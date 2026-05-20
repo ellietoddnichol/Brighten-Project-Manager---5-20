@@ -1,0 +1,6 @@
+{
+  "name": "Brighten Field",
+  "description": "A construction project management web app for Brighten Builders LLC, integrating with Google Workspace (Sheets and Drive).",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

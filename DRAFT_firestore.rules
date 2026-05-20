@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Project Validation
+    function isValidProject(data) {
+      return data.keys().hasAll(['projectNumber', 'projectName', 'customer', 'status', 'ownerId', 'createdAt', 'updatedAt']) 
+      && data.projectNumber is string && data.projectNumber.size() <= 100
+      && data.projectName is string && data.projectName.size() <= 300
+      && data.customer is string && data.customer.size() <= 300
+      && data.status is string && data.status.size() <= 30
+      && data.ownerId == request.auth.uid
+      && data.createdAt is string
+      && data.updatedAt is string;
+    }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && isValidProject(incoming()) && incoming().createdAt == request.time.toIsoString();
+      allow update: if (
+        isSignedIn() && isValidId(projectId) && 
+        existing().ownerId == request.auth.uid && 
+        isValidProject(incoming()) && 
+        incoming().ownerId == existing().ownerId && 
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time.toIsoString()
+      );
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+    }
+
+    // PO Validation
+    function isValidPO(data) {
+      return data.keys().hasAll(['projectId', 'ownerId', 'poNumber', 'vendor', 'originalAmount', 'status', 'createdAt', 'updatedAt'])
+      && data.projectId is string && data.projectId.size() <= 128
+      && data.ownerId == request.auth.uid
+      && data.poNumber is string && data.poNumber.size() <= 100
+      && data.vendor is string && data.vendor.size() <= 300
+      && data.originalAmount is number
+      && data.status is string && data.status.size() <= 50
+      && data.createdAt is string
+      && data.updatedAt is string;
+    }
+
+    match /pos/{poId} {
+      allow get: if isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(poId) 
+        && isValidPO(incoming()) 
+        && get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.ownerId == request.auth.uid
+        && incoming().createdAt == request.time.toIsoString();
+      allow update: if (
+        isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid
+        && isValidPO(incoming()) 
+        && incoming().ownerId == existing().ownerId
+        && existing().projectId == incoming().projectId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toIsoString()
+      );
+      allow delete: if isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid;
+    }
+
+    // CO Validation
+    function isValidCO(data) {
+      return data.keys().hasAll(['projectId', 'ownerId', 'type', 'coNumber', 'title', 'status', 'costImpact', 'createdAt', 'updatedAt'])
+      && data.projectId is string && data.projectId.size() <= 128
+      && data.ownerId == request.auth.uid
+      && data.type is string && data.type.size() <= 50
+      && data.coNumber is string && data.coNumber.size() <= 100
+      && data.title is string && data.title.size() <= 300
+      && data.status is string && data.status.size() <= 50
+      && data.costImpact is number
+      && data.createdAt is string
+      && data.updatedAt is string;
+    }
+
+    match /change-orders/{coId} {
+      allow get: if isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(coId) 
+        && isValidCO(incoming()) 
+        && get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.ownerId == request.auth.uid
+        && incoming().createdAt == request.time.toIsoString();
+      allow update: if (
+        isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid
+        && isValidCO(incoming()) 
+        && incoming().ownerId == existing().ownerId
+        && existing().projectId == incoming().projectId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toIsoString()
+      );
+      allow delete: if isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid;
+    }
+
+    // DailyLog Validation
+    function isValidDailyLog(data) {
+      return data.keys().hasAll(['projectId', 'ownerId', 'logDate', 'createdAt', 'updatedAt'])
+      && data.projectId is string && data.projectId.size() <= 128
+      && data.ownerId == request.auth.uid
+      && data.logDate is string && data.logDate.size() <= 30
+      && data.createdAt is string
+      && data.updatedAt is string;
+    }
+
+    match /daily-logs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(logId) 
+        && isValidDailyLog(incoming()) 
+        && get(/databases/$(database)/documents/projects/$(incoming().projectId)).data.ownerId == request.auth.uid
+        && incoming().createdAt == request.time.toIsoString();
+      allow update: if (
+        isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid
+        && isValidDailyLog(incoming()) 
+        && incoming().ownerId == existing().ownerId
+        && existing().projectId == incoming().projectId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time.toIsoString()
+      );
+      allow delete: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,126 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(projectId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(projectId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /pos/{poId} {
+      allow get: if isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(poId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(poId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /change-orders/{coId} {
+      allow get: if isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(coId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(coId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /daily-logs/{logId} {
+      allow get: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(logId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(logId) && existing().ownerId == request.auth.uid;
+    }
+    
+    match /budget-lines/{lineId} {
+      allow get: if isSignedIn() && isValidId(lineId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(lineId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(lineId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(lineId) && existing().ownerId == request.auth.uid;
+    }
+    
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && isValidId(taskId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(taskId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(taskId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(taskId) && existing().ownerId == request.auth.uid;
+    }
+    
+    match /documents/{docId} {
+      allow get: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(docId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /project-folders/{fid} {
+      allow get: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(fid) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid;
+    }
+
+    match /project-files/{fid} {
+      allow get: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(fid) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(fid) && existing().ownerId == request.auth.uid;
+    }
+
+    match /required-documents/{rdid} {
+      allow get: if isSignedIn() && isValidId(rdid) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(rdid) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(rdid) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(rdid) && existing().ownerId == request.auth.uid;
+    }
+
+    match /project-issues/{iid} {
+      allow get: if isSignedIn() && isValidId(iid) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(iid) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(iid) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(iid) && existing().ownerId == request.auth.uid;
+    }
+
+    match /project-tasks/{tid} {
+      allow get: if isSignedIn() && isValidId(tid) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(tid) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(tid) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(tid) && existing().ownerId == request.auth.uid;
+    }
+
+    match /milestones/{milestoneId} {
+      allow get: if isSignedIn() && isValidId(milestoneId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(milestoneId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(milestoneId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(milestoneId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /billings/{billingId} {
+      allow get: if isSignedIn() && isValidId(billingId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(billingId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(billingId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(billingId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

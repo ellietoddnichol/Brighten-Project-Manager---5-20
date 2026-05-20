@@ -1,0 +1,99 @@
+@if (!authLoaded()) {
+  <div class="flex h-screen items-center justify-center bg-slate-50 text-slate-500 font-sans">
+    Loading...
+  </div>
+} @else if (!user()) {
+  <div class="flex h-screen items-center justify-center bg-slate-50 font-sans">
+    <div class="bg-white p-8 rounded-lg shadow-md border border-slate-200 text-center max-w-sm w-full mx-4">
+      <div class="w-12 h-12 bg-orange-500 rounded flex items-center justify-center font-bold text-xl text-white shadow-sm mx-auto mb-4">B</div>
+      <h1 class="text-2xl font-bold text-slate-900 mb-2">Brighten Field</h1>
+      <p class="text-sm text-slate-500 mb-8">Sign in to access your projects and daily logs.</p>
+      
+      <button (click)="login()" class="w-full bg-slate-900 text-white px-4 py-3 rounded-md font-medium hover:bg-slate-800 transition-colors flex items-center justify-center gap-3">
+        <svg viewBox="0 0 24 24" class="w-5 h-5 fill-current"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/><path d="M1 1h22v22H1z" fill="none"/></svg>
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+} @else {
+  <div class="flex h-screen bg-slate-50 text-slate-900 font-sans overflow-hidden">
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-slate-900 flex flex-col z-20 border-r border-slate-800">
+      <div class="p-5 flex items-center gap-3 border-b border-slate-800">
+        <div class="w-8 h-8 bg-orange-500 rounded flex items-center justify-center font-bold text-sm text-white shadow-sm">B</div>
+        <div>
+          <div class="text-sm font-bold text-white tracking-tight">Brighten Field</div>
+          <div class="text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Brighten Builders LLC</div>
+        </div>
+      </div>
+
+      <nav class="flex-1 px-3 py-4 space-y-1">
+        <a routerLink="/" routerLinkActive="bg-slate-800 text-white" [routerLinkActiveOptions]="{exact: true}"
+           class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all text-sm font-medium group">
+          <mat-icon class="group-hover:text-orange-400 transition-colors !text-[20px] w-5 h-5">dashboard</mat-icon>
+          Dashboard
+        </a>
+        
+        <a routerLink="/projects" routerLinkActive="bg-slate-800 text-white"
+           class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all text-sm font-medium group">
+          <mat-icon class="group-hover:text-orange-400 transition-colors !text-[20px] w-5 h-5">folder</mat-icon>
+          Projects
+        </a>
+
+        <a routerLink="/reports" routerLinkActive="bg-slate-800 text-white"
+           class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all text-sm font-medium group">
+          <mat-icon class="group-hover:text-orange-400 transition-colors !text-[20px] w-5 h-5">bar_chart</mat-icon>
+          Reports
+        </a>
+        
+        <a routerLink="/settings" routerLinkActive="bg-slate-800 text-white"
+           class="flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-all text-sm font-medium group">
+          <mat-icon class="group-hover:text-orange-400 transition-colors !text-[20px] w-5 h-5">settings</mat-icon>
+          Settings
+        </a>
+      </nav>
+
+      <div class="p-4 border-t border-slate-800">
+        <div class="bg-slate-800/40 p-3 rounded-md border border-slate-800">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            <span class="text-[10px] text-slate-300 font-semibold uppercase tracking-wider">Cloud Sync Active</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <mat-icon class="text-slate-400 !text-[14px] h-3.5 w-3.5">cloud_done</mat-icon>
+            <span class="text-xs text-slate-400">Connected to Google Workspace</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-slate-50">
+      <!-- HEADER -->
+      <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 shrink-0">
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2 text-slate-500">
+            <mat-icon class="!text-[18px] w-[18px] h-[18px]">calendar_today</mat-icon>
+            <span class="text-sm font-medium">{{ today | date:'MMMM d, y' }}</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="relative">
+            <mat-icon class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 !text-[16px] w-4 h-4">search</mat-icon>
+            <input type="text" placeholder="Search..." class="w-64 pl-9 pr-4 py-1.5 bg-slate-100 border-none rounded focus:ring-2 focus:ring-orange-500 outline-none text-sm">
+          </div>
+          <div class="h-5 w-[1px] bg-slate-200"></div>
+          
+          <button (click)="logout()" class="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors" title="Sign out">
+            <img [src]="user()?.photoURL || 'https://www.gravatar.com/avatar/0?d=mp'" class="w-8 h-8 rounded-full border border-slate-200" alt="Avatar">
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT AREA -->
+      <main class="flex-1 overflow-y-auto relative">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
+  </div>
+}

@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "A construction project.",
+      "type": "object",
+      "properties": {
+        "projectNumber": { "type": "string" },
+        "projectName": { "type": "string" },
+        "customer": { "type": "string" },
+        "ownerContact": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "billingAddress": { "type": "string" },
+        "taxLocation": { "type": "string" },
+        "billingType": { "type": "string" },
+        "retainagePercent": { "type": "number" },
+        "bondRequired": { "type": "boolean" },
+        "certifiedPayrollRequired": { "type": "boolean" },
+        "prevailingWageRequired": { "type": "boolean" },
+        "projectManager": { "type": "string" },
+        "foreman": { "type": "string" },
+        "startDate": { "type": "string" },
+        "targetCompletionDate": { "type": "string" },
+        "status": { "type": "string" },
+        "contractAmount": { "type": "number" },
+        "estimatedCost": { "type": "number" },
+        "actualCost": { "type": "number" },
+        "billedAmount": { "type": "number" },
+        "driveFolderId": { "type": "string" },
+        "driveFolderUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "ownerId": { "type": "string", "description": "ID of the user who owns the project" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["projectNumber", "projectName", "customer", "status", "ownerId", "createdAt", "updatedAt"]
+    },
+    "PO": {
+      "title": "Purchase Order",
+      "description": "A purchase order for a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "poNumber": { "type": "string" },
+        "vendor": { "type": "string" },
+        "costCode": { "type": "string" },
+        "originalAmount": { "type": "number" },
+        "revisedAmount": { "type": "number" },
+        "invoicesReceived": { "type": "number" },
+        "amountPaid": { "type": "number" },
+        "remainingBalance": { "type": "number" },
+        "status": { "type": "string" },
+        "missingPo": { "type": "boolean" },
+        "invoiceExceedsPo": { "type": "boolean" },
+        "missingCostCode": { "type": "boolean" },
+        "quoteReceivedNoPo": { "type": "boolean" },
+        "costIncreaseNeedsCo": { "type": "boolean" },
+        "itemsPurchased": { "type": "string" },
+        "date": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "receiptUrl": { "type": "string" },
+        "workOrder": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["projectId", "ownerId", "poNumber", "vendor", "originalAmount", "status", "createdAt", "updatedAt"]
+    },
+    "ChangeOrder": {
+      "title": "Change Order",
+      "description": "A change order for a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "type": { "type": "string" },
+        "coNumber": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "requestedBy": { "type": "string" },
+        "status": { "type": "string" },
+        "costImpact": { "type": "number" },
+        "markup": { "type": "number" },
+        "scheduleImpactDays": { "type": "number" },
+        "linkedPoId": { "type": "string" },
+        "linkedInvoiceId": { "type": "string" },
+        "dateSubmitted": { "type": "string" },
+        "dateApproved": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["projectId", "ownerId", "type", "coNumber", "title", "status", "costImpact", "createdAt", "updatedAt"]
+    },
+    "DailyLog": {
+      "title": "Daily Log",
+      "description": "A daily log for a project.",
+      "type": "object",
+      "properties": {
+        "projectId": { "type": "string" },
+        "logDate": { "type": "string" },
+        "weather": { "type": "string" },
+        "crewOnSite": { "type": "string" },
+        "workPerformed": { "type": "string" },
+        "delays": { "type": "string" },
+        "materialsDelivered": { "type": "string" },
+        "inspections": { "type": "string" },
+        "visitors": { "type": "string" },
+        "safetyNotes": { "type": "string" },
+        "nextSteps": { "type": "string" },
+        "photoLinks": { "type": "string" },
+        "createdBy": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["projectId", "ownerId", "logDate", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/Project" },
+      "description": "Project documents owned by a user."
+    },
+    "/pos/{poId}": {
+      "schema": { "$ref": "#/entities/PO" },
+      "description": "Purchase orders for a project."
+    },
+    "/change-orders/{coId}": {
+      "schema": { "$ref": "#/entities/ChangeOrder" },
+      "description": "Change orders for a project."
+    },
+    "/daily-logs/{logId}": {
+      "schema": { "$ref": "#/entities/DailyLog" },
+      "description": "Daily logs for a project."
+    }
+  }
+}
