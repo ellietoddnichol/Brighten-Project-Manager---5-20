@@ -1,0 +1,26 @@
+node_modules
+dist
+.angular
+.git
+.gitignore
+.env*
+gen-lang-client-*.json
+*.pdf
+Bonus Summary*
+Contracts_*
+Dustin_*
+Kyle_*
+J158*
+J162*
+J163*
+J186*
+J193*
+J204*
+J206*
+J208*
+J212*
+J222*
+Job Cost Budget*
+test.txt
+docs
+README.md
