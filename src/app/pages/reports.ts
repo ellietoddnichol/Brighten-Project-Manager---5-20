@@ -2,6 +2,8 @@ import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/c
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '../services/data.service';
+import { dedupeProjectsForDisplay } from '../utils/project-dedupe';
+import { isOverheadJob } from '../utils/project';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -12,8 +14,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
     <div class="p-8 flex-1 overflow-y-auto w-full max-w-7xl mx-auto">
       <header class="flex justify-between items-center mb-8">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Financial Reports</h1>
-          <p class="text-slate-500 text-sm mt-1">Work in progress, job costing, and financial health.</p>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">WIP Report</h1>
+          <p class="text-slate-500 text-sm mt-1">Work in progress and job costing by project.</p>
         </div>
         <div class="flex gap-3">
           <button class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
@@ -129,10 +131,11 @@ import { toSignal } from '@angular/core/rxjs-interop';
 export class Reports {
   dataService = inject(DataService);
   projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
+  uniqueProjects = computed(() => dedupeProjectsForDisplay(this.projects() || []));
   pos = toSignal(this.dataService.getPOs(), { initialValue: [] });
 
   wipData = computed(() => {
-    return (this.projects() || []).map(p => {
+    return this.uniqueProjects().filter(p => !isOverheadJob(p)).map(p => {
       const estCost = (p.estLaborCost || 0) + (p.estMaterialCost || 0) + (p.estSubCost || 0) + (p.estEquipmentCost || 0) + (p.estOtherCost || 0);
       const actCost = p.actualCostToDate || 0;
       const contract = p.originalContractAmount || 0;

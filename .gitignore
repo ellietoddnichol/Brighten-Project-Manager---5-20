@@ -4,6 +4,11 @@
 .env*
 !.env.example
 
+# Firebase service account keys (NEVER commit)
+*firebase-adminsdk*.json
+gen-lang-client-*.json
+serviceAccountKey.json
+
 # Compiled output
 /dist
 /tmp

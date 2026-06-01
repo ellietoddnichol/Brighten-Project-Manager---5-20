@@ -1,81 +1,4 @@
-import { Project, DailyLog, ScheduleMilestone, ProjectIssue, ProjectFile, ChangeOrder, Billing, ProjectTask, ActivityFeedItem } from '../models/types';
-
-export function getMostRecentDailyLog(projectId: string, logs: DailyLog[]): DailyLog | null {
-  const projectLogs = logs.filter(l => l.projectId === projectId).sort((a, b) => {
-    return new Date(b.logDate).getTime() - new Date(a.logDate).getTime();
-  });
-  return projectLogs.length > 0 ? projectLogs[0] : null;
-}
-
-export function getDaysSinceLastDailyLog(projectId: string, logs: DailyLog[]): number {
-  const lastLog = getMostRecentDailyLog(projectId, logs);
-  if (!lastLog) return 999;
-  
-  const logDate = new Date(lastLog.logDate);
-  const now = new Date();
-  
-  // Calculate business days? For simplicity, we just use calendar days for now unless strictly needed.
-  const diffTime = Math.abs(now.getTime() - logDate.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-  return diffDays;
-}
-
-export function getDailyLogExceptions(project: Project, logs: DailyLog[]) {
-  const exceptions = [];
-  const pLogs = logs.filter(l => l.projectId === project.id);
-  const daysSince = getDaysSinceLastDailyLog(project.id, logs);
-  
-  if (project.status === 'Active' && daysSince > 3) {
-    exceptions.push({
-      id: `log-missing-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Missing Daily Logs',
-      description: `Active project with no log in ${daysSince} days.`,
-      type: 'Daily Log',
-      severity: 'warning'
-    });
-  }
-
-  // Check recent logs for safety/delays (maybe last 7 days? Or just unresolved ones? The prompt says "Daily log marked Safety Issue" - maybe we just flag the specific log)
-  pLogs.forEach(log => {
-    if (log.safetyIssues) {
-       exceptions.push({
-         id: `log-safety-${log.id}`,
-         projectId: project.id,
-         projectName: project.projectName,
-         title: 'Safety Issue Logged',
-         description: `Safety issue reported on ${log.logDate}.`,
-         type: 'Daily Log',
-         severity: 'error'
-       });
-    }
-    if (log.delays) {
-       exceptions.push({
-         id: `log-delay-${log.id}`,
-         projectId: project.id,
-         projectName: project.projectName,
-         title: 'Delay Logged',
-         description: `Delay reported on ${log.logDate}: ${log.delayReason || 'No reason'}`,
-         type: 'Daily Log',
-         severity: 'warning'
-       });
-    }
-    if (log.potentialChangeOrder) {
-       exceptions.push({
-         id: `log-pco-${log.id}`,
-         projectId: project.id,
-         projectName: project.projectName,
-         title: 'Potential Change Order',
-         description: `PCO flagged on ${log.logDate}.`,
-         type: 'Daily Log',
-         severity: 'warning'
-       });
-    }
-  });
-
-  return exceptions;
-}
+import { ScheduleMilestone, ProjectIssue, ProjectFile, ChangeOrder, Billing, ProjectTask, ActivityFeedItem } from '../models/types';
 
 export function getUpcomingMilestones(projectId: string, milestones: ScheduleMilestone[]): ScheduleMilestone[] {
   const pM = milestones.filter(m => m.projectId === projectId && m.status !== 'Complete' && m.status !== 'Canceled');
@@ -110,7 +33,7 @@ export function getNextMilestone(projectId: string, milestones: ScheduleMileston
   return pM.length > 0 ? pM[0] : null;
 }
 
-export function getScheduleExceptions(project: Project, milestones: ScheduleMilestone[]) {
+export function getScheduleExceptions(project: { id: string; projectName: string; status: string }, milestones: ScheduleMilestone[]) {
   const exceptions = [];
   const overdue = getOverdueMilestones(project.id, milestones);
   const upcoming7 = getUpcomingMilestones(project.id, milestones);
@@ -153,7 +76,7 @@ export function getScheduleExceptions(project: Project, milestones: ScheduleMile
      });
   });
 
-  if (project.status === 'Active' && !next) {
+  if (project.status === 'Active' && !next && milestones.some(m => m.projectId === project.id)) {
      exceptions.push({
         id: `ms-missing-next-${project.id}`,
         projectId: project.id,
@@ -169,8 +92,7 @@ export function getScheduleExceptions(project: Project, milestones: ScheduleMile
 }
 
 export function buildProjectActivityFeed(
-  projectId: string, 
-  logs: DailyLog[],
+  projectId: string,
   files: ProjectFile[],
   issues: ProjectIssue[],
   tasks: ProjectTask[],
@@ -179,17 +101,6 @@ export function buildProjectActivityFeed(
   milestones: ScheduleMilestone[]
 ): ActivityFeedItem[] {
   const feed: ActivityFeedItem[] = [];
-
-  logs.filter(x => x.projectId === projectId).forEach(l => {
-    feed.push({
-      id: `log-${l.id}`, projectId, activityType: 'Daily Log',
-      title: `Daily Log: ${l.logDate}`,
-      description: l.workPerformed?.slice(0, 100) || 'Work performed logged.',
-      createdAt: l.createdAt || new Date(l.logDate),
-      createdBy: l.createdBy,
-      relatedRecordId: l.id, relatedRecordType: 'DailyLog'
-    });
-  });
 
   files.filter(x => x.projectId === projectId).forEach(f => {
     feed.push({

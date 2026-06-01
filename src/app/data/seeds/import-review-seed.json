@@ -1,0 +1,169 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-27T17:22:19.191Z"
+  },
+  "exceptions": [
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "162",
+      "sourceFileName": "J162 Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J162 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "163",
+      "sourceFileName": "J163 - LPS Heritage- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J163 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "163",
+      "sourceFileName": "J163 - LPS Heritage- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J163 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "186",
+      "sourceFileName": "J186 - LVV HP 3&5- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J186 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "186",
+      "sourceFileName": "J186 - LVV HP 3&5- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J186 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "186",
+      "sourceFileName": "J186 - LVV HP 3&5- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J186 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "186",
+      "sourceFileName": "J186 - LVV HP 3&5- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J186 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "206",
+      "sourceFileName": "J206 - LVV HP 211, 311, & 317- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J206 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "206",
+      "sourceFileName": "J206 - LVV HP 211, 311, & 317- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J206 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "206",
+      "sourceFileName": "J206 - LVV HP 211, 311, & 317- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J206 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "206",
+      "sourceFileName": "J206 - LVV HP 211, 311, & 317- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J206 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "208",
+      "sourceFileName": "J208 - PHSD 2026- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J208 vs workbook J209"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "208",
+      "sourceFileName": "J208 - PHSD 2026- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J208 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "208",
+      "sourceFileName": "J208 - PHSD 2026- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J208 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "208",
+      "sourceFileName": "J208 - PHSD 2026- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J208 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "208",
+      "sourceFileName": "J208 - PHSD 2026- Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J208 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "212",
+      "sourceFileName": "J212 - LPS Lewis & Clark - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J212 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "212",
+      "sourceFileName": "J212 - LPS Lewis & Clark - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J212 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "212",
+      "sourceFileName": "J212 - LPS Lewis & Clark - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J212 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "212",
+      "sourceFileName": "J212 - LPS Lewis & Clark - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J212 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "222",
+      "sourceFileName": "J222 - Fairmount 26 - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J222 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "222",
+      "sourceFileName": "J222 - Fairmount 26 - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J222 vs workbook J162"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "222",
+      "sourceFileName": "J222 - Fairmount 26 - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J222 vs workbook J161"
+    },
+    {
+      "type": "budgetImportWarning",
+      "jobNumber": "222",
+      "sourceFileName": "J222 - Fairmount 26 - Job Costs Budget.xlsx",
+      "message": "Job number conflict: filename J222 vs workbook J162"
+    },
+    {
+      "type": "duplicateDriveFolder",
+      "jobNumber": "101",
+      "message": "Duplicate job folder in Drive — review before linking",
+      "status": "NeedsReview"
+    },
+    {
+      "type": "duplicateDriveFolder",
+      "jobNumber": "102",
+      "message": "Duplicate job folder in Drive — review before linking",
+      "status": "NeedsReview"
+    },
+    {
+      "type": "duplicateDriveFolder",
+      "jobNumber": "103",
+      "message": "Duplicate job folder in Drive — review before linking",
+      "status": "NeedsReview"
+    }
+  ]
+}

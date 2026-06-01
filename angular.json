@@ -5,7 +5,8 @@
     "packageManager": "npm",
     "schematicCollections": [
       "angular-eslint"
-    ]
+    ],
+    "analytics": "3751077a-19f1-4e7c-88dd-01818ce976d5"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -36,8 +37,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "900kB",
+                  "maximumError": "1.35MB"
                 },
                 {
                   "type": "anyComponentStyle",

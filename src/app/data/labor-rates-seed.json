@@ -1,0 +1,142 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-21",
+    "defaultUnionArea": "Commercial Area 1",
+    "source": "Mid-America Carpenters KC Area 1 Commercial — journeyman/fringe from Brighten spec; foreman/general foreman/apprentice periods from 2023-2027 CBA wage schedule (60%-95% apprentice scale, +$5.67 foreman steps)"
+  },
+  "classificationRates": [
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Journeyman",
+      "baseRate": 46.83,
+      "fringeRate": 24.21,
+      "totalPackage": 71.04,
+      "fringeComponents": {
+        "healthWelfare": 11.25,
+        "pension": 9.5,
+        "vacation": 1,
+        "apprenticeTraining": 0.75,
+        "otherFringe": 2.71
+      },
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Carpenter",
+      "baseRate": 46.83,
+      "fringeRate": 24.21,
+      "totalPackage": 71.04,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "General Foreman",
+      "baseRate": 58.17,
+      "fringeRate": 24.21,
+      "totalPackage": 82.38,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Foreman",
+      "baseRate": 52.5,
+      "fringeRate": 24.21,
+      "totalPackage": 76.71,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 1",
+      "baseRate": 28.1,
+      "fringeRate": 24.21,
+      "totalPackage": 52.31,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 2",
+      "baseRate": 30.44,
+      "fringeRate": 24.21,
+      "totalPackage": 54.65,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 3",
+      "baseRate": 32.78,
+      "fringeRate": 24.21,
+      "totalPackage": 56.99,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 4",
+      "baseRate": 35.12,
+      "fringeRate": 24.21,
+      "totalPackage": 59.33,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 5",
+      "baseRate": 37.46,
+      "fringeRate": 24.21,
+      "totalPackage": 61.67,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 6",
+      "baseRate": 39.81,
+      "fringeRate": 24.21,
+      "totalPackage": 64.02,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 7",
+      "baseRate": 42.15,
+      "fringeRate": 24.21,
+      "totalPackage": 66.36,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice Period 8",
+      "baseRate": 44.49,
+      "fringeRate": 24.21,
+      "totalPackage": 68.7,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Apprentice",
+      "baseRate": 28.1,
+      "fringeRate": 24.21,
+      "totalPackage": 52.31,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    },
+    {
+      "unionArea": "Commercial Area 1",
+      "classification": "Carpenter Helper",
+      "baseRate": 35.12,
+      "fringeRate": 24.21,
+      "totalPackage": 59.33,
+      "effectiveDate": "2026-01-01",
+      "source": "seed-default"
+    }
+  ]
+}

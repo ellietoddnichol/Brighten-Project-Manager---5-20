@@ -1,0 +1,259 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-27T17:22:17.414Z",
+    "source": "Drive audit seed (partial — drop CSV for full 91 roots)",
+    "inProgressCount": 32,
+    "closedCount": 0,
+    "totalCount": 32
+  },
+  "topLevelFolders": [
+    {
+      "name": "Shared/root unknown",
+      "driveFolderId": "0AHDiiAbFj8wXUk9PVA"
+    },
+    {
+      "name": "Jobs - In progress",
+      "driveFolderId": "10e2HUm21hzMH77io7mLJi9olf4Oqxts4"
+    },
+    {
+      "name": "Jobs - Closed",
+      "driveFolderId": "1J61iAlxYGRU35_KzS2ioq98RfitzJFtp"
+    },
+    {
+      "name": "Sub Contractors",
+      "driveFolderId": "1jzmkZbTIEhBPL2lsltEZseL-zeWxASkb"
+    },
+    {
+      "name": "Invoices:Receipts",
+      "driveFolderId": "1RMw2pjlZsc1nH0wulEbFh8bv_d9QKLeu"
+    },
+    {
+      "name": "Payroll",
+      "driveFolderId": "1wmC5_5wUqkp7m9Xe2DkigW7E4v2b0KUG"
+    },
+    {
+      "name": "Insurance",
+      "driveFolderId": "1kfpLFrm4BQgy5F2sKtYECnvN9AoHfDsj"
+    },
+    {
+      "name": "Employees",
+      "driveFolderId": "1ueVhrCdzSkLGkwjHFmzUx6UjEiM4KUUm"
+    },
+    {
+      "name": "Masters",
+      "driveFolderId": "1BrrbF1acUiiJadjAZXEXS-BmFsVd2mkF"
+    },
+    {
+      "name": "Financials",
+      "driveFolderId": "1Ol8q7tGW6GacQG7ZF6mepMr8_F4eroSR"
+    }
+  ],
+  "duplicateReviews": [
+    {
+      "jobNumber": "101",
+      "note": "Duplicate job folder in Drive — review before linking"
+    },
+    {
+      "jobNumber": "102",
+      "note": "Duplicate job folder in Drive — review before linking"
+    },
+    {
+      "jobNumber": "103",
+      "note": "Duplicate job folder in Drive — review before linking"
+    }
+  ],
+  "projectRoots": [
+    {
+      "jobNumber": "155",
+      "projectName": "Park Hill School District",
+      "driveFolderId": "1Ggtg2IUdThZju1lAdEwDr_NasKhWRH2p",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "158",
+      "projectName": "Blue Valley CTE 2026",
+      "driveFolderId": "1MJjLQK9sMUk6mHYYDdh66r9qU7PRGvzd",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "163",
+      "projectName": "LPS Heritage Middle",
+      "driveFolderId": "1fNcFWhcWxukNl7TB4HaB-JNjoVWCt9XU",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "182",
+      "projectName": "Wexford Door Replacement",
+      "driveFolderId": "1CS61Lqt79h3PAYIabVdz_bUvZOn_HF2t",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "183",
+      "projectName": "Blue Springs Pole Barns",
+      "driveFolderId": "1rElCR-RKYTFFUkqoRYI8SGYSz8BfHFfh",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "186",
+      "projectName": "LVV - 3B odd side and 5C even side",
+      "driveFolderId": "19NoIklHxKYcpijQ3bHQdqYpbLU0CWF6X",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "187",
+      "projectName": "LVV Sprinkler Damage",
+      "driveFolderId": "1jwsRQRXorNZenyM-_AT2nR0IxAD_u-Lh",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "188",
+      "projectName": "Catalent - Door Frame Replacement",
+      "driveFolderId": "1Pye6Sz6tuRATjqzEU1TdaHJUkfaKWShn",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "189",
+      "projectName": "Topeka VAMC",
+      "driveFolderId": "1McQQXHumvg4kQU4vY48KW7AjiN8dIbqU",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "190",
+      "projectName": "KUMC Delp Office Reno",
+      "driveFolderId": "1J8Jqkkg7mUnRHVzXjB0JqPuZTKuWXP1x",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "192",
+      "projectName": "Catalent Room 135",
+      "driveFolderId": "1OoFHRJ5qt3oZztxgH9gZZlMf1yO0TNSI",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "193",
+      "projectName": "Pulse Design 9th Floor",
+      "driveFolderId": "1db9OES7bQJlfPaq5k-zjJgT8jY-AZ6n4",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "196",
+      "projectName": "Thrive Sprinkler Tenting",
+      "driveFolderId": "1SQ0VPaIpP3jELvLayr18vZgTf4uF647m",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "197",
+      "projectName": "LVV Admin Hallway",
+      "driveFolderId": "1yYVEq5XVot4a-4JYwDMGZ37hX3ituRWR",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "199",
+      "projectName": "Catalent P Building - Mechanical Room",
+      "driveFolderId": "1S9h6p2P7LIeopDDSjY9FkW643zc9Prgm",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "201",
+      "projectName": "LKQ Lockers",
+      "driveFolderId": "1--zj1ZEjj1iH6FdTa80pMrvT62_DNy7_",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "202",
+      "projectName": "Chillicothe Police Dept. Install",
+      "driveFolderId": "1oZEiJJoPlD4XlzHVazjSfqR4cZD2Mvov",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "203",
+      "projectName": "NKC Roller Shades",
+      "driveFolderId": "1TvAdFmPL4kNALK01YsCx4Nc3M6Pfxgcu",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "204",
+      "projectName": "LightEdge Data Center",
+      "driveFolderId": "1ozHLqJJxLtFH80CJwV_VAIffTTwCfEto",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "205",
+      "projectName": "LVV Admin T&M",
+      "driveFolderId": "1xYGzkzHFfSkfpyP1N77WMCXKAAeB2vNp",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "206",
+      "projectName": "LVV Heritage - 211A, 311A & 317A",
+      "driveFolderId": "1fE1S6LQJc_xl4PfE8qikupuBSPTpuRDw",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "207",
+      "projectName": "Stowers 1st Corridor Ceilings",
+      "driveFolderId": "1D0PPfzyr4DS_iqDlggh6UA7OCjUNPXud",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "208",
+      "projectName": "Park Hill 2026",
+      "driveFolderId": "1zQEPQLJKzA8QfG7K5anPVPkUikAPrCzb",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "209",
+      "projectName": "Capital Electric Fab Shop",
+      "driveFolderId": "1MIeaISgDtbzfPozMBs6I8KOHEBkQbgpL",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "210",
+      "projectName": "Benedictine Library Partitions",
+      "driveFolderId": "1TaXgRrfUXXdnG62ntCpWGHpsFzZC-Wsv",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "211",
+      "projectName": "Edward Jones Roller Shades",
+      "driveFolderId": "1B1vAWEjr9KfHBx7ttTmBUT7L8tMGFa3B",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "212",
+      "projectName": "LPS Lewis Clark Restroom",
+      "driveFolderId": "1uXzrejmUOSCicf3aqgkFBIGPiVMp1Jyr",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "214",
+      "projectName": "Hovey Williams LLP - Ceiling Access",
+      "driveFolderId": "18zYvGFiRE9BWfzhQ9UtoI5aIr3fPf4XS",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "215",
+      "projectName": "2306 Visitor Center",
+      "driveFolderId": "1P72T4YTRlpImj0fzaq3RtFGhGxL88f4R",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "216",
+      "projectName": "Unilever Phase II Demo",
+      "driveFolderId": "1G2pq5SOeUmr-2KtiFlLdk0IvQ5BwtU52",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "217",
+      "projectName": "Catalent Summer 2026 Shutdown",
+      "driveFolderId": "1b6_UbNv3WnOD_5u4cr7sbf9qz2pFiZB-",
+      "lifecycleStatus": "inProgress"
+    },
+    {
+      "jobNumber": "218",
+      "projectName": "Dole Grand Jury Room - Water Damage",
+      "driveFolderId": "1sRJ93S0tmYpjs2qWHRA14mNi5Cm8DGME",
+      "lifecycleStatus": "inProgress"
+    }
+  ]
+}

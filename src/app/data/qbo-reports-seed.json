@@ -1,0 +1,656 @@
+{
+  "meta": {
+    "company": "Brighten Builders LLC",
+    "importedAt": "2026-05-21T11:58:21",
+    "asOfDate": "2026-05-21",
+    "description": "QuickBooks Online Projects report + Work in Progress by Project report",
+    "sourceFiles": [
+      "Projects (17).xlsx",
+      "Brighten Builders LLC_Work in progress by project    .xlsx"
+    ]
+  },
+  "records": [
+    {
+      "slug": "158",
+      "jobNumber": "158",
+      "qboLabel": "158 - Blue Valley CTE 2026",
+      "customer": "McCown Gordon",
+      "projectsReport": {
+        "income": 5188.5,
+        "cost": 159.3,
+        "profitMargin": 0.9690000000000001,
+        "startDate": "2025-12-22",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 159.3,
+        "difference": 5188.5,
+        "profit": 5029.2,
+        "profitMargin": 0.9693,
+        "totalActIncome": 5188.5
+      }
+    },
+    {
+      "slug": "163",
+      "jobNumber": "163",
+      "qboLabel": "163 - LPS Heritage Middle",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 995506.85,
+        "cost": 748630.16,
+        "profitMargin": 0.248,
+        "startDate": "2025-06-23",
+        "endDate": "2025-12-22"
+      },
+      "wipReport": {
+        "totalActCosts": 59868.67,
+        "difference": 5939.032051162707,
+        "profit": 16558.90000000001,
+        "profitMargin": 0.2167,
+        "totalActIncome": 76427.57
+      }
+    },
+    {
+      "slug": "183",
+      "jobNumber": "183",
+      "qboLabel": "183 - Blue Springs School District - Pole Barns",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 225200.0,
+        "cost": 177881.44,
+        "profitMargin": 0.21,
+        "startDate": "2025-08-27",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 32575.300000000007,
+        "difference": 4603.750222222217,
+        "profit": 12783.77,
+        "profitMargin": 0.2818,
+        "totalActIncome": 45359.07000000001
+      }
+    },
+    {
+      "slug": "186",
+      "jobNumber": "186",
+      "qboLabel": "186 - LVV 3 & 5",
+      "customer": "Lakeview Village",
+      "projectsReport": {
+        "income": 732218.02,
+        "cost": 603629.74,
+        "profitMargin": 0.17600000000000002,
+        "startDate": "2025-09-02",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 309421.99,
+        "difference": -51925.89147219033,
+        "profit": -973.3099999999977,
+        "profitMargin": -0.0032,
+        "totalActIncome": 308448.68
+      }
+    },
+    {
+      "slug": "189",
+      "jobNumber": "189",
+      "qboLabel": "189 - Topeka VAMC - Anesthesia Unit",
+      "customer": "BKM Contruction LLC",
+      "projectsReport": {
+        "income": 0.0,
+        "cost": 0.0,
+        "profitMargin": null,
+        "startDate": "2025-10-01",
+        "endDate": "2026-09-19"
+      },
+      "wipReport": {
+        "totalActCosts": 0.0,
+        "difference": 0.0,
+        "profit": 0.0,
+        "profitMargin": null,
+        "totalActIncome": 0.0
+      }
+    },
+    {
+      "slug": "190",
+      "jobNumber": "190",
+      "qboLabel": "190 - KUMC Delp Office Reno",
+      "customer": "XEC",
+      "projectsReport": {
+        "income": 32200.0,
+        "cost": 26323.5,
+        "profitMargin": 0.183,
+        "startDate": "2025-10-06",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 15492.85,
+        "difference": 10223.2,
+        "profit": -5269.65,
+        "profitMargin": -0.5155,
+        "totalActIncome": 10223.2
+      }
+    },
+    {
+      "slug": "193",
+      "jobNumber": "193",
+      "qboLabel": "193 - Pulse Design 9th Floor",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 77491.0,
+        "cost": 72002.9,
+        "profitMargin": 0.071,
+        "startDate": "2025-10-16",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 20877.170000000002,
+        "difference": -3087.658374188901,
+        "profit": 712.9799999999996,
+        "profitMargin": 0.033,
+        "totalActIncome": 21590.15
+      }
+    },
+    {
+      "slug": "197",
+      "jobNumber": "197",
+      "qboLabel": "197 - Administrative Hallway Reno",
+      "customer": "Lakeview Village",
+      "projectsReport": {
+        "income": 28485.0,
+        "cost": 24729.75,
+        "profitMargin": 0.132,
+        "startDate": "2025-11-13",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 16622.510000000002,
+        "difference": 6000.0,
+        "profit": 11862.489999999998,
+        "profitMargin": 0.4164,
+        "totalActIncome": 28485.0
+      }
+    },
+    {
+      "slug": "201",
+      "jobNumber": "201",
+      "qboLabel": "201 - LKQ Lockers",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 4000.0,
+        "cost": 2294.78,
+        "profitMargin": 0.426,
+        "startDate": "2025-12-01",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 653.48,
+        "difference": -1045.568,
+        "profit": -653.48,
+        "profitMargin": null,
+        "totalActIncome": 0.0
+      }
+    },
+    {
+      "slug": "203",
+      "jobNumber": "203",
+      "qboLabel": "203 - NKC Hospital Roller Shade",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 1084.0,
+        "cost": 686.7,
+        "profitMargin": 0.36700000000000005,
+        "startDate": "2025-12-09",
+        "endDate": "2025-12-09"
+      },
+      "wipReport": {
+        "totalActCosts": 440.02000000000004,
+        "difference": -276.0,
+        "profit": -36.02000000000004,
+        "profitMargin": -0.0892,
+        "totalActIncome": 404.0
+      }
+    },
+    {
+      "slug": "204",
+      "jobNumber": "204",
+      "qboLabel": "204 - LightEdge Data Center",
+      "customer": "XEC",
+      "projectsReport": {
+        "income": 250741.13,
+        "cost": 131948.19,
+        "profitMargin": 0.474,
+        "startDate": "2026-01-01",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 131948.19,
+        "difference": 80502.59024807691,
+        "profit": 118792.94,
+        "profitMargin": 0.4738,
+        "totalActIncome": 250741.13
+      }
+    },
+    {
+      "slug": "205",
+      "jobNumber": "205",
+      "qboLabel": "205 - LVV Admin T&M",
+      "customer": "Lakeview Village",
+      "projectsReport": {
+        "income": 7286.67,
+        "cost": 6279.91,
+        "profitMargin": 0.138,
+        "startDate": "2026-01-01",
+        "endDate": "2026-03-21"
+      },
+      "wipReport": {
+        "totalActCosts": 6279.91,
+        "difference": 7286.67,
+        "profit": 1006.7600000000002,
+        "profitMargin": 0.1382,
+        "totalActIncome": 7286.67
+      }
+    },
+    {
+      "slug": "206",
+      "jobNumber": "206",
+      "qboLabel": "206 - LVV Heritage - 211A, 311A & 317A",
+      "customer": "Lakeview Village",
+      "projectsReport": {
+        "income": 406731.43,
+        "cost": 293162.74,
+        "profitMargin": 0.27899999999999997,
+        "startDate": "2026-02-09",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 281547.33999999997,
+        "difference": 69510.78140065126,
+        "profit": 125184.09000000003,
+        "profitMargin": 0.3078,
+        "totalActIncome": 406731.43
+      }
+    },
+    {
+      "slug": "207",
+      "jobNumber": "207",
+      "qboLabel": "207 - Stowers 1st Corridor Ceilings",
+      "customer": "Stowers Institute",
+      "projectsReport": {
+        "income": 5375.0,
+        "cost": 3161.4,
+        "profitMargin": 0.41200000000000003,
+        "startDate": "2026-02-10",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 3161.3999999999996,
+        "difference": 1126.8687500000005,
+        "profit": 2213.6000000000004,
+        "profitMargin": 0.4118,
+        "totalActIncome": 5375.0
+      }
+    },
+    {
+      "slug": "208",
+      "jobNumber": "208",
+      "qboLabel": "208 - Park Hill 2026",
+      "customer": "Universal Construction",
+      "projectsReport": {
+        "income": 16487.72,
+        "cost": 10253.0,
+        "profitMargin": 0.37799999999999995,
+        "startDate": "2026-05-01",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 10253.0,
+        "difference": 4176.601133333334,
+        "profit": 6234.720000000001,
+        "profitMargin": 0.37810000000000005,
+        "totalActIncome": 16487.72
+      }
+    },
+    {
+      "slug": "209",
+      "jobNumber": "209",
+      "qboLabel": "209 - Capital Electric Fab Shop",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 17350.0,
+        "cost": 10542.22,
+        "profitMargin": 0.392,
+        "startDate": "2026-02-09",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 10542.220000000001,
+        "difference": 4285.177357142857,
+        "profit": 6807.779999999999,
+        "profitMargin": 0.3924,
+        "totalActIncome": 17350.0
+      }
+    },
+    {
+      "slug": "210",
+      "jobNumber": "210",
+      "qboLabel": "210 - Benedictine Library Toilet Partitions",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 13366.5,
+        "cost": 6922.58,
+        "profitMargin": 0.48200000000000004,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 6922.58,
+        "difference": 4534.242758620689,
+        "profit": 6443.92,
+        "profitMargin": 0.48210000000000003,
+        "totalActIncome": 13366.5
+      }
+    },
+    {
+      "slug": "211",
+      "jobNumber": "211",
+      "qboLabel": "211 - Edward Jones Roller Shades",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 570.0,
+        "cost": 384.29,
+        "profitMargin": 0.326,
+        "startDate": "2026-03-09",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 384.28999999999996,
+        "difference": 570.0,
+        "profit": 185.71000000000004,
+        "profitMargin": 0.3258,
+        "totalActIncome": 570.0
+      }
+    },
+    {
+      "slug": "212",
+      "jobNumber": "212",
+      "qboLabel": "212 - LPS Lewis & Clark Restroom Reno",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 4750.0,
+        "cost": 4136.0,
+        "profitMargin": 0.129,
+        "startDate": "2026-03-09",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 4136.0,
+        "difference": 4750.0,
+        "profit": 614.0,
+        "profitMargin": 0.1293,
+        "totalActIncome": 4750.0
+      }
+    },
+    {
+      "slug": "213",
+      "jobNumber": "213",
+      "qboLabel": "213 - KUMC ORR Major Access Doors",
+      "customer": "XEC",
+      "projectsReport": {
+        "income": 854.86,
+        "cost": 650.56,
+        "profitMargin": 0.239,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 650.56,
+        "difference": 854.86,
+        "profit": 204.30000000000007,
+        "profitMargin": 0.239,
+        "totalActIncome": 854.86
+      }
+    },
+    {
+      "slug": "214",
+      "jobNumber": "214",
+      "qboLabel": "214 - Hovey Williams LLP - Ceiling Access",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 1600.0,
+        "cost": 672.27,
+        "profitMargin": 0.58,
+        "startDate": "2026-03-16",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 672.27,
+        "difference": 1600.0,
+        "profit": 927.73,
+        "profitMargin": 0.5798,
+        "totalActIncome": 1600.0
+      }
+    },
+    {
+      "slug": "215",
+      "jobNumber": "215",
+      "qboLabel": "215 - 2306 Visitor Center",
+      "customer": "BKM Contruction LLC",
+      "projectsReport": {
+        "income": 12720.0,
+        "cost": 6688.07,
+        "profitMargin": 0.474,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 6688.07,
+        "difference": 12720.0,
+        "profit": 6031.93,
+        "profitMargin": 0.4742,
+        "totalActIncome": 12720.0
+      }
+    },
+    {
+      "slug": "216",
+      "jobNumber": "216",
+      "qboLabel": "216 - Unilever Phase II Demo",
+      "customer": "Purdum",
+      "projectsReport": {
+        "income": 3478.7,
+        "cost": 2824.02,
+        "profitMargin": 0.188,
+        "startDate": "2026-03-31",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 2824.02,
+        "difference": 3478.7,
+        "profit": 654.6799999999998,
+        "profitMargin": 0.1882,
+        "totalActIncome": 3478.7
+      }
+    },
+    {
+      "slug": "217",
+      "jobNumber": "217",
+      "qboLabel": "217 - Catalent Summer 2026 Shutdown",
+      "customer": "Purdum",
+      "projectsReport": {
+        "income": 0.0,
+        "cost": 0.0,
+        "profitMargin": null,
+        "startDate": "2026-03-31",
+        "endDate": null
+      },
+      "wipReport": null
+    },
+    {
+      "slug": "218",
+      "jobNumber": "218",
+      "qboLabel": "218 - Dole Grand Jury Room - Water Damage",
+      "customer": "U.S. General Services Administration",
+      "projectsReport": {
+        "income": 10999.55,
+        "cost": 3847.44,
+        "profitMargin": 0.65,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 3847.4399999999996,
+        "difference": 10999.55,
+        "profit": 7152.11,
+        "profitMargin": 0.6502,
+        "totalActIncome": 10999.55
+      }
+    },
+    {
+      "slug": "219",
+      "jobNumber": "219",
+      "qboLabel": "219 - T&M Partitions @ Fox Ridge",
+      "customer": "CWA Specialties, INC.",
+      "projectsReport": {
+        "income": 1323.0,
+        "cost": 918.54,
+        "profitMargin": 0.306,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 918.54,
+        "difference": 1323.0,
+        "profit": 404.46000000000004,
+        "profitMargin": 0.3057,
+        "totalActIncome": 1323.0
+      }
+    },
+    {
+      "slug": "220",
+      "jobNumber": "220",
+      "qboLabel": "220 - KC VA Medical Center",
+      "customer": "U.S. General Services Administration",
+      "projectsReport": {
+        "income": 0.0,
+        "cost": 0.0,
+        "profitMargin": null,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": null
+    },
+    {
+      "slug": "221",
+      "jobNumber": "221",
+      "qboLabel": "221 - Whitaker USMS Vault Door",
+      "customer": "BKM Contruction LLC",
+      "projectsReport": {
+        "income": 600.0,
+        "cost": 151.24,
+        "profitMargin": 0.748,
+        "startDate": "2026-04-26",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 151.24,
+        "difference": 600.0,
+        "profit": 448.76,
+        "profitMargin": 0.7479,
+        "totalActIncome": 600.0
+      }
+    },
+    {
+      "slug": "222",
+      "jobNumber": "222",
+      "qboLabel": "222 - ISD Fairmount 26",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 9500.0,
+        "cost": 0.0,
+        "profitMargin": 1.0,
+        "startDate": "2026-04-26",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 0.0,
+        "difference": 9500.0,
+        "profit": 9500.0,
+        "profitMargin": 1.0,
+        "totalActIncome": 9500.0
+      }
+    },
+    {
+      "slug": "223",
+      "jobNumber": "223",
+      "qboLabel": "223 - Kearney Deferred Maint",
+      "customer": "Newkirk Novak",
+      "projectsReport": {
+        "income": 4000.0,
+        "cost": 0.0,
+        "profitMargin": 1.0,
+        "startDate": "2026-05-16",
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 0.0,
+        "difference": 4000.0,
+        "profit": 4000.0,
+        "profitMargin": 1.0,
+        "totalActIncome": 4000.0
+      }
+    },
+    {
+      "slug": "224",
+      "jobNumber": "224",
+      "qboLabel": "224 - KUMC Research",
+      "customer": "XEC",
+      "projectsReport": {
+        "income": 5126.8,
+        "cost": 0.0,
+        "profitMargin": 1.0,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 0.0,
+        "difference": 5126.8,
+        "profit": 5126.8,
+        "profitMargin": 1.0,
+        "totalActIncome": 5126.8
+      }
+    },
+    {
+      "slug": "225",
+      "jobNumber": "225",
+      "qboLabel": "225 - LV VA Bldg-89",
+      "customer": "BKM Contruction LLC",
+      "projectsReport": {
+        "income": 0.0,
+        "cost": 0.0,
+        "profitMargin": null,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": null
+    },
+    {
+      "slug": "carolane",
+      "jobNumber": null,
+      "qboLabel": "Carolane",
+      "customer": "Brighten Builders LLC",
+      "projectsReport": {
+        "income": 0.0,
+        "cost": 10116.47,
+        "profitMargin": null,
+        "startDate": null,
+        "endDate": null
+      },
+      "wipReport": {
+        "totalActCosts": 9669.849999999999,
+        "difference": 0.0,
+        "profit": -9669.849999999999,
+        "profitMargin": null,
+        "totalActIncome": 0.0
+      }
+    }
+  ]
+}

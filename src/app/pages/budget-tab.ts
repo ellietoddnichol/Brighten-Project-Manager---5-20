@@ -4,193 +4,422 @@ import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { Project, ProjectBudgetLine } from '../models/types';
 import { ProjectFinancialSummary } from '../utils/financial';
-import { DataService } from '../services/data.service';
+import { BudgetLineService } from '../services/budget-line.service';
+import { ProjectFinancialService } from '../services/project-financial.service';
+import { DEFAULT_BUDGET_CATEGORIES, ComputedBudgetLine } from '../utils/budget-line.compute';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { DataService } from '../services/data.service';
+import { ImportDataService } from '../services/import-data.service';
+import { QuickBooksSyncDataService } from '../services/quickbooks-sync-data.service';
+import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
+import { BudgetSegment } from '../utils/project-money.compute';
+
+type BudgetInnerTab = 'lines' | 'labor-bonus';
 
 @Component({
   selector: 'app-budget-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent],
   template: `
     <div class="space-y-6">
-      
-      <!-- Summary Cards -->
-      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Orig Contract</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.originalContract | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Approved COs</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.approvedCOs | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-1">Rev Contract</p>
-          <p class="text-xl font-bold text-indigo-700">{{ summary.revisedContract | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Est Cost</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.estimatedCost | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Actual Cost</p>
-          <p class="text-xl font-bold text-red-700">{{ summary.actualCost | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200" [class.bg-red-50]="summary.leftInBudget < 0" [class.border-red-200]="summary.leftInBudget < 0">
-          <p class="text-[10px] font-bold uppercase tracking-widest mb-1" [class.text-slate-500]="summary.leftInBudget >= 0" [class.text-red-600]="summary.leftInBudget < 0">Left in Budget</p>
-          <p class="text-xl font-bold" [class.text-slate-900]="summary.leftInBudget >= 0" [class.text-red-700]="summary.leftInBudget < 0">{{ summary.leftInBudget | currency }}</p>
-        </div>
-        
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Billed</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.billedToDate | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Left to Bill</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.leftToBill | currency }}</p>
-        </div>
-        
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200 relative">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Over/Underbilled</p>
-          <p class="text-xl font-bold" [class.text-amber-600]="summary.overUnderBilling > 0" [class.text-slate-900]="summary.overUnderBilling <= 0">{{ Math.abs(summary.overUnderBilling) | currency }}</p>
-          <!-- <span class="absolute top-4 right-4 text-[10px] font-bold uppercase" [class.text-amber-600]="summary.overUnderBilling > 0">{{ summary.overUnderBilling > 0 ? 'OVER' : 'UNDER' }}</span> -->
-        </div>
-        
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Proj Profit</p>
-          <p class="text-xl font-bold text-slate-900">{{ summary.projectedProfit | currency }}</p>
-        </div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200" [class.bg-amber-50]="summary.projectedMargin < 10" [class.border-amber-200]="summary.projectedMargin < 10">
-          <p class="text-[10px] font-bold uppercase tracking-widest mb-1" [class.text-slate-500]="summary.projectedMargin >= 10" [class.text-amber-600]="summary.projectedMargin < 10">Proj Margin</p>
-          <p class="text-xl font-bold" [class.text-slate-900]="summary.projectedMargin >= 10" [class.text-amber-700]="summary.projectedMargin < 10">{{ summary.projectedMargin | number:'1.1-1' }}%</p>
-        </div>
+      @if (!simplified) {
+      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
+        <button type="button" (click)="activeInnerTab.set('lines')"
+                class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2"
+                [class.border-slate-900]="activeInnerTab() === 'lines'"
+                [class.text-slate-900]="activeInnerTab() === 'lines'"
+                [class.border-transparent]="activeInnerTab() !== 'lines'"
+                [class.text-slate-500]="activeInnerTab() !== 'lines'">
+          Budget Lines
+        </button>
+        <button type="button" (click)="activeInnerTab.set('labor-bonus')"
+                class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2"
+                [class.border-slate-900]="activeInnerTab() === 'labor-bonus'"
+                [class.text-slate-900]="activeInnerTab() === 'labor-bonus'"
+                [class.border-transparent]="activeInnerTab() !== 'labor-bonus'"
+                [class.text-slate-500]="activeInnerTab() !== 'labor-bonus'">
+          Labor Bonus
+        </button>
       </div>
+      }
 
-      <!-- Budget Detail Table -->
-      <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">Budget Details</h3>
-          <button (click)="showNewLine = !showNewLine" class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold shadow-sm hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-            <mat-icon class="!text-[18px] w-4 h-4">add</mat-icon> Add Line
-          </button>
+      @if (!simplified && activeInnerTab() === 'labor-bonus') {
+        <app-project-foreman-bonus-tab [project]="project" />
+      } @else {
+      @if (rollup().budgetIsEstimated) {
+        <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
+          <strong>Budget Basis = Estimated from 20% target.</strong>
+          Target cost budget is 80% of current contract until a real budget workbook is imported.
         </div>
-        
-        @if (showNewLine) {
-          <div class="p-5 border-b border-slate-200 bg-slate-50 grid grid-cols-2 md:grid-cols-4 gap-4">
-             <div>
-               <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Code</label>
-               <input [(ngModel)]="newLine.costCode" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-             </div>
-             <div>
-               <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Category</label>
-               <select [(ngModel)]="newLine.category" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-                  <option value="Labor">Labor</option>
-                  <option value="Materials">Materials</option>
-                  <option value="Subcontractors">Subcontractors</option>
-                  <option value="Equipment">Equipment</option>
-                  <option value="Other">Other</option>
-               </select>
-             </div>
-             <div>
-               <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Orig Budget</label>
-               <input type="number" [(ngModel)]="newLine.originalBudget" (input)="recalcLine(newLine)" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-             </div>
-             <div>
-               <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Act Cost</label>
-               <input type="number" [(ngModel)]="newLine.actualCost" (input)="recalcLine(newLine)" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-             </div>
-             <div class="col-span-full flex justify-end gap-2">
-                <button (click)="showNewLine = false" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button (click)="saveNewLine()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold hover:bg-emerald-700 text-sm">Save Line</button>
-             </div>
+      } @else if (financial().budgetBasis === 'Imported') {
+        <div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <strong>Budget Basis = Imported from workbook.</strong>
+            @if (importSnapshots().length) {
+              {{ importSnapshots().length }} snapshot(s) on file — Original and Updated preserved.
+            }
+            @if (sovLines().length) {
+              · {{ sovLines().length }} SOV line(s) imported
+            }
+          </div>
+          @if (importSnapshots().length) {
+            <button type="button" (click)="openSnapshotDrawer()"
+                    class="text-xs font-semibold text-emerald-900 underline">
+              View snapshots
+            </button>
+          }
+        </div>
+      }
+
+      @if (segment !== 'sources') {
+      <div class="grid gap-3" [ngClass]="simplified ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Budget</p>
+          <p class="text-xl font-bold">{{ rollup().budgetAmount | currency }}</p>
+        </div>
+        @if (!simplified) {
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Committed</p>
+          <p class="text-xl font-bold text-indigo-800">{{ rollup().committedAmount | currency }}</p>
+        </div>
+        }
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Actual Cost</p>
+          <p class="text-xl font-bold text-red-700">{{ rollup().costToDate | currency }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Projected Final</p>
+          <p class="text-xl font-bold">{{ rollup().estimatedFinalCost | currency }}</p>
+        </div>
+        @if (segment === 'variance' || !simplified) {
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"
+             [class.bg-red-50]="totalVariance() < 0" [class.border-red-200]="totalVariance() < 0">
+          <p class="text-[10px] font-bold uppercase tracking-widest mb-1">Variance</p>
+          <p class="text-xl font-bold" [class.text-red-700]="totalVariance() < 0">{{ totalVariance() | currency }}</p>
+        </div>
+        }
+        @if (!simplified) {
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Cost to Complete</p>
+          <p class="text-xl font-bold">{{ rollup().costToComplete | currency }}</p>
+        </div>
+        }
+      </div>
+      }
+
+      @if (segment === 'budget' || segment === 'actuals' || segment === 'variance' || !simplified) {
+      <!-- Category split -->
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        @for (cat of categoryCards(); track cat.label) {
+          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{{ cat.label }}</p>
+            <p class="text-xs text-slate-500">Budget {{ cat.budget | currency }}</p>
+            <p class="text-xs text-slate-500">Actual {{ cat.actual | currency }}</p>
+            <p class="text-sm font-bold mt-1" [class.text-red-600]="cat.variance < 0">{{ cat.variance | currency }}</p>
           </div>
         }
+      </div>
+      }
+
+      @if ((segment === 'sources' || !simplified) && qbCostTransactions().length) {
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div class="p-4 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-sm font-bold text-slate-900">QuickBooks Detail Costs</h3>
+            <span class="text-[10px] font-bold uppercase text-blue-700 bg-blue-50 px-2 py-1 rounded">QuickBooks Detail</span>
+          </div>
+          <div class="overflow-x-auto max-h-64">
+            <table class="w-full text-sm min-w-[900px]">
+              <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
+                <tr>
+                  <th class="px-4 py-2 text-left">Date</th>
+                  <th class="px-4 py-2 text-left">Vendor</th>
+                  <th class="px-4 py-2 text-left">Category</th>
+                  <th class="px-4 py-2 text-left">Account</th>
+                  <th class="px-4 py-2 text-right">Amount</th>
+                  <th class="px-4 py-2 text-left">WIP</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y">
+                @for (t of qbCostTransactions(); track t.id) {
+                  <tr>
+                    <td class="px-4 py-2">{{ t.transactionDate || '—' }}</td>
+                    <td class="px-4 py-2">{{ t.vendorName || '—' }}</td>
+                    <td class="px-4 py-2">{{ t.costCategory }}</td>
+                    <td class="px-4 py-2 text-xs text-slate-500">{{ t.account || t.memo || '—' }}</td>
+                    <td class="px-4 py-2 text-right font-mono">{{ t.amount | currency }}</td>
+                    <td class="px-4 py-2 text-xs">{{ t.includeInWipActuals ? 'Included' : 'Excluded' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+
+      @if (segment === 'budget' || segment === 'variance' || segment === 'actuals' || !simplified) {
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 class="text-lg font-bold text-slate-900">Budget Lines</h3>
+          <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
+            <mat-icon class="!text-[18px]">add</mat-icon> Add Line
+          </button>
+        </div>
 
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse min-w-[1000px]">
+          <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead>
               <tr class="bg-white border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-400">
-                <th class="px-6 py-4 font-bold">Code / Cat</th>
-                <th class="px-4 py-4 font-bold text-right">Orig Budg</th>
-                <th class="px-4 py-4 font-bold text-right">App CO Budg</th>
-                <th class="px-4 py-4 font-bold text-right">Rev Budg</th>
-                <th class="px-4 py-4 font-bold text-right text-red-600">Act Cost</th>
-                <th class="px-4 py-4 font-bold text-right">Cost 2 Comp</th>
-                <th class="px-4 py-4 font-bold text-right">Proj Final</th>
+                <th class="px-6 py-4 font-bold">Code / Category</th>
+                <th class="px-4 py-4 font-bold text-right">Budget</th>
+                <th class="px-4 py-4 font-bold text-right">Committed</th>
+                <th class="px-4 py-4 font-bold text-right text-red-600">Actual</th>
+                <th class="px-4 py-4 font-bold text-right">Projected</th>
+                <th class="px-4 py-4 font-bold text-right">CTC</th>
                 <th class="px-4 py-4 font-bold text-right">Variance</th>
+                <th class="px-4 py-4 font-bold">Source</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100 text-sm font-medium">
-              @for (line of projectBudgetLines(); track line.id) {
-                <tr class="hover:bg-slate-50 transition-colors">
+            <tbody class="divide-y divide-slate-100 text-sm">
+              @for (line of computedLines(); track line.id) {
+                <tr class="hover:bg-slate-50 cursor-pointer" (click)="editLine(line)">
                   <td class="px-6 py-4">
-                    <p class="text-slate-900 font-bold">{{ line.costCode || 'N/A' }}</p>
+                    <p class="text-slate-900 font-bold">{{ line.costCode || '—' }}</p>
                     <p class="text-[10px] text-slate-500 uppercase">{{ line.category }}</p>
+                    @if (line.isEstimated) {
+                      <span class="text-[10px] text-amber-700 font-bold">Estimated</span>
+                    }
                   </td>
-                  <td class="px-4 py-4 text-right text-slate-600 font-mono">{{ line.originalBudget | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-600 font-mono">{{ line.approvedCOBudget | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-mono font-bold">{{ line.revisedBudget | currency }}</td>
+                  <td class="px-4 py-4 text-right font-mono">{{ line.budgetAmount | currency }}</td>
+                  <td class="px-4 py-4 text-right font-mono text-indigo-800">{{ line.committedAmount | currency }}</td>
                   <td class="px-4 py-4 text-right text-red-600 font-mono">{{ line.actualCost | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-600 font-mono">{{ line.costToComplete | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-mono">{{ line.projectedFinalCost | currency }}</td>
-                  <td class="px-4 py-4 text-right font-mono font-bold" [class.text-slate-900]="line.variance >= 0" [class.text-red-600]="line.variance < 0">{{ line.variance | currency }}</td>
+                  <td class="px-4 py-4 text-right font-mono">{{ line.projectedCost | currency }}</td>
+                  <td class="px-4 py-4 text-right font-mono">{{ line.costToComplete | currency }}</td>
+                  <td class="px-4 py-4 text-right font-mono font-bold" [class.text-red-600]="line.variance < 0">{{ line.variance | currency }}</td>
+                  <td class="px-4 py-4 text-xs">
+                    <span class="px-2 py-0.5 rounded-full font-semibold"
+                          [class.bg-emerald-100]="sourceBadge(line) === 'Budget Workbook'"
+                          [class.text-emerald-800]="sourceBadge(line) === 'Budget Workbook'"
+                          [class.bg-slate-100]="sourceBadge(line) === 'Manual'"
+                          [class.text-slate-700]="sourceBadge(line) === 'Manual'"
+                          [class.bg-blue-100]="sourceBadge(line) !== 'Budget Workbook' && sourceBadge(line) !== 'Manual'"
+                          [class.text-blue-800]="sourceBadge(line) !== 'Budget Workbook' && sourceBadge(line) !== 'Manual'">
+                      {{ sourceBadge(line) }}
+                    </span>
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 italic">No budget lines configured.</td></tr>
+                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 italic">No budget lines — add lines or import seed/QB data.</td></tr>
               }
             </tbody>
-            @if (projectBudgetLines().length > 0) {
-              <tfoot>
-                <tr class="bg-slate-50 border-t-2 border-slate-200">
-                  <td class="px-6 py-4 font-bold text-slate-900">TOTALS</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-bold font-mono">{{ getTotals('originalBudget') | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-bold font-mono">{{ getTotals('approvedCOBudget') | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-bold font-mono">{{ getTotals('revisedBudget') | currency }}</td>
-                  <td class="px-4 py-4 text-right text-red-700 font-bold font-mono">{{ getTotals('actualCost') | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-bold font-mono">{{ getTotals('costToComplete') | currency }}</td>
-                  <td class="px-4 py-4 text-right text-slate-900 font-bold font-mono">{{ getTotals('projectedFinalCost') | currency }}</td>
-                  <td class="px-4 py-4 text-right font-bold font-mono" [class.text-red-700]="getTotals('variance') < 0">
-                    {{ getTotals('variance') | currency }}
-                  </td>
-                </tr>
-              </tfoot>
-            }
           </table>
         </div>
       </div>
+      }
+
+      @if (snapshotDrawerOpen()) {
+        <div class="fixed inset-0 z-40 bg-black/30" (click)="closeSnapshotDrawer()"></div>
+        <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
+          <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+            <h3 class="text-lg font-bold">Imported Budget Snapshots</h3>
+            <button type="button" (click)="closeSnapshotDrawer()"><mat-icon>close</mat-icon></button>
+          </div>
+          <div class="p-5 space-y-4">
+            @for (snap of importSnapshots(); track snap.id) {
+              <div class="border rounded-lg p-4">
+                <p class="font-semibold">{{ snap.snapshotType }} — {{ snap.sourceSheetName }}</p>
+                <p class="text-xs text-slate-500">{{ snap.sourceFileName }}</p>
+                <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
+                  <div>Budget: {{ snap.totalBudget | currency }}</div>
+                  <div>Actual: {{ snap.totalActual | currency }}</div>
+                  @if (snap.contractAmount) {
+                    <div>Contract: {{ snap.contractAmount | currency }}</div>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <p class="text-slate-400 italic">No imported snapshots for this job.</p>
+            }
+
+            @if (originalSnapshot() && updatedSnapshot()) {
+              <div class="border border-amber-200 bg-amber-50 rounded-lg p-4 text-sm">
+                <p class="font-bold mb-2">Original vs Updated Budget</p>
+                <p>Original: {{ originalSnapshot()?.totalBudget | currency }}</p>
+                <p>Updated: {{ updatedSnapshot()?.totalBudget | currency }}</p>
+                <p class="mt-1">Delta: {{ (updatedSnapshot()!.totalBudget! - (originalSnapshot()?.totalBudget ?? 0)) | currency }}</p>
+              </div>
+            }
+
+            @if (sovLines().length) {
+              <div>
+                <h4 class="text-sm font-bold mb-2">SOV Lines</h4>
+                <div class="overflow-x-auto border rounded-lg">
+                  <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
+                      <tr>
+                        <th class="px-3 py-2 text-left">#</th>
+                        <th class="px-3 py-2 text-left">Description</th>
+                        <th class="px-3 py-2 text-right">Scheduled</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                      @for (sov of sovLines(); track sov.id) {
+                        <tr>
+                          <td class="px-3 py-2">{{ sov.lineNumber }}</td>
+                          <td class="px-3 py-2">{{ sov.description }}</td>
+                          <td class="px-3 py-2 text-right font-mono">{{ sov.scheduledValue | currency }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            }
+          </div>
+        </aside>
+      }
+
+      @if (drawerOpen()) {
+        <div class="fixed inset-0 z-40 bg-black/30" (click)="closeDrawer()"></div>
+        <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-white shadow-xl overflow-y-auto">
+          <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+            <h3 class="text-lg font-bold">{{ editingLineId() ? 'Edit Budget Line' : 'New Budget Line' }}</h3>
+            <button type="button" (click)="closeDrawer()"><mat-icon>close</mat-icon></button>
+          </div>
+          <div class="p-5 space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
+              <select [(ngModel)]="lineDraft.category" class="w-full px-3 py-2 border rounded-lg text-sm">
+                @for (c of defaultCategories; track c.category) {
+                  <option [value]="c.category">{{ c.label }}</option>
+                }
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cost Code</label>
+              <input [(ngModel)]="lineDraft.costCode" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+              <input [(ngModel)]="lineDraft.description" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Budget Amount</label>
+              <input type="number" [(ngModel)]="lineBudgetAmount" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Actual Cost (override)</label>
+              <input type="number" [(ngModel)]="lineDraft.actualCost" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cost to Complete (manual)</label>
+              <input type="number" [(ngModel)]="lineDraft.costToComplete" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
+              <textarea [(ngModel)]="lineDraft.notes" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+            </div>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" [(ngModel)]="lineDraft.isEstimated"> Mark as estimated
+            </label>
+            <button type="button" (click)="saveLine()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Save Line</button>
+          </div>
+        </aside>
+      }
+      }
     </div>
-  `
+  `,
 })
 export class BudgetTabComponent {
   @Input({ required: true }) project!: Project;
   @Input({ required: true }) summary!: ProjectFinancialSummary;
+  @Input() segment: BudgetSegment = 'budget';
+  @Input() simplified = false;
 
-  private dataService = inject(DataService);
-  
-  Math = Math;
-  
-  budgetLines = toSignal(this.dataService.getBudgetLines(), { initialValue: [] });
-  projectBudgetLines = computed(() => (this.budgetLines() || []).filter(l => l.projectId === this.project.id));
-  
-  showNewLine = false;
-  newLine: Partial<ProjectBudgetLine> = { category: 'Materials', originalBudget: 0, actualCost: 0, approvedCOBudget: 0, costToComplete: 0, revisedBudget: 0, projectedFinalCost: 0, variance: 0 };
+  activeInnerTab = signal<BudgetInnerTab>('lines');
 
-  recalcLine(line: Partial<ProjectBudgetLine>) {
-    line.revisedBudget = (line.originalBudget || 0) + (line.approvedCOBudget || 0);
-    line.projectedFinalCost = (line.actualCost || 0) + (line.costToComplete || 0);
-    line.variance = line.revisedBudget - line.projectedFinalCost;
+  private budgetSvc = inject(BudgetLineService);
+  private financialSvc = inject(ProjectFinancialService);
+  private importData = inject(ImportDataService);
+  private qbSyncData = inject(QuickBooksSyncDataService);
+  private data = inject(DataService);
+
+  financial = computed(() => this.financialSvc.computeForProject(this.project));
+  importSnapshots = computed(() => this.importData.snapshotsForJob(this.project.projectNumber));
+  sovLines = computed(() => this.importData.sovForJob(this.project.projectNumber));
+  qbCostTransactions = computed(() => this.qbSyncData.costTransactionsForProject(this.project.id));
+  originalSnapshot = computed(() =>
+    this.importSnapshots().find(s => s.snapshotType === 'Original'),
+  );
+  updatedSnapshot = computed(() =>
+    this.importSnapshots().find(s => s.snapshotType === 'UpdatedBudget'),
+  );
+
+  budgetLines = toSignal(this.data.getBudgetLines(), { initialValue: [] });
+
+  drawerOpen = signal(false);
+  snapshotDrawerOpen = signal(false);
+  editingLineId = signal<string | null>(null);
+  lineDraft: Partial<ProjectBudgetLine> = {};
+  lineBudgetAmount = 0;
+
+  readonly defaultCategories = DEFAULT_BUDGET_CATEGORIES;
+
+  rollup = computed(() => this.budgetSvc.rollupForProject(this.project));
+  computedLines = computed(() => this.rollup().lines);
+
+  totalVariance = computed(() =>
+    this.computedLines().reduce((s, l) => s + l.variance, 0),
+  );
+
+  categoryCards = computed(() => {
+    const fin = this.financialSvc.computeForProject(this.project);
+    return [
+      { label: 'Self-Performed', budget: fin.selfPerformedBudget, actual: fin.selfPerformedCostToDate, variance: fin.selfPerformedBudget - fin.selfPerformedCostToDate },
+      { label: 'Materials', budget: fin.materialBudget, actual: fin.materialCostToDate, variance: fin.materialBudget - fin.materialCostToDate },
+      { label: 'Subcontractors', budget: fin.subcontractorBudget, actual: fin.subcontractorCostToDate, variance: fin.subcontractorBudget - fin.subcontractorCostToDate },
+      { label: 'Equipment', budget: fin.equipmentBudget, actual: fin.equipmentCostToDate, variance: fin.equipmentBudget - fin.equipmentCostToDate },
+      { label: 'Other / GC', budget: fin.otherBudget, actual: fin.otherCostToDate, variance: fin.otherBudget - fin.otherCostToDate },
+    ];
+  });
+
+  sourceBadge(line: ComputedBudgetLine): string {
+    if (line.importSource === 'job-cost-budget' || line.source === 'Imported') return 'Budget Workbook';
+    if (line.source === 'QuickBooks') return 'QuickBooks';
+    if (line.source === 'Manual') return 'Manual';
+    return line.source || 'Manual';
   }
 
-  saveNewLine() {
-    this.recalcLine(this.newLine);
-    this.newLine.projectId = this.project.id;
-    this.dataService.createBudgetLine(this.newLine).subscribe(() => {
-      this.newLine = { category: 'Materials', originalBudget: 0, actualCost: 0, approvedCOBudget: 0, costToComplete: 0, revisedBudget: 0, projectedFinalCost: 0, variance: 0 };
-      this.showNewLine = false;
-    });
+  openSnapshotDrawer(): void {
+    this.snapshotDrawerOpen.set(true);
   }
-  
-  getTotals(field: keyof ProjectBudgetLine): number {
-    return this.projectBudgetLines().reduce((acc, line) => acc + ((line[field] as number) || 0), 0);
+
+  closeSnapshotDrawer(): void {
+    this.snapshotDrawerOpen.set(false);
+  }
+
+  openNewLine(): void {
+    this.editingLineId.set(null);
+    this.lineDraft = { category: 'Materials', source: 'Manual', actualCost: 0, costToComplete: 0 };
+    this.lineBudgetAmount = 0;
+    this.drawerOpen.set(true);
+  }
+
+  editLine(line: ComputedBudgetLine): void {
+    this.editingLineId.set(line.id);
+    this.lineDraft = { ...line, source: 'Manual' };
+    this.lineBudgetAmount = line.budgetAmount;
+    this.drawerOpen.set(true);
+  }
+
+  closeDrawer(): void {
+    this.drawerOpen.set(false);
+    this.editingLineId.set(null);
+  }
+
+  async saveLine(): Promise<void> {
+    this.lineDraft.budgetAmount = this.lineBudgetAmount;
+    this.lineDraft.originalBudget = this.lineBudgetAmount;
+    await this.budgetSvc.saveLine(this.project, this.lineDraft, this.editingLineId());
+    this.closeDrawer();
   }
 }

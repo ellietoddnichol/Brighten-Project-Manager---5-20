@@ -1,731 +1,623 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '../services/data.service';
+import { AuthService } from '../services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { PO } from '../models/types';
-import { DriveService, DriveFile } from '../services/drive.service';
-import { getProjectFinancialSummary, getProjectExceptions } from '../utils/financial';
-import { BudgetTabComponent } from './budget-tab';
-import { CoTabComponent } from './co-tab';
-import { BillingTabComponent } from './billing-tab';
-import { DocumentsTabComponent } from './documents-tab';
-import { IssuesTasksTabComponent } from './issues-tasks-tab';
-import { DailyLogsTabComponent } from './daily-logs-tab';
-import { ScheduleTabComponent } from './schedule-tab';
-import { getNextMilestone, getDaysSinceLastDailyLog, buildProjectActivityFeed } from '../utils/field';
+import { Project, PROJECT_STATUSES } from '../models/types';
+import { DriveService, DriveFile, parseDriveFolderId } from '../services/drive.service';
+import { DriveFolderDiscoveryService } from '../services/drive-folder-discovery.service';
+import { getProjectFinancialSummary } from '../utils/financial';
+import { formatProjectDate, isOverheadJob } from '../utils/project';
+import {
+  isMasterSheetLinkedProject,
+  isMasterSheetReadOnlyField,
+  stripMasterSheetFieldsFromUserPatch,
+} from '../utils/master-sheet-fields';
+import { collectProjectActionItems } from '../utils/action-items';
+import { CertifiedPayrollService } from '../services/certified-payroll.service';
+import { isCertifiedPayrollProject } from '../utils/certified-payroll-week';
+import { getNextMilestone, buildProjectActivityFeed } from '../utils/field';
+import { BudgetLineService } from '../services/budget-line.service';
+import { buildProjectCostDonut, buildBudgetVsActualBars, buildBudgetVsActualFromLines } from '../utils/chart-data';
+import { ProjectDataService } from '../services/project-data.service';
+import { normalizedProjectToProject } from '../utils/sheet-normalizers';
+import { ProjectHeaderComponent } from '../components/project/project-header';
+import { ProjectPrimaryNavComponent } from '../components/project/project-primary-nav';
+import { ProjectOverviewPanelComponent } from '../components/project/project-overview-panel';
+import { ProjectWorkflowsPanelComponent } from '../components/project/project-workflows-panel';
+import { ProjectFinancialsPanelComponent } from '../components/project/project-financials-panel';
+import { ProjectDocumentsPanelComponent } from '../components/project/project-documents-panel';
+import { ProjectUtilityPanelComponent } from '../components/project/project-utility-panel';
+import {
+  FinancialView,
+  NewItemAction,
+  ProjectNavState,
+  ProjectPrimarySection,
+  UtilityView,
+  WorkflowChip,
+  WorkflowView,
+  FileView,
+} from '../components/project/project-detail.types';
+import {
+  defaultNavState,
+  navQueryParams,
+  openFinancial,
+  openFileView,
+  openUtility,
+  openWorkflow,
+  resolveNavFromQuery,
+  savePersistedNav,
+  persistShowAllToolsKey,
+} from '../components/project/project-navigation';
+import { ProjectNeedsService } from '../services/project-needs.service';
+import { ProjectLifecycleService } from '../services/project-lifecycle.service';
+import { workflowChipVisible, computeProjectEnabledModules } from '../utils/project-needs.compute';
 
 @Component({
   selector: 'app-project-details',
   standalone: true,
-  imports: [CommonModule, MatIconModule, RouterModule, FormsModule, BudgetTabComponent, CoTabComponent, BillingTabComponent, DocumentsTabComponent, IssuesTasksTabComponent, DailyLogsTabComponent, ScheduleTabComponent],
+  imports: [
+    CommonModule, MatIconModule, RouterModule, FormsModule,
+    ProjectHeaderComponent, ProjectPrimaryNavComponent,
+    ProjectOverviewPanelComponent, ProjectWorkflowsPanelComponent,
+    ProjectFinancialsPanelComponent, ProjectDocumentsPanelComponent, ProjectUtilityPanelComponent,
+  ],
   template: `
-    <div class="h-full flex flex-col">
-      <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-col gap-4">
-        <div class="flex justify-between items-start">
-          <div>
-            <div class="flex items-center gap-2 mb-1">
-              <a routerLink="/projects" class="text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-1 text-[10px] uppercase font-bold tracking-widest"><mat-icon class="!text-[14px] w-[14px] h-[14px]">arrow_back</mat-icon> Back</a>
-              <span class="text-slate-300">/</span>
-              <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">#{{ project()?.projectNumber || '...' }}</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-700 border border-slate-200 ml-2">{{ project()?.status }}</span>
-            </div>
-            <h1 class="text-2xl font-bold text-slate-900">{{ project()?.projectName || 'Project Details' }}</h1>
+    <div class="h-full flex flex-col bg-slate-50/50">
+      @if (project(); as p) {
+        <app-project-header
+          [project]="p"
+          (edit)="openEdit()"
+          (newItem)="onNewItem($event)"
+          (moreSelect)="openMore($event)" />
+
+        <app-project-primary-nav
+          [active]="nav().section"
+          (sectionChange)="setSection($event)" />
+
+        @if (project(); as p) {
+          <div class="px-6 py-2 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+            <p class="text-xs text-slate-500">
+              @if (enabledModules().profile) {
+                Profile: <span class="font-semibold text-slate-700">{{ enabledModules().profile }}</span>
+              }
+            </p>
+            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+              <input type="checkbox" [checked]="showAllTools()" (change)="toggleShowAllTools($event)">
+              Show all tools
+            </label>
           </div>
-          <div class="flex gap-2">
-            @if (project()?.driveFolderUrl || project()?.driveFolderId) {
-              <a [href]="project()?.driveFolderUrl" target="_blank" class="bg-blue-50 text-blue-700 px-3 py-2 rounded-md font-bold hover:bg-blue-100 transition-all text-sm flex items-center gap-2">
-                <mat-icon class="!text-[18px]">folder_shared</mat-icon> Drive
-              </a>
+        }
+
+        <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+          @if (nav().utilityView) {
+            <app-project-utility-panel
+              [project]="p"
+              [view]="nav().utilityView!"
+              [driveFiles]="driveFiles()"
+              [loadingFiles]="loadingFiles()"
+              [driveError]="driveError()"
+              (close)="closeUtility()"
+              (editProject)="openEdit()"
+              (saveDrive)="saveDriveIdFromUtility($event)"
+              (saveSheet)="saveSheetIdFromUtility($event)"
+              (openUtility)="openMore($event)"
+              (refreshFiles)="loadDriveFiles()" />
+          } @else {
+            @switch (nav().section) {
+              @case ('overview') {
+                <app-project-overview-panel
+                  [project]="p"
+                  [summary]="financialSummary()!"
+                  [actionItems]="projectExceptions()"
+                  [activityFeed]="activityFeed()"
+                  [latestChangeOrders]="latestChangeOrders()"
+                  [visibleWorkflowChips]="visibleWorkflowChips()"
+                  [lifecycleGroup]="lifecycleSnapshot()?.projectLifecycleGroup ?? ''"
+                  [nextAction]="nextAction()"
+                  (navigateWorkflow)="goWorkflow($event)"
+                  (navigateFinancial)="goFinancial($event)"
+                  (navigateAction)="goActionItem($event)" />
+              }
+              @case ('workflows') {
+                <app-project-workflows-panel
+                  [project]="p"
+                  [activeView]="nav().workflowView"
+                  [modules]="enabledModules()"
+                  (viewChange)="goWorkflow($event)" />
+              }
+              @case ('financials') {
+                <app-project-financials-panel
+                  [project]="p"
+                  [summary]="financialSummary()!"
+                  [activeView]="nav().financialView"
+                  [modules]="enabledModules()"
+                  (viewChange)="goFinancial($event)" />
+              }
+              @case ('documents') {
+                <app-project-documents-panel
+                  [project]="p"
+                  [activeView]="nav().fileView"
+                  [modules]="enabledModules()"
+                  (utilitySelect)="openMore($event)"
+                  (fileViewChange)="goFileView($event)" />
+              }
             }
-            <button class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold shadow-sm hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
-              <mat-icon class="!text-[18px] w-4 h-4">edit</mat-icon> Edit
-            </button>
-          </div>
+          }
         </div>
-        
-        <div class="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-9 gap-4 bg-slate-50 border border-slate-200 p-4 rounded-lg items-center divide-x divide-slate-200">
-          <div class="px-2 flex flex-col justify-center">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Orig Contract</span>
-            <span class="font-bold text-slate-900 text-sm whitespace-nowrap">{{ financialSummary().originalContract | currency }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Rev Contract</span>
-            <span class="font-bold text-slate-900 text-sm whitespace-nowrap">{{ financialSummary().revisedContract | currency }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5">Billed</span>
-            <span class="font-bold text-indigo-700 text-sm whitespace-nowrap">{{ financialSummary().billedToDate | currency }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">Left to Bill</span>
-            <span class="font-bold text-amber-700 text-sm whitespace-nowrap">{{ financialSummary().leftToBill | currency }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-0.5">Actual Cost</span>
-            <span class="font-bold text-red-700 text-sm whitespace-nowrap">{{ financialSummary().actualCost | currency }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l relative">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Left in Budget</span>
-            <span class="font-bold text-sm whitespace-nowrap" [class.text-slate-900]="financialSummary().leftInBudget >= 0" [class.text-red-600]="financialSummary().leftInBudget < 0">
-              {{ financialSummary().leftInBudget | currency }}
-            </span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Open COs</span>
-            <span class="font-bold text-orange-600 text-sm whitespace-nowrap">{{ projectCOs().length }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l">
-            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Next Milestone</span>
-            <span class="font-bold text-slate-900 text-sm whitespace-nowrap truncate">{{ nextMilestone()?.title || 'TBD' }}</span>
-          </div>
-          <div class="px-4 flex flex-col justify-center border-l" [class.bg-red-50]="missingDocsCount() > 0">
-            <span class="text-[10px] font-bold uppercase tracking-wider mb-0.5" [class.text-red-500]="missingDocsCount() > 0" [class.text-slate-500]="missingDocsCount() === 0">Missing Docs</span>
-            <span class="font-bold text-sm whitespace-nowrap" [class.text-red-700]="missingDocsCount() > 0" [class.text-slate-900]="missingDocsCount() === 0">{{ missingDocsCount() }}</span>
-          </div>
-        </div>
-      </header>
+      } @else {
+        <div class="flex-1 flex items-center justify-center text-slate-400">Loading project...</div>
+      }
+    </div>
 
-      <nav class="bg-white border-b border-slate-200 px-8 flex overflow-x-auto gap-6 shrink-0">
-        @for (tab of tabs; track tab.id) {
-          <button (click)="activeTab.set(tab.id)"
-                  [class.text-orange-600]="activeTab() === tab.id"
-                  [class.border-orange-600]="activeTab() === tab.id"
-                  [class.text-slate-500]="activeTab() !== tab.id"
-                  [class.border-transparent]="activeTab() !== tab.id"
-                  class="whitespace-nowrap py-4 px-1 border-b-2 font-bold text-sm tracking-wide transition-colors flex items-center gap-2">
-            <mat-icon class="!text-[18px] w-[18px] h-[18px]">{{ tab.icon }}</mat-icon>
-            {{ tab.label }}
-          </button>
-        }
-      </nav>
-
-      <div class="flex-1 overflow-y-auto p-8">
-        @if (activeTab() === 'overview') {
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Feed/Action Items -->
-            <div class="lg:col-span-2 space-y-6">
-              <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                  <h3 class="text-sm font-bold text-slate-900">Action Items & Missing Info</h3>
-                  @if (projectExceptions().length > 0) {
-                    <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-[10px] font-bold uppercase">{{ projectExceptions().length }} OPEN</span>
-                  }
-                </div>
-                <div class="p-0">
-                   @for (ex of projectExceptions(); track ex.id) {
-                     <div class="p-4 border-b border-slate-100 flex gap-4 hover:bg-slate-50 transition-colors cursor-pointer">
-                        <div class="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                             [ngClass]="ex.severity === 'error' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'">
-                          <mat-icon class="!text-[18px]">error_outline</mat-icon>
-                        </div>
-                        <div>
-                          <h4 class="font-bold text-sm text-slate-900">{{ ex.title }}</h4>
-                          <p class="text-xs text-slate-500 mt-0.5">{{ ex.description }}</p>
-                        </div>
-                     </div>
-                   } @empty {
-                     <div class="p-8 text-center flex flex-col items-center justify-center">
-                       <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2">
-                         <mat-icon class="!text-[20px]">check</mat-icon>
-                       </div>
-                       <p class="text-sm font-medium text-slate-600">All caught up! No action items.</p>
-                     </div>
-                   }
-                </div>
-              </div>
-              
-              <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-                <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                  <h3 class="text-sm font-bold text-slate-900">Recent Activity Feed</h3>
-                </div>
-                <div class="p-5 pb-2 border-l-2 border-slate-200 ml-5 space-y-6">
-                  @for (item of activityFeed().slice(0, 5); track item.id) {
-                    <div class="relative">
-                      <div class="absolute -left-[27px] w-6 h-6 rounded-full flex items-center justify-center border"
-                           [ngClass]="{
-                             'bg-slate-100 border-slate-300 text-slate-500': item.activityType === 'Daily Log',
-                             'bg-orange-100 border-orange-300 text-orange-600': item.activityType === 'Change Order Updated',
-                             'bg-emerald-100 border-emerald-300 text-emerald-600': item.activityType === 'Task Completed',
-                             'bg-blue-100 border-blue-300 text-blue-600': item.activityType === 'File Added',
-                             'bg-amber-100 border-amber-300 text-amber-600': item.activityType === 'Billing Updated' || item.activityType === 'Issue Created' || item.activityType === 'Milestone Updated' || item.activityType === 'Document Status Updated'
-                           }">
-                         <mat-icon class="!text-[12px]">
-                           {{ item.activityType === 'Daily Log' ? 'history_edu' : '' }}
-                           {{ item.activityType === 'Change Order Updated' ? 'sync_alt' : '' }}
-                           {{ item.activityType === 'Task Completed' ? 'check_circle' : '' }}
-                           {{ item.activityType === 'File Added' ? 'description' : '' }}
-                           {{ item.activityType === 'Billing Updated' ? 'request_quote' : '' }}
-                           {{ item.activityType === 'Issue Created' ? 'error_outline' : '' }}
-                           {{ item.activityType === 'Milestone Updated' ? 'calendar_month' : '' }}
-                           {{ item.activityType === 'Document Status Updated' ? 'task' : '' }}
-                         </mat-icon>
-                      </div>
-                      <p class="text-xs text-slate-400 font-medium mb-1">{{ item.createdAt | date:'short' }}</p>
-                      <p class="text-sm font-medium text-slate-900">{{ item.title }}</p>
-                      <p class="text-xs text-slate-500 mt-0.5">{{ item.description }}</p>
-                    </div>
-                  } @empty {
-                    <div class="text-sm text-slate-400 italic">No activity recorded yet.</div>
-                  }
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Side Widgets -->
-            <div class="space-y-6">
-              <div class="bg-white rounded-md shadow-sm border border-slate-200 p-5">
-                <div class="flex justify-between items-center mb-4">
-                   <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Recent Photos</h3>
-                   <button (click)="activeTab.set('files')" class="text-xs font-bold text-blue-600 hover:underline">View All</button>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                   @for (p of recentPhotos(); track p.id) {
-                     <a [href]="p.fileUrl" target="_blank" class="block aspect-square bg-slate-100 rounded overflow-hidden relative group">
-                        @if (p.fileUrl) {
-                          <img [src]="p.fileUrl" class="w-full h-full object-cover">
-                        } @else {
-                          <div class="w-full h-full flex items-center justify-center"><mat-icon class="text-slate-300">image</mat-icon></div>
-                        }
-                        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2 cursor-pointer">
-                           <p class="text-[10px] font-bold text-white truncate">{{ p.fileName }}</p>
-                           <p class="text-[9px] text-slate-300">{{ p.uploadedAt?.toDate() | date:'shortDate' }}</p>
-                        </div>
-                     </a>
-                   } @empty {
-                     <div class="col-span-2 py-6 text-center bg-slate-50 border border-dashed border-slate-200 rounded">
-                        <mat-icon class="text-slate-300 !text-[24px] w-6 h-6 mb-1">add_a_photo</mat-icon>
-                        <p class="text-xs text-slate-500 font-medium tracking-wide">No photos added</p>
-                     </div>
-                   }
-                </div>
-              </div>
-
-              <!-- Quick Links -->
-              <div class="bg-white rounded-md shadow-sm border border-slate-200 p-5">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Quick Links</h3>
-                <div class="space-y-2">
-                  @if (project()?.driveFolderUrl || project()?.driveFolderId) {
-                    <a [href]="project()?.driveFolderUrl" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 text-slate-700 transition-colors text-sm font-medium">
-                      <mat-icon class="text-blue-500">folder_shared</mat-icon> Project Drive Folder
-                    </a>
-                  }
-                  @if (project()?.googleSheetUrl || project()?.googleSheetId) {
-                    <a [href]="project()?.googleSheetUrl" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 text-slate-700 transition-colors text-sm font-medium">
-                      <mat-icon class="text-emerald-500">table_chart</mat-icon> Google Sheet Budget
-                    </a>
-                  } @else {
-                    <button (click)="activeTab.set('setup')" class="w-full text-left flex items-center gap-3 p-2 rounded hover:bg-slate-50 text-slate-700 transition-colors text-sm font-medium">
-                      <mat-icon class="text-slate-400">add_link</mat-icon> Link Budget Sheet
-                    </button>
-                  }
-                  @if (project()?.address) {
-                    <a [href]="'https://www.google.com/maps/search/?api=1&query=' + project()?.address" target="_blank" class="flex items-center gap-3 p-2 rounded hover:bg-slate-50 text-slate-700 transition-colors text-sm font-medium">
-                      <mat-icon class="text-orange-500">map</mat-icon> Map Directions
-                    </a>
-                  }
-                </div>
-              </div>
-
-              <!-- Key Contacts -->
-              <div class="bg-white rounded-md shadow-sm border border-slate-200 p-5">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Key Contacts</h3>
-                <div class="space-y-4">
-                  <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">PM</div>
-                    <div>
-                      <p class="text-sm font-bold text-slate-900">{{ project()?.projectManager || 'Unassigned' }}</p>
-                      <p class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Project Manager</p>
-                    </div>
-                  </div>
-                  <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">SUP</div>
-                    <div>
-                      <p class="text-sm font-bold text-slate-900">{{ project()?.superintendent || 'Unassigned' }}</p>
-                      <p class="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Superintendent</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+    @if (showEditModal()) {
+      <div class="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-2xl rounded-xl shadow-xl border border-slate-200 max-h-[90vh] flex flex-col">
+          <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+            <h2 class="text-base font-bold text-slate-900">Edit Project</h2>
+            <button type="button" (click)="showEditModal.set(false)" class="text-slate-400 hover:text-slate-600"><mat-icon>close</mat-icon></button>
           </div>
-        }
-        @if (activeTab() === 'setup') {
-          <div class="max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Setup Tab Content -->
-            <div class="bg-white p-6 rounded-md shadow-sm border border-slate-200">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Core Details</h3>
-                <button class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition-colors">Edit</button>
-              </div>
-              <dl class="space-y-4 text-sm">
-                <div>
-                  <dt class="text-slate-500 font-medium">Customer</dt>
-                  <dd class="font-bold text-slate-900">{{ project()?.customer }}</dd>
-                </div>
-                <div>
-                  <dt class="text-slate-500 font-medium">Site Address</dt>
-                  <dd class="font-bold text-slate-900">{{ project()?.address || 'N/A' }}</dd>
-                </div>
-                <div>
-                  <dt class="text-slate-500 font-medium">Project Manager</dt>
-                  <dd class="font-bold text-slate-900">{{ project()?.projectManager || 'Unassigned' }}</dd>
-                </div>
-              </dl>
-            </div>
-            
-            <div class="bg-white p-6 rounded-md shadow-sm border border-slate-200">
-              <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Billing & Contract</h3>
-                <button class="bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-600 px-3 py-1 rounded text-xs font-bold transition-colors">Edit</button>
-              </div>
-              <dl class="space-y-4 text-sm">
-                <div>
-                  <dt class="text-slate-500 font-medium">Contract Amount</dt>
-                  <dd class="font-bold text-slate-900">{{ project()?.originalContractAmount | currency:'USD' }}</dd>
-                </div>
-                <div>
-                  <dt class="text-slate-500 font-medium">Billing Type</dt>
-                  <dd class="font-bold text-slate-900">{{ project()?.billingTerms || 'Lump Sum' }}</dd>
-                </div>
-              </dl>
-            </div>
-
-            <div class="bg-white p-6 rounded-md shadow-sm border border-slate-200 md:col-span-2">
-              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Integrations & Sync</h3>
-              
-              <div class="flex flex-col gap-4">
-                <div>
-                  <label for="driveId" class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Google Drive Folder ID</label>
-                  <div class="flex gap-2">
-                    <input id="driveId" type="text" [(ngModel)]="tempDriveId" (ngModelChange)="driveIdDirty.set(true)" class="flex-1 px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 text-sm text-slate-700 placeholder:text-slate-400" placeholder="e.g. 1A2b3C4d5E6f7G8h9I0j...">
-                    <button (click)="saveDriveId()" [disabled]="!driveIdDirty()" class="bg-slate-800 text-white px-5 py-2 rounded font-bold shadow-sm hover:bg-slate-900 transition-all text-sm whitespace-nowrap disabled:opacity-50">
-                      Save ID
-                    </button>
-                  </div>
-                  <p class="text-xs text-slate-500 mt-2">Paste the Drive Folder ID here to link project documents.</p>
-                </div>
-                
-                <div class="pt-4 mt-2 border-t border-slate-100">
-                  <label for="sheetId" class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Google Sheet ID (Estimating / Budget)</label>
-                  <div class="flex gap-2">
-                    <input id="sheetId" type="text" [(ngModel)]="tempSheetId" (ngModelChange)="sheetIdDirty.set(true)" class="flex-1 px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-emerald-500 text-sm text-slate-700 placeholder:text-slate-400" placeholder="e.g. 1BvO... ">
-                    <button (click)="saveSheetId()" [disabled]="!sheetIdDirty()" class="bg-emerald-600 text-white px-5 py-2 rounded font-bold shadow-sm hover:bg-emerald-700 transition-all text-sm whitespace-nowrap disabled:opacity-50">
-                      Save Sheet
-                    </button>
-                  </div>
-                  <p class="text-xs text-slate-500 mt-2">Link the project's main financial Google Sheet.</p>
-                </div>
-                
-                <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <h4 class="font-bold text-slate-800 text-sm">Sync with Google Drive</h4>
-                    <p class="text-xs text-slate-500 mt-1">Trigger a manual webhook sync to pull in the latest documents and updates from Drive.</p>
-                  </div>
-                  <button (click)="activeTab.set('files')" class="bg-white text-slate-700 border border-slate-300 px-4 py-2 rounded font-bold shadow-sm hover:bg-slate-50 transition-colors text-sm flex items-center gap-2">
-                    <mat-icon class="!text-[18px] w-[18px] h-[18px] text-slate-500">folder</mat-icon> View Files
-                  </button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        }
-        @if (activeTab() === 'budget') {
-          <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-200 bg-slate-50">
-              <h3 class="text-lg font-bold text-slate-900">Job Cost & WIP</h3>
-            </div>
-            <div class="p-6">
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <!-- Sample WIP Metrics -->
-                <div>
-                  <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Contract Value</p>
-                  <p class="text-3xl font-black text-slate-800">{{ project()?.originalContractAmount || 0 | currency:'USD' }}</p>
-                </div>
-                <div>
-                  <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Committed Cost</p>
-                  <p class="text-3xl font-black text-slate-800">{{ 0 | currency:'USD' }}</p>
-                </div>
-                <div>
-                  <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Over/Under Billed</p>
-                  <p class="text-3xl font-black text-slate-800">{{ 0 | currency:'USD' }}</p>
-                </div>
-                <div>
-                  <p class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Margin %</p>
-                  <p class="text-3xl font-black text-slate-800">0%</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        }
-        @if (activeTab() === 'pos') {
-          <div class="space-y-6">
-            @if (showNewPO()) {
-              <div class="bg-white p-6 rounded-md shadow-sm border border-slate-200 animate-in fade-in slide-in-from-top-4 duration-300">
-                <div class="flex justify-between items-center mb-6">
-                  <h3 class="text-lg font-bold text-slate-900">Add New Purchase Order</h3>
-                  <button (click)="showNewPO.set(false)" class="text-slate-400 hover:text-slate-600 transition-colors"><mat-icon>close</mat-icon></button>
-                </div>
-                <form (ngSubmit)="savePO()" class="space-y-6">
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label for="poNum" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">PO Number</label>
-                      <input id="poNum" type="text" [(ngModel)]="newPO.poNumber" name="poNum" required class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-bold text-sm">
-                    </div>
-                    <div class="md:col-span-2">
-                      <label for="vendor" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Vendor / Supplier</label>
-                      <input id="vendor" type="text" [(ngModel)]="newPO.vendor" name="vendor" required class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-bold text-sm">
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label for="amount" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Amount</label>
-                      <input id="amount" type="number" [(ngModel)]="newPO.originalAmount" name="amount" required class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-bold font-mono text-sm">
-                    </div>
-                    <div>
-                      <label for="poDate" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Date</label>
-                      <input id="poDate" type="date" [(ngModel)]="newPO.date" name="poDate" class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-bold text-slate-700 text-sm">
-                    </div>
-                    <div>
-                      <label for="poStatus" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Status</label>
-                      <select id="poStatus" [(ngModel)]="newPO.status" name="status" class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-bold text-sm">
-                        <option value="Draft">Draft</option>
-                        <option value="Sent">Sent</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Partially Invoiced">Partially Invoiced</option>
-                        <option value="Closed">Closed</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label for="items" class="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">Items Purchased / Notes</label>
-                    <textarea id="items" [(ngModel)]="newPO.itemsPurchased" name="items" rows="3" class="w-full px-4 py-2 bg-white rounded border border-slate-300 outline-none focus:ring-2 focus:ring-orange-500 font-medium text-slate-700 placeholder:text-slate-400 text-sm" placeholder="List items or describe purchase..."></textarea>
-                  </div>
-                  <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" (click)="showNewPO.set(false)" class="px-6 py-2 rounded font-bold text-slate-600 hover:bg-slate-100 transition-colors border border-transparent text-sm">Cancel</button>
-                    <button type="submit" class="bg-orange-500 text-white px-6 py-2 rounded font-bold shadow-sm hover:bg-orange-600 transition-all flex items-center gap-2 text-sm">
-                      <mat-icon class="!text-[18px] w-[18px] h-[18px]">check</mat-icon> Save PO
-                    </button>
-                  </div>
-                </form>
-              </div>
+          <form (submit)="saveEdit(); $event.preventDefault()" class="p-6 space-y-4 overflow-y-auto">
+            @if (masterSheetLinked()) {
+              <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                Fields synced from the Master Data Sheet are read-only here. PM, contract, status, and other app fields can still be edited.
+              </p>
             }
-
-            <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-              <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-                <h3 class="text-lg font-bold text-slate-900">Purchase Orders</h3>
-                <button (click)="showNewPO.set(true)" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded font-bold shadow-sm hover:bg-slate-50 transition-colors text-sm flex items-center gap-2">
-                  <mat-icon class="!text-lg">add</mat-icon> New PO
-                </button>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Project #</label>
+                <input type="text" [(ngModel)]="editDraft.projectNumber" name="editNum"
+                       [disabled]="isReadOnlyField('projectNumber')"
+                       class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500">
               </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm whitespace-nowrap">
-                  <thead>
-                    <tr class="bg-white border-b border-slate-200">
-                      <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Number / Date</th>
-                      <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Vendor / Items</th>
-                      <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Status</th>
-                      <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-slate-100">
-                    @for (po of projectPOs(); track po.id) {
-                      <tr class="hover:bg-slate-50 transition-colors">
-                        <td class="px-6 py-4">
-                          <div class="font-bold text-slate-900 flex flex-col">
-                            <span>{{ po.poNumber || 'Draft' }}</span>
-                            <span class="text-xs text-slate-500 font-medium">{{ (po.date || po.createdAt) | date:'shortDate' }}</span>
-                          </div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <div class="flex flex-col">
-                            <span class="font-bold text-slate-900">{{ po.vendor }}</span>
-                            <span class="text-xs text-slate-500 font-medium truncate max-w-[300px]" [title]="po.itemsPurchased || ''">{{ po.itemsPurchased || 'No description provided' }}</span>
-                          </div>
-                        </td>
-                        <td class="px-6 py-4">
-                          <span class="px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide"
-                            [ngClass]="{
-                              'bg-slate-100 text-slate-600': po.status === 'Draft',
-                              'bg-amber-100 text-amber-700': po.status === 'Sent',
-                              'bg-blue-100 text-blue-700': po.status === 'Approved' || po.status === 'Partially Invoiced',
-                              'bg-emerald-100 text-emerald-700': po.status === 'Closed'
-                            }">
-                            {{ po.status }}
-                          </span>
-                        </td>
-                        <td class="px-6 py-4 text-right font-mono font-bold text-slate-900">
-                          {{ po.originalAmount | currency:'USD' }}
-                        </td>
-                      </tr>
-                    } @empty {
-                      <tr><td colspan="4" class="px-6 py-12 text-center text-slate-400 italic">No purchase orders found for this project</td></tr>
-                    }
-                  </tbody>
-                </table>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Project Name</label>
+                <input type="text" [(ngModel)]="editDraft.projectName" name="editName"
+                       [disabled]="isReadOnlyField('projectName')"
+                       class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500">
               </div>
             </div>
-          </div>
-        }
-        @if (activeTab() === 'budget') {
-          <app-budget-tab [project]="project()!" [summary]="financialSummary()!"></app-budget-tab>
-        }
-        @if (activeTab() === 'co') {
-          <app-co-tab [project]="project()!"></app-co-tab>
-        }
-        @if (activeTab() === 'billing') {
-          <app-billing-tab [project]="project()!" [summary]="financialSummary()!"></app-billing-tab>
-        }
-        @if (activeTab() === 'documents') {
-          <app-documents-tab [project]="project()!"></app-documents-tab>
-        }
-        @if (activeTab() === 'issues') {
-          <app-issues-tasks-tab [project]="project()!"></app-issues-tasks-tab>
-        }
-        @if (activeTab() === 'logs') {
-          <app-daily-logs-tab [project]="project()!"></app-daily-logs-tab>
-        }
-        @if (activeTab() === 'schedule') {
-          <app-schedule-tab [project]="project()!"></app-schedule-tab>
-        }
-        @if (activeTab() === 'files') {
-          <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-              <h3 class="text-lg font-bold text-slate-900">Project Documents</h3>
-              <button (click)="loadDriveFiles()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded font-bold shadow-sm hover:bg-slate-50 transition-colors text-sm flex items-center gap-2">
-                <mat-icon class="!text-[18px]">sync</mat-icon> Refresh
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Customer</label>
+                <input type="text" [(ngModel)]="editDraft.customer" name="editCust"
+                       [disabled]="isReadOnlyField('customer')"
+                       class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Status</label>
+                <select [(ngModel)]="editDraft.status" name="editStatus" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                  @for (s of projectStatuses; track s) {
+                    <option [value]="s">{{ s }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Address</label>
+              <input type="text" [(ngModel)]="editDraft.address" name="editAddress"
+                     [disabled]="isReadOnlyField('address')"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm disabled:bg-slate-100 disabled:text-slate-500">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Project Manager</label>
+                <input type="text" [(ngModel)]="editDraft.projectManager" name="editPm" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Superintendent</label>
+                <input type="text" [(ngModel)]="editDraft.superintendent" name="editSup" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Contract ($)</label>
+                <input type="number" [(ngModel)]="editDraft.originalContractAmount" name="editContract" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Retainage %</label>
+                <input type="number" [(ngModel)]="editDraft.retainagePercent" name="editRet" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" (click)="showEditModal.set(false)" class="px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
+              <button type="submit" [disabled]="savingEdit()" class="bg-slate-900 text-white px-5 py-2 rounded-lg text-sm font-bold disabled:opacity-50">
+                {{ savingEdit() ? 'Saving...' : 'Save Changes' }}
               </button>
             </div>
-            
-            <div class="p-0">
-              @if (!project()?.driveFolderId) {
-                <div class="py-16 text-center">
-                  <mat-icon class="!text-3xl w-8 h-8 text-slate-300 mb-2">folder_off</mat-icon>
-                  <h3 class="text-lg font-bold text-slate-900 mb-1">No Drive Folder Linked</h3>
-                  <p class="text-slate-500 text-sm mb-4">Go to Setup to link a Google Drive folder ID.</p>
-                  <button (click)="activeTab.set('setup')" class="bg-orange-500 text-white px-4 py-2 rounded font-bold shadow-sm hover:bg-orange-600 transition-colors text-sm">
-                    Go to Setup
-                  </button>
-                </div>
-              } @else if (loadingFiles()) {
-                <div class="py-16 text-center text-slate-500 flex flex-col items-center justify-center">
-                  <mat-icon class="animate-spin mb-2">refresh</mat-icon>
-                  <p class="text-sm font-medium">Loading files from Google Drive...</p>
-                </div>
-              } @else if (driveError()) {
-                <div class="py-16 text-center text-red-500 flex flex-col items-center justify-center">
-                  <mat-icon class="mb-2">error_outline</mat-icon>
-                  <p class="text-sm font-medium mb-4">{{ driveError() }}</p>
-                  <button (click)="loadDriveFiles()" class="bg-slate-800 text-white px-4 py-2 rounded font-bold hover:bg-slate-900 text-sm">Retry</button>
-                </div>
-              } @else {
-                <div class="overflow-x-auto">
-                  <table class="w-full text-left border-collapse">
-                    <thead>
-                      <tr class="bg-white border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-400">
-                        <th class="px-6 py-4 font-bold">Name</th>
-                        <th class="px-6 py-4 font-bold">Last Modified</th>
-                        <th class="px-6 py-4 font-bold text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100 text-sm">
-                      @for (file of driveFiles(); track file.id) {
-                        <tr class="hover:bg-slate-50 transition-colors group">
-                          <td class="px-6 py-4">
-                            <div class="flex items-center gap-3">
-                              <img [src]="file.iconLink" class="w-4 h-4" alt="Icon">
-                              <span class="font-medium text-slate-800">{{ file.name }}</span>
-                            </div>
-                          </td>
-                          <td class="px-6 py-4 text-slate-500">
-                            {{ file.modifiedTime | date:'medium' }}
-                          </td>
-                          <td class="px-6 py-4 text-right">
-                            <a [href]="file.webViewLink" target="_blank" referrerpolicy="no-referrer" class="text-orange-600 hover:text-orange-700 font-medium inline-flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              Open <mat-icon class="!text-[14px]">open_in_new</mat-icon>
-                            </a>
-                          </td>
-                        </tr>
-                      } @empty {
-                        <tr><td colspan="3" class="px-6 py-12 text-center text-slate-400 italic">No files found in folder</td></tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              }
-            </div>
-          </div>
-        }
-        @if (activeTab() !== 'setup' && activeTab() !== 'budget' && activeTab() !== 'co' && activeTab() !== 'pos' && activeTab() !== 'files' && activeTab() !== 'billing' && activeTab() !== 'overview' && activeTab() !== 'documents' && activeTab() !== 'issues' && activeTab() !== 'logs' && activeTab() !== 'schedule') {
-          <div class="py-16 text-center border-2 border-dashed border-slate-300 rounded-md bg-slate-50">
-            <mat-icon class="!text-3xl w-8 h-8 text-slate-300 mb-2">construction</mat-icon>
-            <h3 class="text-lg font-bold text-slate-900 mb-1">Under Construction</h3>
-            <p class="text-slate-500 max-w-sm mx-auto text-sm">This tab is being built out to support field and office operations.</p>
-          </div>
-        }
+          </form>
+        </div>
       </div>
-    </div>
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectDetails {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private projectData = inject(ProjectDataService);
   private dataService = inject(DataService);
-  
+  private authService = inject(AuthService);
   private driveService = inject(DriveService);
-  
-  projectId = this.route.snapshot.paramMap.get('id');
-  projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
-  project = computed(() => (this.projects() || []).find(p => p.id === this.projectId));
+  private folderDiscovery = inject(DriveFolderDiscoveryService);
+  private certifiedPayroll = inject(CertifiedPayrollService);
+  private budgetLineSvc = inject(BudgetLineService);
+  private needsSvc = inject(ProjectNeedsService);
+  private lifecycleSvc = inject(ProjectLifecycleService);
 
-  pos = toSignal(this.dataService.getPOs(), { initialValue: [] });
-  projectPOs = computed(() => (this.pos() || []).filter(po => po.projectId === this.projectId));
+  projectId = this.route.snapshot.paramMap.get('id');
+
+  projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
+  project = computed(() => {
+    const firestoreProject = (this.projects() || []).find(
+      p => p.id === this.projectId || p.seedProjectId === this.projectId,
+    );
+    if (firestoreProject) return firestoreProject;
+    const sheetProject = this.projectId ? this.projectData.getProjectDetail(this.projectId)?.project : null;
+    return sheetProject ? normalizedProjectToProject(sheetProject) : undefined;
+  });
 
   changeOrders = toSignal(this.dataService.getChangeOrders(), { initialValue: [] });
-  projectCOs = computed(() => (this.changeOrders() || []).filter(co => co.projectId === this.projectId));
-
-  billings = toSignal(this.dataService.getBillings(), { initialValue: [] });
-  projectBillings = computed(() => (this.billings() || []).filter(b => b.projectId === this.projectId));
-
-  files = toSignal(this.dataService.getProjectFiles(), { initialValue: [] });
-  projectFiles = computed(() => (this.files() || []).filter(f => f.projectId === this.projectId));
-
-  reqDocs = toSignal(this.dataService.getRequiredDocuments(), { initialValue: [] });
-  projectReqDocs = computed(() => (this.reqDocs() || []).filter(r => r.projectId === this.projectId));
-
-  issues = toSignal(this.dataService.getProjectIssues(), { initialValue: [] });
-  projectIssues = computed(() => (this.issues() || []).filter(i => i.projectId === this.projectId));
-
-  tasks = toSignal(this.dataService.getProjectTasks(), { initialValue: [] });
-  projectTasks = computed(() => (this.tasks() || []).filter(t => t.projectId === this.projectId));
-
+  rfis = toSignal(this.dataService.getRfis(), { initialValue: [] });
+  submittals = toSignal(this.dataService.getSubmittals(), { initialValue: [] });
   dailyLogs = toSignal(this.dataService.getDailyLogs(), { initialValue: [] });
-  projectLogs = computed(() => (this.dailyLogs() || []).filter(l => l.projectId === this.projectId));
-
+  fieldIssues = toSignal(this.dataService.getFieldIssues(), { initialValue: [] });
+  billings = toSignal(this.dataService.getBillings(), { initialValue: [] });
+  budgetLines = toSignal(this.dataService.getBudgetLines(), { initialValue: [] });
+  pos = toSignal(this.dataService.getPOs(), { initialValue: [] });
+  arRecords = toSignal(this.dataService.getArRecords(), { initialValue: [] });
+  files = toSignal(this.dataService.getProjectFiles(), { initialValue: [] });
+  reqDocs = toSignal(this.dataService.getRequiredDocuments(), { initialValue: [] });
+  issues = toSignal(this.dataService.getProjectIssues(), { initialValue: [] });
+  tasks = toSignal(this.dataService.getProjectTasks(), { initialValue: [] });
   milestones = toSignal(this.dataService.getMilestones(), { initialValue: [] });
-  projectMilestones = computed(() => (this.milestones() || []).filter(m => m.projectId === this.projectId));
+
+  sheetDetail = computed(() => (this.projectId ? this.projectData.getProjectDetail(this.projectId) : null));
+
+  projectCOs = computed(() => {
+    const sheetCos = this.sheetDetail()?.changes ?? [];
+    if (sheetCos.length) {
+      return sheetCos.map(c => ({
+        id: c.id,
+        projectId: c.projectId,
+        coNumber: c.changeNo,
+        title: c.title,
+        status: c.status as import('../models/types').ChangeOrder['status'],
+        sellPrice: c.submittedAmount,
+        approvedAmount: c.approvedAmount,
+        dateSubmitted: c.dateSubmitted,
+      }));
+    }
+    return (this.changeOrders() || []).filter(co => co.projectId === this.projectId);
+  });
+
+  projectBillings = computed(() => {
+    const sheetInvoices = this.sheetDetail()?.invoices ?? [];
+    if (sheetInvoices.length) {
+      return sheetInvoices.map(i => ({
+        id: i.id,
+        projectId: i.projectId,
+        payAppNumber: i.invoiceNo,
+        billingPeriod: i.billingPeriod ?? '',
+        status: i.status as import('../models/types').Billing['status'],
+        totalBilledToDate: i.grossBilled,
+        amountPaid: i.paid,
+      }));
+    }
+    return (this.billings() || []).filter(b => b.projectId === this.projectId);
+  });
+
+  projectBudgetLines = computed(() =>
+    (this.budgetLines() || []).filter(line => line.projectId === this.projectId),
+  );
 
   activityFeed = computed(() => buildProjectActivityFeed(
-    this.projectId!, 
-    this.dailyLogs() || [],
+    this.projectId!,
     this.files() || [],
     this.issues() || [],
     this.tasks() || [],
     this.changeOrders() || [],
     this.billings() || [],
-    this.milestones() || []
+    this.milestones() || [],
   ));
 
-  recentPhotos = computed(() => (this.projectFiles()).filter(f => f.documentType === 'Photo' || f.mimeType?.startsWith('image')).slice(0, 4));
+  financialSummary = computed(() =>
+    getProjectFinancialSummary(this.project() || null, this.projectCOs(), this.projectBillings()),
+  );
 
-  financialSummary = computed(() => getProjectFinancialSummary(this.project() || null, this.projectCOs(), this.projectBillings()));
-  
-  missingDocsCount = computed(() => this.projectReqDocs().filter(r => r.status === 'Needed' || r.status === 'Requested').length);
-  
-  daysSinceLastLog = computed(() => getDaysSinceLastDailyLog(this.projectId!, this.projectLogs()));
-  nextMilestone = computed(() => getNextMilestone(this.projectId!, this.projectMilestones()));
+  costDonut = computed(() => {
+    const p = this.project();
+    return p ? buildProjectCostDonut(p) : [];
+  });
+
+  budgetVsActual = computed(() => {
+    const p = this.project();
+    if (!p) return { labels: [], rows: [] };
+    const lines = this.budgetLineSvc.computeForProject(p);
+    if (lines.length) return buildBudgetVsActualFromLines(lines);
+    return buildBudgetVsActualBars(p);
+  });
+
+  latestChangeOrders = computed(() =>
+    [...this.projectCOs()]
+      .sort((a, b) => (b.dateSubmitted || '').localeCompare(a.dateSubmitted || ''))
+      .slice(0, 5),
+  );
 
   projectExceptions = computed(() => {
     const p = this.project();
     if (!p) return [];
-    return getProjectExceptions(p, this.financialSummary(), this.projectCOs(), this.projectBillings(), this.projectFiles(), this.projectReqDocs(), this.projectIssues(), this.projectTasks());
+    return collectProjectActionItems(p, {
+      changeOrders: this.changeOrders() || [],
+      billings: this.billings() || [],
+      pos: this.pos() || [],
+      budgetLines: this.budgetLines() || [],
+      arRecords: this.arRecords() || [],
+      files: this.files() || [],
+      requiredDocuments: this.reqDocs() || [],
+      issues: this.issues() || [],
+      tasks: this.tasks() || [],
+      milestones: this.milestones() || [],
+    });
   });
 
-  showNewPO = signal(false);
-  newPO: Partial<PO> = { poNumber: '', vendor: '', originalAmount: 0, status: 'Draft', itemsPurchased: '', paymentMethod: '' };
+  workflowChips = computed((): WorkflowChip[] => {
+    const pid = this.projectId!;
+    const openCos = this.projectCOs().filter(c => !['Approved', 'Rejected', 'Void'].includes(c.status ?? '')).length;
+    const openRfis = this.rfis().filter(r => r.projectId === pid && r.status !== 'Closed').length;
+    const openSubs = this.submittals().filter(s => s.projectId === pid && s.status !== 'Approved').length;
+    const openLogs = this.dailyLogs().filter(l => l.projectId === pid).length;
+    const openIssues = this.fieldIssues().filter(f => f.projectId === pid && f.status !== 'Closed').length;
+    const draftBilling = this.projectBillings().filter(b => b.status === 'Draft' || b.status === 'Submitted').length;
 
-  savePO() {
-    if (!this.newPO.poNumber || !this.newPO.vendor || !this.projectId) return;
-    this.newPO.projectId = this.projectId;
-    this.dataService.createPO(this.newPO).subscribe(() => {
-      this.showNewPO.set(false);
-      this.newPO = { poNumber: '', vendor: '', originalAmount: 0, status: 'Draft', itemsPurchased: '', paymentMethod: '' };
-      window.location.reload();
+    return [
+      { id: 'changes', label: 'Changes', count: openCos, status: openCos ? 'attention' : 'ok' },
+      { id: 'rfis', label: 'RFIs', count: openRfis, status: openRfis ? 'attention' : 'ok' },
+      { id: 'submittals', label: 'Submittals', count: openSubs, status: openSubs ? 'attention' : 'ok' },
+      { id: 'daily-logs', label: 'Daily Logs', count: openLogs, status: 'ok' },
+      { id: 'field-issues', label: 'Field Issues', count: openIssues, status: openIssues ? 'alert' : 'ok' },
+      { id: 'billing', label: 'Billing', count: draftBilling, status: draftBilling ? 'attention' : 'ok' },
+    ];
+  });
+
+  showAllTools = signal(false);
+
+  enabledModules = computed(() => {
+    const p = this.project();
+    if (!p) return computeProjectEnabledModules({
+      projectId: '',
+      isActive2026: false,
+      prevailingWage: false,
+      certifiedPayrollRequired: false,
+      bonusEligible: false,
+      hasForemanAssignment: false,
+      hasLaborBudget: false,
+      hasDriveFolder: false,
+      hasRFIs: false,
+      hasSubmittals: false,
+      hasDailyLogs: false,
+      hasFieldIssues: false,
+      hasOpenTasks: false,
+      hasCPRRecords: false,
+      hasSubs: false,
+      hasPOs: false,
+      hasSubcontractorCosts: false,
+      hasSubInvoices: false,
+      hasAR: false,
+      hasBilling: false,
+      hasQuickBooksDetailCosts: false,
+      hasApprovedCoNotBilled: false,
+      hasBonusRecords: false,
+      requiresRfis: false,
+      requiresSubmittals: false,
+      requiresDailyLogs: false,
+      hasMaterialScope: false,
+      hasSafetyRecords: false,
+      hasInspectionRecords: false,
+      isCloseoutOrClosed: false,
+      showAllTools: this.showAllTools(),
     });
-  }
+    return this.needsSvc.enabledModules(p, this.showAllTools());
+  });
 
-  activeTab = signal('overview');
-  tempDriveId = '';
-  driveIdDirty = signal(false);
-  tempSheetId = '';
-  sheetIdDirty = signal(false);
+  visibleWorkflowChips = computed(() => {
+    const modules = this.enabledModules();
+    return this.workflowChips().filter(chip =>
+      workflowChipVisible(chip.id, modules, chip.count, chip.status !== 'ok'),
+    );
+  });
 
-  constructor() {
-    // initialize tempDriveId
-    setTimeout(() => {
-      const p = this.project();
-      if (p && p.driveFolderId) {
-        this.tempDriveId = p.driveFolderId;
-      }
-      if (p && p.googleSheetId) {
-        this.tempSheetId = p.googleSheetId;
-      }
-    }, 100);
+  lifecycleSnapshot = computed(() => {
+    const p = this.project();
+    return p ? this.lifecycleSvc.forProject(p) : undefined;
+  });
 
-    // Watch active tab and load files if files tab is opened
-    effect(() => {
-      if (this.activeTab() === 'files' && this.project()?.driveFolderId) {
-        this.loadDriveFiles();
-      }
-    });
-  }
+  nextAction = computed(() => {
+    const p = this.project();
+    return p ? this.needsSvc.nextAction(p) : undefined;
+  });
 
-  saveDriveId() {
-    if (!this.projectId) return;
-    this.dataService.updateProject(this.projectId, { driveFolderId: this.tempDriveId }).subscribe(() => {
-      this.driveIdDirty.set(false);
-      // Optional: show a toast or success message
-      alert('Google Drive Folder ID saved successfully!');
-      if (this.activeTab() === 'files') {
-        this.loadDriveFiles();
-      }
-    });
-  }
+  nav = signal<ProjectNavState>(defaultNavState());
+  showEditModal = signal(false);
+  savingEdit = signal(false);
+  editDraft: Partial<Project> = {};
+  projectStatuses = PROJECT_STATUSES;
 
-  saveSheetId() {
-    if (!this.projectId) return;
-    this.dataService.updateProject(this.projectId, { 
-      googleSheetId: this.tempSheetId,
-      googleSheetUrl: this.tempSheetId ? `https://docs.google.com/spreadsheets/d/${this.tempSheetId}/edit` : undefined
-    }).subscribe(() => {
-      this.sheetIdDirty.set(false);
-      alert('Google Sheet ID saved successfully!');
-    });
-  }
+  masterSheetLinked = computed(() => {
+    const p = this.project();
+    return p ? isMasterSheetLinkedProject(p) : false;
+  });
 
   driveFiles = signal<DriveFile[]>([]);
   loadingFiles = signal(false);
   driveError = signal<string | null>(null);
 
-  async loadDriveFiles() {
+  constructor() {
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    const section = this.route.snapshot.queryParamMap.get('section');
+    const view = this.route.snapshot.queryParamMap.get('view');
+    this.nav.set(resolveNavFromQuery(tab, section, view));
+
+    if (this.projectId) {
+      try {
+        const raw = localStorage.getItem(persistShowAllToolsKey(this.projectId));
+        if (raw === 'true') this.showAllTools.set(true);
+      } catch { /* ignore */ }
+    }
+
+    this.route.queryParamMap.subscribe(params => {
+      this.nav.set(resolveNavFromQuery(
+        params.get('tab'),
+        params.get('section'),
+        params.get('view'),
+      ));
+    });
+
+    effect(() => {
+      const utility = this.nav().utilityView;
+      if (utility === 'files' && this.project()?.driveFolderId) {
+        void this.loadDriveFiles();
+      }
+    });
+  }
+
+  setSection(section: ProjectPrimarySection): void {
+    this.applyNav({ ...defaultNavState(), section, utilityView: null });
+  }
+
+  goWorkflow(view: WorkflowView | 'billing'): void {
+    if (view === 'billing') {
+      this.applyNav(openFinancial('billing'));
+    } else {
+      this.applyNav(openWorkflow(view));
+    }
+  }
+
+  goFinancial(view: FinancialView): void {
+    this.applyNav(openFinancial(view));
+  }
+
+  goActionItem(state: ProjectNavState): void {
+    this.applyNav(state);
+  }
+
+  goFileView(view: FileView): void {
+    this.applyNav(openFileView(view));
+  }
+
+  toggleShowAllTools(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.showAllTools.set(checked);
+    if (this.projectId) {
+      try {
+        localStorage.setItem(persistShowAllToolsKey(this.projectId), String(checked));
+      } catch { /* ignore */ }
+    }
+  }
+
+  openMore(view: UtilityView): void {
+    this.applyNav({ ...this.nav(), utilityView: view });
+    if (view === 'files') void this.loadDriveFiles();
+  }
+
+  closeUtility(): void {
+    this.applyNav({ ...this.nav(), utilityView: null });
+  }
+
+  onNewItem(item: NewItemAction): void {
+    if (item.section === 'workflows' && item.view) {
+      this.goWorkflow(item.view as WorkflowView);
+    } else if (item.section === 'financials' && item.view) {
+      this.goFinancial(item.view as FinancialView);
+    } else if (item.section === 'documents') {
+      this.setSection('documents');
+    }
+  }
+
+  private applyNav(state: ProjectNavState): void {
+    this.nav.set(state);
+    if (this.projectId) savePersistedNav(this.projectId, state);
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: navQueryParams(state),
+      queryParamsHandling: 'merge',
+    });
+  }
+
+  openEdit(): void {
     const p = this.project();
-    if (!p || !p.driveFolderId) return;
+    if (!p) return;
+    this.editDraft = { ...p };
+    this.showEditModal.set(true);
+  }
+
+  isReadOnlyField(field: keyof Project): boolean {
+    const p = this.project();
+    return p ? isMasterSheetReadOnlyField(field, p) : false;
+  }
+
+  saveEdit(): void {
+    if (!this.projectId) return;
+    const current = this.project();
+    if (!current) return;
+    this.savingEdit.set(true);
+    const patch = stripMasterSheetFieldsFromUserPatch(current, {
+      ...this.editDraft,
+      taxable: !this.editDraft.taxExempt,
+    });
+    this.dataService.updateProject(this.projectId, patch).subscribe({
+      next: (updated) => {
+        this.savingEdit.set(false);
+        this.showEditModal.set(false);
+        if (updated && isCertifiedPayrollProject(updated)) {
+          void this.certifiedPayroll.ensureComplianceForProject(updated);
+        }
+      },
+      error: () => {
+        this.savingEdit.set(false);
+        alert('Failed to save project changes.');
+      },
+    });
+  }
+
+  saveDriveIdFromUtility(folderIdRaw: string): void {
+    if (!this.projectId) return;
+    const folderId = parseDriveFolderId(folderIdRaw);
+    const driveFolderUrl = this.driveService.folderUrl(folderId);
+    this.dataService.updateProject(this.projectId, { driveFolderId: folderId, driveFolderUrl }).subscribe(async () => {
+      const p = this.project();
+      if (p) {
+        await this.folderDiscovery.initializeFolderLinks(this.projectId!, folderId);
+        const token = await this.authService.getAccessToken();
+        if (token) {
+          await this.folderDiscovery.discoverProjectFolders({ ...p, driveFolderId: folderId, driveFolderUrl });
+        }
+      }
+    });
+  }
+
+  saveSheetIdFromUtility(sheetId: string): void {
+    if (!this.projectId) return;
+    this.dataService.updateProject(this.projectId, {
+      googleSheetId: sheetId,
+      googleSheetUrl: sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit` : undefined,
+    }).subscribe();
+  }
+
+  async loadDriveFiles(): Promise<void> {
+    const p = this.project();
+    if (!p?.driveFolderId || this.loadingFiles()) return;
     try {
       this.loadingFiles.set(true);
       this.driveError.set(null);
-      const files = await this.driveService.listFiles(p.driveFolderId);
-      this.driveFiles.set(files);
-    } catch (e: any) {
-      this.driveError.set(e.message || 'Error loading files');
+      this.driveFiles.set(await this.driveService.listFiles(p.driveFolderId));
+    } catch (e: unknown) {
+      this.driveError.set(e instanceof Error ? e.message : 'Error loading files');
     } finally {
       this.loadingFiles.set(false);
     }
   }
-
-  tabs = [
-    { id: 'overview', label: 'Overview', icon: 'dashboard' },
-    { id: 'setup', label: 'Setup', icon: 'settings' },
-    { id: 'budget', label: 'Budget / WIP', icon: 'account_balance_wallet' },
-    { id: 'co', label: 'Change Orders', icon: 'sync_alt' },
-    { id: 'logs', label: 'Daily Logs', icon: 'history_edu' },
-    { id: 'schedule', label: 'Schedule', icon: 'calendar_month' },
-    { id: 'billing', label: 'Billing', icon: 'request_quote' },
-    { id: 'documents', label: 'Documents', icon: 'description' },
-    { id: 'issues', label: 'Issues / Tasks', icon: 'assignment_late' },
-    { id: 'files', label: 'Files', icon: 'folder' }
-  ];
 }

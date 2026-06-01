@@ -1,0 +1,434 @@
+import { Component, computed, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { MatIconModule } from '@angular/material/icon';
+import { DataService } from '../services/data.service';
+import { ProjectFinancialService } from '../services/project-financial.service';
+import { ProjectLifecycleService } from '../services/project-lifecycle.service';
+import { ForemanBonusService } from '../services/foreman-bonus.service';
+import { ImportDataService } from '../services/import-data.service';
+import {
+  Active2026ControlRow,
+  ControlFilterId,
+  ControlSegmentId,
+  ControlSortKey,
+} from '../models/active-2026-control.types';
+import {
+  buildActive2026ControlRows,
+  CONTROL_FILTER_OPTIONS,
+  matchesControlFilter,
+  matchesControlSegment,
+  rowWarningChips,
+  sortControlRows,
+  summarizeActive2026Control,
+} from '../utils/active-2026-control.compute';
+import { downloadCsv } from '../utils/csv-export';
+import { BRIGHTEN_PROFIT_TARGET } from '../config/active-2026-jobs.config';
+import { PageHeaderComponent } from '../components/ui/page-header';
+import { StatCardComponent } from '../components/ui/stat-card';
+import { CompactStatStripComponent } from '../components/ui/compact-stat-strip';
+import { SegmentedControlComponent } from '../components/ui/segmented-control';
+import { ListRowComponent } from '../components/ui/list-row';
+import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '../components/ui/detail-drawer';
+import { EmptyStateComponent } from '../components/ui/empty-state';
+
+const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
+  'all',
+  'criticalRisk',
+  'setupNeeded',
+  'reviewNeeded',
+  'billing',
+  'cpr',
+  'subs',
+]);
+
+@Component({
+  selector: 'app-active-2026-control-page',
+  standalone: true,
+  imports: [
+    CommonModule, FormsModule, RouterLink, MatIconModule,
+    PageHeaderComponent, StatCardComponent, CompactStatStripComponent,
+    SegmentedControlComponent, ListRowComponent,
+    DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent,
+    EmptyStateComponent,
+  ],
+  template: `
+    <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+      <app-page-header
+        title="Active 2026 Control"
+        [subtitle]="'Owner view · ' + summary().activeJobs + ' active jobs · 20% profit target'">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" (click)="filterDrawerOpen.set(true)"
+                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+            Filter
+            @if (activeFilters().size) {
+              <span class="ml-1 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full">{{ activeFilters().size }}</span>
+            }
+          </button>
+          <select [(ngModel)]="sortKey" class="px-3 py-2 border rounded-lg text-sm">
+            @for (opt of sortOptions; track opt.id) {
+              <option [value]="opt.id">{{ opt.label }}</option>
+            }
+          </select>
+          <button type="button" (click)="exportCsv()"
+                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shrink-0">
+            Export CSV
+          </button>
+        </div>
+      </app-page-header>
+
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <app-stat-card label="Active Jobs" [value]="fmtCount(summary().activeJobs)" icon="work" />
+        <app-stat-card label="Critical Risk" [value]="fmtCount(summary().jobsCriticalRisk)"
+                       [subtext]="summary().jobsCriticalRisk ? 'Margin, AR, contract' : 'None critical'"
+                       icon="warning" />
+        <app-stat-card label="Open AR" [value]="fmtCurrency(summary().openArTotal)"
+                       [subtext]="summary().openArTotal > 0 ? summary().jobsArPastDue + ' past due' : undefined"
+                       icon="receipt_long" />
+        <app-stat-card label="Left to Bill" [value]="fmtCurrency(summary().leftToBillTotal)" icon="payments" />
+      </div>
+
+      <app-compact-stat-strip [stats]="compactStats()" />
+
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <app-segmented-control
+          [options]="segmentOptions()"
+          [value]="activeSegment()"
+          (select)="onSegmentSelect($event)" />
+        @if (activeFilters().size) {
+          <button type="button" (click)="clearFilters()" class="text-xs font-semibold text-slate-600 underline">
+            Clear {{ activeFilters().size }} advanced filter(s)
+          </button>
+        }
+      </div>
+
+      <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
+        @for (row of displayRows(); track row.projectId) {
+          <app-list-row
+            [title]="row.jobNumber + ' · ' + row.projectName"
+            [subtitle]="(row.customer || 'No customer') + ' · ' + row.status + ' · ' + row.lifecycleGroup"
+            [health]="row.healthStatus"
+            [metrics]="rowMetrics(row)"
+            [chips]="rowWarningChips(row)"
+            [nextAction]="row.nextAction.label"
+            (rowClick)="openDrawer(row)" />
+        } @empty {
+          <app-empty-state
+            title="No jobs match the current filters."
+            message="Try a different segment or clear advanced filters." />
+        }
+      </div>
+    </div>
+
+    @if (filterDrawerOpen()) {
+      <div class="fixed inset-0 z-40 bg-black/30" (click)="filterDrawerOpen.set(false)"></div>
+      <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-white shadow-xl overflow-y-auto flex flex-col">
+        <div class="sticky top-0 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+          <h2 class="text-lg font-bold text-slate-900">Advanced Filters</h2>
+          <button type="button" (click)="filterDrawerOpen.set(false)" class="text-slate-400 hover:text-slate-600">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="p-5 space-y-2 flex-1">
+          @for (f of filterOptions; track f.id) {
+            <label class="flex items-center gap-3 py-2 cursor-pointer">
+              <input type="checkbox"
+                     [checked]="activeFilters().has(f.id)"
+                     (change)="toggleFilter(f.id)"
+                     class="rounded border-slate-300" />
+              <span class="text-sm">{{ f.label }}</span>
+            </label>
+          }
+        </div>
+        <div class="sticky bottom-0 border-t bg-white p-4 flex gap-2">
+          <button type="button" (click)="clearFilters()"
+                  class="flex-1 py-2 rounded-lg border text-sm font-semibold">Clear all</button>
+          <button type="button" (click)="filterDrawerOpen.set(false)"
+                  class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold">Apply</button>
+        </div>
+      </aside>
+    }
+
+    <app-detail-drawer
+      [open]="!!selectedRow()"
+      [title]="selectedRow()?.jobNumber + ' · ' + selectedRow()?.projectName"
+      [subtitle]="selectedRow()?.customer"
+      [footerActionLabel]="selectedRow()?.nextAction?.label"
+      (close)="selectedRow.set(null)"
+      (footerAction)="navigateNextAction()">
+      @if (selectedRow(); as row) {
+        <app-drawer-section title="Summary">
+          <app-drawer-field label="Status" [value]="row.status + ' · ' + row.lifecycleGroup" />
+          <app-drawer-field label="Health" [value]="row.healthStatus" />
+          <app-drawer-field label="PM" [value]="row.pm || '—'" />
+          <app-drawer-field label="Foreman" [value]="row.foreman || '—'" />
+          <app-drawer-field label="Drive" [value]="row.driveLinked ? 'Linked' : 'Missing'" [alert]="!row.driveLinked" />
+          <app-drawer-field label="Setup" [value]="row.seedCompletenessStatus" />
+        </app-drawer-section>
+
+        <app-drawer-section title="Billing">
+          <app-drawer-field label="Contract" [value]="fmtCurrency(row.currentContract)" [mono]="true" />
+          <app-drawer-field label="Approved COs" [value]="fmtCurrency(row.approvedCos)" [mono]="true" />
+          <app-drawer-field label="Pending COs" [value]="fmtCurrency(row.pendingCos)" [mono]="true" />
+          <app-drawer-field label="Billed" [value]="fmtCurrency(row.billedToDate)" [mono]="true" />
+          <app-drawer-field label="Left to Bill" [value]="fmtCurrency(row.leftToBill)" [mono]="true" />
+          <app-drawer-field label="AR" [value]="fmtCurrency(row.arBalance)" [mono]="true" [alert]="row.arBalance > 0" />
+          <app-drawer-field label="AR Past Due" [value]="fmtCurrency(row.arPastDue)" [mono]="true" [alert]="row.arPastDue > 0" />
+          <app-drawer-field label="Retainage" [value]="fmtCurrency(row.retainage)" [mono]="true" />
+          <app-drawer-field label="Billing Status" [value]="row.billingStatus" />
+          <app-drawer-field label="Over/Under" [value]="fmtCurrency(row.overUnderBilling)" [mono]="true" />
+        </app-drawer-section>
+
+        <app-drawer-section title="Labor">
+          <app-drawer-field label="Budget Basis" [value]="budgetBasisLabel(row.budgetBasis)" />
+          <app-drawer-field label="Budget" [value]="fmtCurrency(row.totalBudget)" [mono]="true" />
+          <app-drawer-field label="Actual Cost" [value]="fmtCurrency(row.actualCostToDate)" [mono]="true" />
+          <app-drawer-field label="Est Final" [value]="fmtCurrency(row.estimatedFinalCost)" [mono]="true" />
+          <app-drawer-field label="Variance" [value]="fmtCurrency(row.budgetVariance)" [mono]="true" [alert]="row.budgetVariance < 0" />
+          <app-drawer-field label="Proj Profit" [value]="fmtCurrency(row.projectedProfit)" [mono]="true" />
+          <app-drawer-field label="Margin" [value]="row.projectedMarginPct.toFixed(1) + '%'"
+                            [alert]="row.projectedMarginPct < profitTargetPct" />
+          <app-drawer-field label="Labor Budget" [value]="fmtCurrency(row.laborBudget)" [mono]="true" />
+          <app-drawer-field label="Labor Actual" [value]="fmtCurrency(row.laborActualCost)" [mono]="true" />
+          <app-drawer-field label="Labor Var" [value]="fmtCurrency(row.laborVariance)" [mono]="true" [alert]="row.laborVariance < 0" />
+          <app-drawer-field label="Bonus" [value]="row.bonusStatus" />
+          <app-drawer-field label="WIP" [value]="row.wipStatus" />
+        </app-drawer-section>
+
+        <app-drawer-section title="Subs / Compliance">
+          <app-drawer-field label="Sub Count" [value]="fmtCount(row.subcontractorCount)" />
+          <app-drawer-field label="Sub Cost" [value]="fmtCurrency(row.subcontractorCostToDate)" [mono]="true" />
+          <app-drawer-field label="Missing W-9" [value]="fmtCount(row.missingW9Count)" [alert]="row.missingW9Count > 0" />
+          <app-drawer-field label="Missing COI" [value]="fmtCount(row.missingCoiCount)" [alert]="row.missingCoiCount > 0" />
+          <app-drawer-field label="CPR" [value]="row.cprStatus" [alert]="row.cprRequired && row.cprStatus === 'Missing setup'" />
+        </app-drawer-section>
+
+        <app-drawer-section title="Setup / Docs">
+          <a [routerLink]="['/projects', row.projectId]"
+             class="text-sm font-semibold text-indigo-700 underline">Open project</a>
+        </app-drawer-section>
+      }
+    </app-detail-drawer>
+  `,
+})
+export class Active2026ControlPage {
+  private data = inject(DataService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private financialSvc = inject(ProjectFinancialService);
+  private lifecycleSvc = inject(ProjectLifecycleService);
+  private foremanBonus = inject(ForemanBonusService);
+  private importData = inject(ImportDataService);
+
+  readonly profitTargetPct = BRIGHTEN_PROFIT_TARGET * 100;
+  readonly filterOptions = CONTROL_FILTER_OPTIONS;
+  readonly rowWarningChips = rowWarningChips;
+
+  sortKey: ControlSortKey = 'jobNumber';
+  activeFilters = signal<Set<ControlFilterId>>(new Set());
+  activeSegment = signal<ControlSegmentId>('all');
+  selectedRow = signal<Active2026ControlRow | null>(null);
+  filterDrawerOpen = signal(false);
+
+  constructor() {
+    this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      const seg = params.get('segment') as ControlSegmentId | null;
+      if (seg && VALID_CONTROL_SEGMENTS.has(seg)) {
+        this.activeSegment.set(seg);
+      }
+    });
+  }
+
+  private projects = toSignal(this.data.getProjects(), { initialValue: [] as ReturnType<DataService['projectsSnapshot']> });
+
+  readonly sortOptions: { id: ControlSortKey; label: string }[] = [
+    { id: 'jobNumber', label: 'Job number' },
+    { id: 'highestAr', label: 'Highest AR' },
+    { id: 'lowestMargin', label: 'Lowest margin' },
+    { id: 'largestContract', label: 'Largest contract' },
+    { id: 'largestCostOverrun', label: 'Largest cost overrun' },
+    { id: 'mostMissing', label: 'Most missing items' },
+    { id: 'nextBilling', label: 'Next billing action' },
+    { id: 'projectName', label: 'Project name' },
+  ];
+
+  private allRows = computed(() => {
+    const projects = this.projects() ?? [];
+    const lifecycles = this.lifecycleSvc.snapshotMap();
+    const financials = new Map(projects.map(p => [p.id, this.financialSvc.computeForProject(p)]));
+    const wipRecords = this.financialSvc.computeWipRecords();
+    const wipByProjectId = new Map(wipRecords.map(w => [w.projectId, w]));
+
+    return buildActive2026ControlRows({
+      projects,
+      financialByProjectId: financials,
+      lifecycleByProjectId: lifecycles,
+      wipByProjectId,
+      changeOrders: this.data.changeOrdersSnapshot(),
+      arRecords: this.data.arRecordsSnapshot(),
+      laborActuals: this.data.projectLaborActualsSnapshot(),
+      budgetLines: this.data.budgetLinesSnapshot(),
+      projectSubcontractors: this.data.projectSubcontractorsSnapshot(),
+      subcontractors: this.data.subcontractorsSnapshot(),
+      subDocuments: this.data.subcontractorDocumentsSnapshot(),
+      foremanAssignments: this.foremanBonus.assignments(),
+      foremanRecords: this.foremanBonus.records(),
+      laborBudgetImported: job => !!this.importData.flagsForJob(job)?.laborBudgetImported,
+    });
+  });
+
+  summary = computed(() => summarizeActive2026Control(this.allRows()));
+
+  displayRows = computed(() => {
+    let rows = this.allRows();
+    const segment = this.activeSegment();
+    if (segment !== 'all') {
+      rows = rows.filter(row => matchesControlSegment(row, segment));
+    }
+    const filters = this.activeFilters();
+    if (filters.size) {
+      rows = rows.filter(row => [...filters].every(f => matchesControlFilter(row, f)));
+    }
+    return sortControlRows(rows, this.sortKey);
+  });
+
+  segmentOptions = computed(() => {
+    const rows = this.allRows();
+    const count = (seg: ControlSegmentId) =>
+      seg === 'all' ? rows.length : rows.filter(r => matchesControlSegment(r, seg)).length;
+    return [
+      { id: 'all' as ControlSegmentId, label: 'All', badge: count('all') || undefined },
+      { id: 'criticalRisk' as ControlSegmentId, label: 'Critical', badge: count('criticalRisk') || undefined },
+      { id: 'billing' as ControlSegmentId, label: 'Billing', badge: count('billing') || undefined },
+    ];
+  });
+
+  compactStats = computed(() => {
+    const s = this.summary();
+    return [
+      { label: 'Critical Risk', value: String(s.jobsCriticalRisk), alert: s.jobsCriticalRisk > 0 },
+      { label: 'Open AR', value: this.fmtCurrency(s.openArTotal), alert: s.openArTotal > 0 },
+      { label: 'Left to Bill', value: this.fmtCurrency(s.leftToBillTotal), alert: false },
+    ];
+  });
+
+  fmtCurrency(n: number): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+  }
+
+  fmtCount(n: number): string {
+    return n > 0 ? String(n) : '—';
+  }
+
+  rowMetrics(row: Active2026ControlRow) {
+    return [
+      { label: 'Contract', value: this.fmtCurrency(row.currentContract) },
+      { label: 'Billed', value: this.fmtCurrency(row.billedToDate) },
+      { label: 'Left', value: this.fmtCurrency(row.leftToBill) },
+      { label: 'AR', value: this.fmtCurrency(row.arBalance), alert: row.arBalance > 0 },
+      { label: 'Margin', value: `${row.projectedMarginPct.toFixed(1)}%`, alert: row.projectedMarginPct < this.profitTargetPct },
+    ];
+  }
+
+  onSegmentSelect(seg: ControlSegmentId): void {
+    this.activeSegment.set(seg);
+  }
+
+  openDrawer(row: Active2026ControlRow): void {
+    this.selectedRow.set(row);
+  }
+
+  toggleFilter(id: ControlFilterId): void {
+    const next = new Set(this.activeFilters());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.activeFilters.set(next);
+  }
+
+  clearFilters(): void {
+    this.activeFilters.set(new Set());
+  }
+
+  budgetBasisLabel(basis: string): string {
+    switch (basis) {
+      case 'EstimatedFrom20PercentTarget': return '80% estimate';
+      case 'Imported': return 'Imported';
+      case 'Manual': return 'Manual';
+      default: return 'Missing';
+    }
+  }
+
+  navigateNextAction(): void {
+    const row = this.selectedRow();
+    if (!row) return;
+    const action = row.nextAction;
+    let url = action.route;
+    if (action.queryParams) {
+      const qs = new URLSearchParams(action.queryParams).toString();
+      if (qs) url += `?${qs}`;
+    }
+    if (action.fragment) url += `#${action.fragment}`;
+    void this.router.navigateByUrl(url);
+    this.selectedRow.set(null);
+  }
+
+  exportCsv(): void {
+    const filters = [...this.activeFilters()].join(';') || 'none';
+    const rows = this.displayRows().map(r => [
+      r.healthStatus,
+      r.jobNumber,
+      r.projectName,
+      r.customer,
+      r.status,
+      r.lifecycleGroup,
+      r.pm,
+      r.foreman,
+      r.currentContract,
+      r.approvedCos,
+      r.pendingCos,
+      r.billedToDate,
+      r.leftToBill,
+      r.arBalance,
+      r.arPastDue,
+      r.retainage,
+      r.billingStatus,
+      r.budgetBasis,
+      r.totalBudget,
+      r.actualCostToDate,
+      r.costToComplete,
+      r.estimatedFinalCost,
+      r.budgetVariance,
+      r.projectedProfit,
+      r.projectedMarginPct,
+      r.overUnderBilling,
+      r.wipStatus,
+      r.laborBudget,
+      r.laborActualCost,
+      r.laborVariance,
+      r.bonusStatus,
+      r.subcontractorCount,
+      r.subcontractorCostToDate,
+      r.missingW9Count,
+      r.missingCoiCount,
+      r.driveLinked ? 'Yes' : 'No',
+      r.cprStatus,
+      r.seedCompletenessStatus,
+      r.nextAction.label,
+    ]);
+
+    downloadCsv(
+      `active-2026-control-${filters}.csv`,
+      [
+        'Health', 'Job', 'Project', 'Customer', 'Status', 'Lifecycle', 'PM', 'Foreman',
+        'Contract', 'Approved COs', 'Pending COs', 'Billed', 'Left to Bill', 'AR', 'AR Past Due',
+        'Retainage', 'Billing Status', 'Budget Basis', 'Budget', 'Actual Cost', 'CTC', 'Est Final',
+        'Variance', 'Projected Profit', 'Margin %', 'Over/Under', 'WIP', 'Labor Budget',
+        'Labor Actual', 'Labor Var', 'Bonus Status', 'Sub Count', 'Sub Cost', 'Missing W-9',
+        'Missing COI', 'Drive Linked', 'CPR', 'Setup Status', 'Next Action',
+      ],
+      rows,
+    );
+  }
+}

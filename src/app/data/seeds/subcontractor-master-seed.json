@@ -1,0 +1,130 @@
+{
+  "meta": {
+    "sourceFile": "account-quickreport-summary.pdf",
+    "periodLabel": "March 8, 2025–March 8, 2026",
+    "vendorCount": 24,
+    "totalCost": 1469389.0900000003
+  },
+  "vendors": [
+    {
+      "companyName": "Briarwood Construction Inc..",
+      "normalizedName": "briarwoodconstructioninc",
+      "seededTotalCost": 473796.95
+    },
+    {
+      "companyName": "C4 Drywall Finishing LLC",
+      "normalizedName": "c4drywallfinishingllc",
+      "seededTotalCost": 323219.01
+    },
+    {
+      "companyName": "CDF Contracting LLC",
+      "normalizedName": "cdfcontractingllc",
+      "seededTotalCost": 24668.5
+    },
+    {
+      "companyName": "CERTIFIED LIFE SAFETY, LLC",
+      "normalizedName": "certifiedlifesafetyllc",
+      "seededTotalCost": 3540
+    },
+    {
+      "companyName": "CKF",
+      "normalizedName": "ckf",
+      "seededTotalCost": 33676.39
+    },
+    {
+      "companyName": "DayCo Painting, Inc.",
+      "normalizedName": "daycopaintinginc",
+      "seededTotalCost": 25920
+    },
+    {
+      "companyName": "ELDON & SONS GUTTERS",
+      "normalizedName": "eldonsonsgutters",
+      "seededTotalCost": 18518
+    },
+    {
+      "companyName": "FDC Contract",
+      "normalizedName": "fdccontract",
+      "seededTotalCost": 50846
+    },
+    {
+      "companyName": "General Fire Sprinkler",
+      "normalizedName": "generalfiresprinkler",
+      "seededTotalCost": 2294
+    },
+    {
+      "companyName": "Great Plains Tile and Stone",
+      "normalizedName": "greatplainstileandstone",
+      "seededTotalCost": 9252.06
+    },
+    {
+      "companyName": "Hi-Gene's Janitorial Service, Inc.",
+      "normalizedName": "higenesjanitorialserviceinc",
+      "seededTotalCost": 1690
+    },
+    {
+      "companyName": "J&B Blinds",
+      "normalizedName": "jbblinds",
+      "seededTotalCost": 17560.16
+    },
+    {
+      "companyName": "Jayhawk Fire Sprinklers",
+      "normalizedName": "jayhawkfiresprinklers",
+      "seededTotalCost": 42399.12
+    },
+    {
+      "companyName": "JF Denney Inc..",
+      "normalizedName": "jfdenneyinc",
+      "seededTotalCost": 125413.83
+    },
+    {
+      "companyName": "K Building Specialties, Inc.",
+      "normalizedName": "kbuildingspecialtiesinc",
+      "seededTotalCost": 21348
+    },
+    {
+      "companyName": "Kansas Granite and Tile",
+      "normalizedName": "kansasgraniteandtile",
+      "seededTotalCost": 5145.26
+    },
+    {
+      "companyName": "KC Plastering",
+      "normalizedName": "kcplastering",
+      "seededTotalCost": 19000
+    },
+    {
+      "companyName": "Keller Fire & Safety",
+      "normalizedName": "kellerfiresafety",
+      "seededTotalCost": 16799.34
+    },
+    {
+      "companyName": "McGlinn Heating and Cooling",
+      "normalizedName": "mcglinnheatingandcooling",
+      "seededTotalCost": 9350
+    },
+    {
+      "companyName": "Petty Products, Inc..",
+      "normalizedName": "pettyproductsinc",
+      "seededTotalCost": 7218.87
+    },
+    {
+      "companyName": "Rand Construction Company",
+      "normalizedName": "randconstructioncompany",
+      "seededTotalCost": 13671.6
+    },
+    {
+      "companyName": "Scooter Door Service",
+      "normalizedName": "scooterdoorservice",
+      "seededTotalCost": 7015
+    },
+    {
+      "companyName": "Switzer Brothers Painting LLC",
+      "normalizedName": "switzerbrotherspaintingllc",
+      "seededTotalCost": 29980
+    },
+    {
+      "companyName": "Tech Electric, LLC",
+      "normalizedName": "techelectricllc",
+      "seededTotalCost": 187067
+    }
+  ]
+}

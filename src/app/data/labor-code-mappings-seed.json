@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-27T00:00:00.000Z"
+  },
+  "mappings": [
+    {
+      "laborCode": "510",
+      "displayName": "Journeyman Carpenter",
+      "category": "Journeyman",
+      "workCompCategory": "Carpentry",
+      "certifiedPayrollClassification": "Journeyman Carpenter",
+      "defaultCostCode": "510",
+      "bonusEligible": true,
+      "certifiedPayrollEligible": true,
+      "wipEligible": true,
+      "excludeFromForemanBonus": false,
+      "excludeFromAudit": false,
+      "active": true
+    },
+    {
+      "laborCode": "520",
+      "displayName": "Foreman",
+      "category": "Foreman",
+      "workCompCategory": "Carpentry",
+      "certifiedPayrollClassification": "Foreman",
+      "defaultCostCode": "520",
+      "bonusEligible": true,
+      "certifiedPayrollEligible": true,
+      "wipEligible": true,
+      "excludeFromForemanBonus": false,
+      "excludeFromAudit": false,
+      "active": true
+    },
+    {
+      "laborCode": "530",
+      "displayName": "Apprentice",
+      "category": "Apprentice",
+      "workCompCategory": "Carpentry",
+      "certifiedPayrollClassification": "Apprentice Carpenter",
+      "defaultCostCode": "530",
+      "bonusEligible": true,
+      "certifiedPayrollEligible": true,
+      "wipEligible": true,
+      "excludeFromForemanBonus": false,
+      "excludeFromAudit": false,
+      "active": true
+    },
+    {
+      "laborCode": "998",
+      "displayName": "Admin / Overhead",
+      "category": "Admin",
+      "workCompCategory": "Clerical",
+      "bonusEligible": false,
+      "certifiedPayrollEligible": false,
+      "wipEligible": false,
+      "excludeFromForemanBonus": true,
+      "excludeFromAudit": true,
+      "active": true,
+      "notes": "Office and overhead labor — excluded from project WIP and bonus"
+    },
+    {
+      "laborCode": "PTO",
+      "displayName": "Paid Time Off",
+      "category": "PTO",
+      "workCompCategory": "PTO",
+      "bonusEligible": false,
+      "certifiedPayrollEligible": false,
+      "wipEligible": false,
+      "excludeFromForemanBonus": true,
+      "excludeFromAudit": true,
+      "active": true
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "generatedAt": "2026-05-27T00:00:00.000Z",
+    "source": "Drive audit — project Subs folders",
+    "activeJobsWithSubsFolder": 8,
+    "activeProjectSubFolderCount": 31,
+    "closedJobsWithSubFolders": 11,
+    "topLevelSubContractorsFolderId": "1jzmkZbTIEhBPL2lsltEZseL-zeWxASkb",
+    "topLevelSubContractorsItemCount": 20
+  },
+  "activeProjectSubFolders": [
+    {
+      "jobNumber": "155",
+      "projectName": "Park Hill School District",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["C4"]
+    },
+    {
+      "jobNumber": "163",
+      "projectName": "LPS Heritage Middle",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["Briarwood", "C4", "KC Plaster", "L&W"]
+    },
+    {
+      "jobNumber": "183",
+      "projectName": "Blue Springs Pole Barns",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["Eldon & Sons", "MPI", "SDS"]
+    },
+    {
+      "jobNumber": "186",
+      "projectName": "LVV - 3B odd side and 5C even side",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["C4", "CKF", "DayCo", "Denney", "FDC", "Great Plains", "J&B Blinds", "Jayhawk", "Keller", "McGlinn", "NS Solutions LLC", "Petty", "Tech"]
+    },
+    {
+      "jobNumber": "187",
+      "projectName": "LVV Sprinkler Damage",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": []
+    },
+    {
+      "jobNumber": "190",
+      "projectName": "KUMC Delp Office Reno",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["C4", "L&W"]
+    },
+    {
+      "jobNumber": "193",
+      "projectName": "Pulse Design 9th Floor",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["Briarwood", "C4", "Engineer"]
+    },
+    {
+      "jobNumber": "206",
+      "projectName": "LVV Heritage - 211A, 311A & 317A",
+      "lifecycleStatus": "inProgress",
+      "hasSubsFolder": true,
+      "subFolderNames": ["CKF", "Denney", "Jayhawk", "Keller", "Tech Electric"]
+    }
+  ],
+  "closedJobsWithSubFolders": [
+    { "jobNumber": "120", "projectName": "KUMC Morgue" },
+    { "jobNumber": "140", "projectName": "Lakeview" },
+    { "jobNumber": "149", "projectName": "Visions / Firefighters Reception" },
+    { "jobNumber": "153", "projectName": "Blue Valley CTE/FACS 2025" },
+    { "jobNumber": "156", "projectName": "ISD Fairmont" },
+    { "jobNumber": "161", "projectName": "Catalent Restrooms Bldg B" },
+    { "jobNumber": "162", "projectName": "TUKHS / Residency GME" },
+    { "jobNumber": "164", "projectName": "LVV Heritage 516A" },
+    { "jobNumber": "166", "projectName": "Simmons Bank Canopy" },
+    { "jobNumber": "179", "projectName": "Bolling 18th FL" },
+    { "jobNumber": "181", "projectName": "COE 4th Floor" }
+  ]
+}

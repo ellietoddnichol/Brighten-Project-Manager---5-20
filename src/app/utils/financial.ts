@@ -1,4 +1,18 @@
 import { Project, ChangeOrder, Billing, ProjectFile, RequiredDocument, ProjectIssue, ProjectTask } from '../models/types';
+import { isOverheadJob } from './project';
+import { isManualProjectTask } from './project-task.util';
+import {
+  coApprovedAmount,
+  coTotalAmount,
+  computeChangeMetrics,
+  isApprovedCo,
+  countsTowardApprovedContract,
+  isApprovedUnbilledCo,
+  isIncludedInDraftPayApp,
+  isPendingCo,
+  isOpenChangeRequest,
+  normalizeCoStatus,
+} from './change-management';
 
 export interface ProjectFinancialSummary {
   originalContract: number;
@@ -28,8 +42,73 @@ export interface ProjectException {
   projectName?: string;
 }
 
+export interface PortfolioMetrics {
+  revisedContract: number;
+  billedToDate: number;
+  openAR: number;
+  leftToBill: number;
+  pendingChangeValue: number;
+  pendingChangeCount: number;
+  approvedChangeValue: number;
+}
+
+const OPEN_CO_STATUSES = new Set(['Draft', 'Pricing', 'Needs Backup', 'Sent', 'Submitted', 'Internal Review', 'Need Pricing']);
+
+export { computeChangeMetrics, type ChangeMetrics } from './change-management';
+
+/** Company-wide billing / WIP totals (excludes overhead codes like PTO/SHOP). */
+export function computePortfolioMetrics(
+  projects: Project[],
+  changeOrders: ChangeOrder[],
+  billings: Billing[],
+): PortfolioMetrics {
+  const jobProjects = projects.filter(p => !isOverheadJob(p));
+
+  let revisedContract = 0;
+  let billedToDate = 0;
+  let leftToBill = 0;
+  let openAR = 0;
+
+  for (const project of jobProjects) {
+    const pCOs = changeOrders.filter(c => c.projectId === project.id);
+    const pBills = billings.filter(b => b.projectId === project.id);
+    const summary = getProjectFinancialSummary(project, pCOs, pBills);
+    revisedContract += summary.revisedContract;
+    billedToDate += summary.billedToDate;
+    leftToBill += summary.leftToBill;
+    openAR += project.currentAR ?? 0;
+  }
+
+  let pendingChangeValue = 0;
+  let pendingChangeCount = 0;
+  let approvedChangeValue = 0;
+
+  for (const co of changeOrders) {
+    const normalized = normalizeCoStatus(co.status);
+    if (OPEN_CO_STATUSES.has(co.status) || isPendingCo(co)) {
+      pendingChangeValue += coTotalAmount(co);
+      pendingChangeCount++;
+    }
+    if (isApprovedCo(co)) {
+      approvedChangeValue += coApprovedAmount(co);
+    }
+  }
+
+  return {
+    revisedContract,
+    billedToDate,
+    openAR,
+    leftToBill,
+    pendingChangeValue,
+    pendingChangeCount,
+    approvedChangeValue,
+  };
+}
+
 export function calculateRevisedContract(originalContract: number, approvedCOs: ChangeOrder[]): number {
-  const approved = approvedCOs.filter(co => co.status === 'Approved').reduce((acc, co) => acc + (co.approvedAmount || 0), 0);
+  const approved = approvedCOs
+    .filter(countsTowardApprovedContract)
+    .reduce((acc, co) => acc + coApprovedAmount(co), 0);
   return (originalContract || 0) + approved;
 }
 
@@ -65,28 +144,33 @@ export function calculateOverUnderBilling(billedToDate: number, earnedRevenue: n
 
 export function getProjectFinancialSummary(project: Project | null, changeOrders: ChangeOrder[], billings: Billing[]): ProjectFinancialSummary {
   const originalContract = project?.originalContractAmount || 0;
-  const approvedCOsTotal = changeOrders.filter(co => co.status === 'Approved').reduce((acc, co) => acc + (co.approvedAmount || 0), 0);
+  const approvedCOsTotal = changeOrders
+    .filter(countsTowardApprovedContract)
+    .reduce((acc, co) => acc + coApprovedAmount(co), 0);
   const revisedContract = originalContract + approvedCOsTotal;
   
   const billedToDate = billings.filter(b => b.status === 'Approved' || b.status === 'Paid' || b.status === 'Past Due').reduce((acc, b) => acc + (b.totalBilledToDate || 0), 0); 
-  const totalBilled = project?.billedToDate || billedToDate;
+  const totalBilled = project?.billedToDate ?? billedToDate;
 
-  const leftToBill = revisedContract - totalBilled;
+  const leftToBill = project?.wipLeftToBill ?? (revisedContract - totalBilled);
   
-  const estimatedCost = (project?.estLaborCost || 0) + (project?.estMaterialCost || 0) + (project?.estSubCost || 0) + (project?.estEquipmentCost || 0) + (project?.estOtherCost || 0);
+  const estimatedCost = project?.estCostBudget
+    ?? ((project?.estLaborCost || 0) + (project?.estMaterialCost || 0) + (project?.estSubCost || 0) + (project?.estEquipmentCost || 0) + (project?.estOtherCost || 0));
   const actualCost = project?.actualCostToDate || 0;
   
-  const costToComplete = Math.max(0, estimatedCost - actualCost);
+  const costToComplete = project?.wipCostToComplete ?? Math.max(0, estimatedCost - actualCost);
   
   const projectedFinalCost = actualCost + costToComplete;
   const leftInBudget = estimatedCost - actualCost;
   
-  const projectedProfit = revisedContract - projectedFinalCost;
-  const projectedMargin = revisedContract ? (projectedProfit / revisedContract) * 100 : 0;
+  const projectedProfit = project?.forecastGP ?? (revisedContract - projectedFinalCost);
+  const projectedMargin = project?.forecastMargin
+    ?? (revisedContract ? (projectedProfit / revisedContract) * 100 : 0);
   
-  const percentComplete = estimatedCost ? (actualCost / estimatedCost) * 100 : 0;
-  const earnedRevenue = (percentComplete / 100) * revisedContract;
-  const overUnderBilling = totalBilled - earnedRevenue;
+  const percentComplete = project?.wipPercentComplete
+    ?? (estimatedCost ? (actualCost / estimatedCost) * 100 : 0);
+  const earnedRevenue = project?.earnedRevenue ?? ((percentComplete / 100) * revisedContract);
+  const overUnderBilling = project?.overUnderBilled ?? (totalBilled - earnedRevenue);
   
   return {
     originalContract,
@@ -119,6 +203,8 @@ export function getProjectExceptions(
 ): ProjectException[] {
   const exceptions: ProjectException[] = [];
   
+  if (isOverheadJob(project)) return exceptions;
+
   if (summary.leftInBudget < 0) {
     exceptions.push({
       id: `budget-${project.id}`,
@@ -143,14 +229,27 @@ export function getProjectExceptions(
     });
   }
   
-  const submittedCOs = changeOrders.filter(co => co.status === 'Submitted');
+  const submittedCOs = changeOrders.filter(co => normalizeCoStatus(co.status) === 'Sent');
   if (submittedCOs.length > 0) {
     exceptions.push({
       id: `co-${project.id}`,
       projectId: project.id,
       projectName: project.projectName,
-      title: 'Unapproved Change Orders',
-      description: `${submittedCOs.length} change order(s) submitted but not approved.`,
+      title: 'Change Orders Awaiting Approval',
+      description: `${submittedCOs.length} change order(s) sent but not yet approved.`,
+      type: 'CO',
+      severity: 'warning'
+    });
+  }
+
+  const unbilledApproved = changeOrders.filter(isApprovedUnbilledCo);
+  if (unbilledApproved.length > 0) {
+    exceptions.push({
+      id: `co-unbilled-${project.id}`,
+      projectId: project.id,
+      projectName: project.projectName,
+      title: 'Approved COs Ready to Bill',
+      description: `${unbilledApproved.length} approved change order(s) not yet on a pay app.`,
       type: 'CO',
       severity: 'warning'
     });
@@ -178,30 +277,6 @@ export function getProjectExceptions(
       description: `Project is ${project.status} but still has $${summary.leftToBill.toFixed(2)} left to bill.`,
       type: 'Billing',
       severity: 'error'
-    });
-  }
-  
-  if (!project.driveFolderId && !project.driveFolderUrl) {
-    exceptions.push({
-      id: `drive-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Missing Drive Folder',
-      description: `No Google Drive folder linked.`,
-      type: 'Setup',
-      severity: 'warning'
-    });
-  }
-
-  if (!project.googleSheetId && !project.googleSheetUrl) {
-    exceptions.push({
-      id: `sheet-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Missing Budget Sheet',
-      description: `No Google Sheet linked for budget.`,
-      type: 'Setup',
-      severity: 'warning'
     });
   }
   
@@ -249,7 +324,13 @@ export function getProjectExceptions(
     });
   }
 
-  const overdueTasks = tasks.filter(t => t.status !== 'Complete' && t.status !== 'Canceled' && t.dueDate && new Date(t.dueDate) < new Date());
+  const overdueTasks = tasks.filter(t =>
+    isManualProjectTask(t)
+    && t.status !== 'Complete'
+    && t.status !== 'Canceled'
+    && t.dueDate
+    && new Date(t.dueDate) < new Date(),
+  );
   if (overdueTasks.length > 0) {
     exceptions.push({
       id: `due-task-${project.id}`,
