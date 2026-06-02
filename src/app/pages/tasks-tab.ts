@@ -65,7 +65,7 @@ import { isManualProjectTask } from '../utils/project-task.util';
         @if (simplified) {
           @for (task of filteredTasks(); track task.id) {
             <app-list-row
-              [title]="task.title ?? 'Task'"
+              [title]="task.title"
               [subtitle]="(task.assignedTo || 'Unassigned') + ' · ' + task.status"
               [metrics]="taskMetrics(task)"
               [chips]="taskChips(task)"

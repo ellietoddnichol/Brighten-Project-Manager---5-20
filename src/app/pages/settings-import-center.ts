@@ -7,7 +7,7 @@ import { DriveFolderSeedService } from '../services/drive-folder-seed.service';
 import { BillingSovImportService } from '../services/billing-sov-import.service';
 import { QbInvoicePacketImportService } from '../services/qb-invoice-packet-import.service';
 import { LaborCodeMappingService } from '../services/labor-code-mapping.service';
-import { DataService } from '../services/data.service';
+import { LaborDataService } from '../services/labor-data.service';
 import { SettingsLaborCodes } from './settings-labor-codes';
 import { SettingsDriveFolders } from './settings-drive-folders';
 
@@ -77,7 +77,7 @@ export class SettingsImportCenterComponent {
   private billingSov = inject(BillingSovImportService);
   private invoicePacket = inject(QbInvoicePacketImportService);
   private laborCodes = inject(LaborCodeMappingService);
-  private data = inject(DataService);
+  private laborData = inject(LaborDataService);
 
   message = signal<string | null>(null);
   error = signal<string | null>(null);
@@ -129,6 +129,7 @@ export class SettingsImportCenterComponent {
 
   running(): boolean {
     return this.qbSync.syncing() || this.timeSync.syncing()
+      || this.laborData.loading()
       || this.billingSov.running() || this.invoicePacket.running();
   }
 
@@ -158,8 +159,8 @@ export class SettingsImportCenterComponent {
           this.message.set(this.invoicePacket.lastMessage() ?? 'Invoice packet imported.');
           break;
         case 'labor-codes': {
-          await this.timeSync.syncFromTimeDataSheet(true);
-          const rows = this.laborCodes.discoveryRowsFromEntries([]);
+          await this.laborData.refreshFromSheets(true);
+          const rows = this.laborCodes.discoveryRowsFromEntries(this.laborData.normalizedEntries());
           await this.laborCodes.discoverFromMasterTimeSheet(rows);
           this.message.set('Labor codes discovered from time sheet.');
           break;

@@ -36,7 +36,7 @@ import {
           <app-stat-card label="Closeout AR" [value]="fmt(row.isCloseout ? row.totalOpen : 0)" />
         </div>
         <app-compact-stat-strip [stats]="compactStats()" />
-        @if (row.warningChips?.length) {
+        @if (row.warningChips.length) {
           <div class="flex flex-wrap gap-1.5">
             @for (chip of row.warningChips; track chip.label) {
               <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
