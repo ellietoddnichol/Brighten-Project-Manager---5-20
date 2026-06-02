@@ -158,7 +158,8 @@ export class SettingsImportCenterComponent {
           this.message.set(this.invoicePacket.lastMessage() ?? 'Invoice packet imported.');
           break;
         case 'labor-codes': {
-          const rows = this.laborCodes.discoveryRowsFromEntries([], this.data.projectLaborActualsSnapshot());
+          await this.timeSync.syncFromTimeDataSheet(true);
+          const rows = this.laborCodes.discoveryRowsFromEntries([]);
           await this.laborCodes.discoverFromMasterTimeSheet(rows);
           this.message.set('Labor codes discovered from time sheet.');
           break;
