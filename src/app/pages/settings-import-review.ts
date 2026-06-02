@@ -12,6 +12,9 @@ import { QuickBooksSyncSheetsService } from '../services/quickbooks-sync-sheets.
 
 import { QbInvoicePacketImportService } from '../services/qb-invoice-packet-import.service';
 import { WipForecastImportService } from '../services/wip-forecast-import.service';
+import { WipSetupImportService } from '../services/wip-setup-import.service';
+import { ArAgingImportService } from '../services/ar-aging-import.service';
+import { BillingSovImportService } from '../services/billing-sov-import.service';
 
 import { ImportException } from '../models/import.types';
 
@@ -81,6 +84,30 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
           </button>
 
+          <button type="button" (click)="runWipSetup()" [disabled]="wipSetup.running()"
+
+                  class="bg-teal-700 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
+
+            {{ wipSetup.running() ? 'Applying…' : 'Apply WIP setup fields (June 2026)' }}
+
+          </button>
+
+          <button type="button" (click)="runArAging()" [disabled]="arAging.running()"
+
+                  class="bg-sky-700 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
+
+            {{ arAging.running() ? 'Importing…' : 'Import AR aging (Jun 2, 2026)' }}
+
+          </button>
+
+          <button type="button" (click)="runBillingSov()" [disabled]="billingSov.running()"
+
+                  class="bg-fuchsia-700 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
+
+            {{ billingSov.running() ? 'Importing…' : 'Import Billing/SOV baseline (May 2026)' }}
+
+          </button>
+
           <button type="button" (click)="review.exportExceptionsCsv()"
 
                   class="bg-white border border-slate-300 px-4 py-2 rounded-md text-sm font-semibold">
@@ -118,6 +145,24 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
       @if (wipForecast.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ wipForecast.lastMessage() }}</p>
+
+      }
+
+      @if (wipSetup.lastMessage()) {
+
+        <p class="text-sm text-emerald-700 mb-2">{{ wipSetup.lastMessage() }}</p>
+
+      }
+
+      @if (arAging.lastMessage()) {
+
+        <p class="text-sm text-emerald-700 mb-2">{{ arAging.lastMessage() }}</p>
+
+      }
+
+      @if (billingSov.lastMessage()) {
+
+        <p class="text-sm text-emerald-700 mb-2">{{ billingSov.lastMessage() }}</p>
 
       }
 
@@ -436,6 +481,10 @@ export class SettingsImportReview {
 
   wipForecast = inject(WipForecastImportService);
 
+  wipSetup = inject(WipSetupImportService);
+  arAging = inject(ArAgingImportService);
+  billingSov = inject(BillingSovImportService);
+
   activeSection = signal<string>('all');
 
   showUnmatchedProjects = signal(false);
@@ -455,6 +504,8 @@ export class SettingsImportReview {
     { id: 'po', label: 'PO Sheet' },
 
     { id: 'budget', label: 'Budget Workbooks (later)' },
+
+    { id: 'billing', label: 'Billing / SOV' },
 
     { id: 'subs', label: 'Subcontractors' },
 
@@ -502,6 +553,8 @@ export class SettingsImportReview {
 
     if (section === 'budget') return list.filter(e => e.source === 'BudgetWorkbook' || e.type.includes('budget') || e.type.includes('coSheet'));
 
+    if (section === 'billing') return list.filter(e => e.source === 'BillingSovWorkbook' || e.type === 'billingSovReview' || e.type === 'payAppContractMismatch');
+
     if (section === 'po') return list.filter(e => e.source === 'PoSheet' || e.message?.toLowerCase().includes('purchase order'));
 
     if (section === 'subs') return list.filter(e => e.source === 'QuickBooksSync' || e.source === 'QuickBooksSeed'
@@ -542,6 +595,24 @@ export class SettingsImportReview {
   async runWipForecast(): Promise<void> {
 
     await this.wipForecast.importFromSeed();
+
+  }
+
+  async runWipSetup(): Promise<void> {
+
+    await this.wipSetup.importFromSeed();
+
+  }
+
+  async runArAging(): Promise<void> {
+
+    await this.arAging.importFromSeed();
+
+  }
+
+  async runBillingSov(): Promise<void> {
+
+    await this.billingSov.importFromSeed();
 
   }
 

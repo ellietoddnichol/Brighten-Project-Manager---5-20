@@ -21,12 +21,10 @@ export { BRIGHTEN_PROFIT_TARGET, BRIGHTEN_COST_BUDGET_RATIO };
 const DEFAULT_PROFIT_TARGET = BRIGHTEN_PROFIT_TARGET;
 
 export const DEFAULT_BUDGET_CATEGORIES: Array<{ category: ProjectBudgetLine['category']; type: BudgetLineType; label: string }> = [
-  { category: 'Labor', type: 'Labor', label: 'Self-Performed Labor' },
+  { category: 'Labor', type: 'Labor', label: 'Labor' },
   { category: 'Materials', type: 'Material', label: 'Materials' },
   { category: 'Subcontractors', type: 'Subcontractor', label: 'Subcontractors' },
-  { category: 'Equipment', type: 'Equipment', label: 'Equipment' },
-  { category: 'General Conditions', type: 'GeneralConditions', label: 'General Conditions' },
-  { category: 'Other', type: 'Other', label: 'Other' },
+  { category: 'Other', type: 'Other', label: 'Other / Equipment Rental' },
 ];
 
 export function normalizePoStatus(status?: string): PurchaseOrderStatus {

@@ -6,7 +6,7 @@ import { ProjectEnabledModules } from '../models/project-needs.types';
 import { FinancialView } from '../components/project/project-detail.types';
 
 export type BudgetSegment = 'budget' | 'actuals' | 'variance' | 'sources';
-export type BillingSegment = 'summary' | 'pay-apps' | 'ar' | 'retainage';
+export type BillingSegment = 'summary' | 'pay-apps' | 'sov' | 'source' | 'review' | 'ar' | 'retainage';
 export type MoneyDrawerType =
   | 'contract'
   | 'budget'

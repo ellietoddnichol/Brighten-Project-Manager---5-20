@@ -23,6 +23,10 @@ export function arForecastImportKey(jobNumber: string): string {
   return `wip-forecast-ar-${jobNumber}`;
 }
 
+export function arAgingSummaryImportKey(jobNumber: string): string {
+  return `ar-aging-summary-${jobNumber}`;
+}
+
 export function projectPatchFromWipForecastRow(row: WipForecastProjectRow): Partial<Project> {
   const contract = row.contractBudget;
   const billed = row.cumulativeBilledEarned;

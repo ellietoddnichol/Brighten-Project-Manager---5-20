@@ -77,9 +77,7 @@ function showInspectionsInMore(input: ProjectNeedsInput): boolean {
 
 
 function showWip(input: ProjectNeedsInput): boolean {
-
-  return input.showAllTools || (input.isActive2026 && !input.isCloseoutOrClosed);
-
+  return input.showAllTools || input.isActive2026;
 }
 
 
@@ -183,18 +181,12 @@ export function computeProjectEnabledModules(input: ProjectNeedsInput): ProjectE
   const showCommitments = input.showAllTools || input.hasSubs || input.hasPOs || input.hasSubcontractorCosts;
 
   if (showCommitments) moneyPrimary.push('pos');
-
   else hidden.push('pos');
 
-
+  if (showWip(input)) moneyPrimary.push('wip');
+  else hidden.push('wip');
 
   const moneyMore: FinancialView[] = [];
-
-
-
-  if (showWip(input)) moneyMore.push('wip');
-
-  else hidden.push('wip');
 
 
 

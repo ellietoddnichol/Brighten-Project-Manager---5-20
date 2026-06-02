@@ -128,7 +128,7 @@ export const FINANCIALS_SEGMENT_OPTIONS: { id: FinancialsSegmentId; label: strin
   { id: 'wip', label: 'WIP' },
   { id: 'ar', label: 'AR' },
   { id: 'billing', label: 'Billing' },
-  { id: 'commitments', label: 'Commitments' },
+  { id: 'commitments', label: 'Purchase Orders' },
   { id: 'bonuses', label: 'Bonuses' },
   { id: 'sources', label: 'Sources' },
 ];
@@ -453,10 +453,10 @@ export function buildFinancialsCommitmentRows(projects: Project[], pos: PO[]): F
     if (unmatched) matchStatus = 'Unmatched project';
     else if (po.missingPo) matchStatus = 'Not in QB';
 
-    let nextAction = 'Review commitment';
+    let nextAction = 'Review PO';
     if (unmatched) nextAction = 'Match in Source Review';
     else if (po.invoiceExceedsPo) nextAction = 'Invoice exceeds PO';
-    else if (po.status === 'Open' || po.status === 'Issued') nextAction = 'Track commitment';
+    else if (po.status === 'Open' || po.status === 'Issued') nextAction = 'Track PO';
 
     return {
       id: po.id,

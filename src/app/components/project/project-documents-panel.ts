@@ -8,6 +8,7 @@ import { ProjectEnabledModules } from '../../models/project-needs.types';
 import { DataService } from '../../services/data.service';
 import { ProjectRequirementsService } from '../../services/project-requirements.service';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ProjectLifecycleService } from '../../services/project-lifecycle.service';
 import { fileViewVisibleInNav } from '../../utils/project-documents.compute';
 
 @Component({
@@ -96,6 +97,7 @@ export class ProjectDocumentsPanelComponent {
 
   private data = inject(DataService);
   private requirements = inject(ProjectRequirementsService);
+  private lifecycle = inject(ProjectLifecycleService);
 
   moreOpen = signal(false);
 
@@ -106,7 +108,14 @@ export class ProjectDocumentsPanelComponent {
   private projectReqs = computed(() => (this.allReqs() ?? []).filter(r => r.projectId === this.project.id));
 
   private countFor = (view: FileView) =>
-    fileCountForView(this.allFiles() ?? [], view, this.project, this.projectReqs(), this.requirements);
+    fileCountForView(
+      this.allFiles() ?? [],
+      view,
+      this.project,
+      this.projectReqs(),
+      this.requirements,
+      this.lifecycle.forProject(this.project),
+    );
 
   private segmentBadge(view: FileView): number | undefined {
     const count = this.countFor(view);

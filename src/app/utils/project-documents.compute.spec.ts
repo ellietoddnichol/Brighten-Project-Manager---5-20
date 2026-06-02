@@ -80,6 +80,13 @@ describe('project-documents.compute', () => {
     expect(items[0].id).toBe('2');
   });
 
+  it('includes setup gaps in required view', () => {
+    const items = filterDocumentList([], 'required', sampleCtx(), [], '', [
+      { field: 'address', label: 'Address', category: 'identity', blocksWorkflow: false },
+    ]);
+    expect(items.some(i => i.fileName === 'Address')).toBe(true);
+  });
+
   it('includes missing required contract when folder required', () => {
     const ctx = sampleCtx({ billings: [{ id: 'b1', projectId: 'p1', payAppNumber: '1', billingPeriod: 'Jan', status: 'Approved' }] as never });
     const cats = requiredFileCategories(ctx);

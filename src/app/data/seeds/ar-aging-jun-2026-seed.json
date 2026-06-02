@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "asOfDate": "2026-06-02",
+    "sourceFile": "A_R Aging Summary Report.xlsx",
+    "grandTotal": 419961.28
+  },
+  "rows": [
+    {
+      "jobNumber": "215",
+      "projectName": "2306 Visitor Center",
+      "customerGroup": "BKM Contruction LLC",
+      "current": 12720,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 12720
+    },
+    {
+      "jobNumber": "221",
+      "projectName": "Whitaker USMS Vault Door",
+      "customerGroup": "BKM Contruction LLC",
+      "current": 600,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 600
+    },
+    {
+      "jobNumber": "209",
+      "projectName": "Capital Electric Fab Shop",
+      "customerGroup": "CWA Specialties, INC.",
+      "current": 0,
+      "days1To30": 17350,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 17350
+    },
+    {
+      "jobNumber": "210",
+      "projectName": "Benedictine Library Toilet Partitions",
+      "customerGroup": "CWA Specialties, INC.",
+      "current": 13366.5,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 13366.5
+    },
+    {
+      "jobNumber": "219",
+      "projectName": "T&M Partitions @ Fox Ridge",
+      "customerGroup": "CWA Specialties, INC.",
+      "current": 1323,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 1323
+    },
+    {
+      "jobNumber": "197",
+      "projectName": "Administrative Hallway Reno",
+      "customerGroup": "Lakeview Village",
+      "current": 6000,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 6000
+    },
+    {
+      "jobNumber": "206",
+      "projectName": "LVV Heritage - 211A, 311A & 317A",
+      "customerGroup": "Lakeview Village",
+      "current": 103745.93,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 103745.93
+    },
+    {
+      "jobNumber": "158",
+      "projectName": "Blue Valley CTE 2026",
+      "customerGroup": "McCown Gordon",
+      "current": 2594.25,
+      "days1To30": 2594.25,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 5188.5
+    },
+    {
+      "jobNumber": "212",
+      "projectName": "LPS Lewis & Clark Restroom Reno",
+      "customerGroup": "Newkirk Novak",
+      "current": 2375,
+      "days1To30": 2375,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 4750
+    },
+    {
+      "jobNumber": "222",
+      "projectName": "ISD Fairmount 26",
+      "customerGroup": "Newkirk Novak",
+      "current": 9500,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 9500
+    },
+    {
+      "jobNumber": "223",
+      "projectName": "Kearney Deferred Maint",
+      "customerGroup": "Newkirk Novak",
+      "current": 4000,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 4000
+    },
+    {
+      "jobNumber": "216",
+      "projectName": "Unilever Phase II Demo",
+      "customerGroup": "Purdum",
+      "current": 347.87,
+      "days1To30": 3130.83,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 3478.7
+    },
+    {
+      "jobNumber": "208",
+      "projectName": "Park Hill 2026",
+      "customerGroup": "Universal Construction",
+      "current": 5586.47,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 5586.47
+    },
+    {
+      "jobNumber": "218",
+      "projectName": "Dole Grand Jury Room - Water Damage",
+      "customerGroup": "U.S. General Services Administration",
+      "current": 10999.55,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 10999.55
+    },
+    {
+      "jobNumber": "204",
+      "projectName": "LightEdge Data Center",
+      "customerGroup": "XEC",
+      "current": 109302.53,
+      "days1To30": 106936.2,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 216238.73
+    },
+    {
+      "jobNumber": "224",
+      "projectName": "KUMC Research",
+      "customerGroup": "XEC",
+      "current": 5113.9,
+      "days1To30": 0,
+      "days31To60": 0,
+      "days61To90": 0,
+      "days90Plus": 0,
+      "total": 5113.9
+    }
+  ]
+}

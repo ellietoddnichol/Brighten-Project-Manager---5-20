@@ -142,12 +142,24 @@ import { DataService } from '../services/data.service';
             </tbody>
           </table>
         </div>
+      } @else {
+        <div class="bg-white rounded-xl border border-slate-200 p-8 text-center space-y-4">
+          <p class="text-slate-600">WIP metrics are still loading for this job.</p>
+          <button type="button" (click)="openDrawer()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Edit WIP assumptions</button>
+        </div>
       }
 
       @if (drawerOpen()) {
-        <div class="fixed inset-0 z-40 bg-black/30" (click)="drawerOpen.set(false)"></div>
-        <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-md bg-white shadow-xl overflow-y-auto p-5 space-y-4">
-          <h3 class="text-lg font-bold">WIP Assumptions</h3>
+        <div class="fixed inset-0 z-[60] bg-black/30" (click)="drawerOpen.set(false)"></div>
+        <aside class="fixed top-0 right-0 z-[70] h-full w-full max-w-md bg-white shadow-xl overflow-y-auto p-5 space-y-4">
+          <div class="flex items-start justify-between gap-3">
+            <h3 class="text-lg font-bold">WIP Assumptions</h3>
+            <button type="button" (click)="drawerOpen.set(false)" class="text-slate-400 hover:text-slate-600">Close</button>
+          </div>
+          <p class="text-xs text-slate-500">Overrides apply to this job only and are saved to Firestore.</p>
+          @if (saveMessage()) {
+            <p class="text-sm" [class.text-emerald-700]="saveOk()" [class.text-rose-700]="!saveOk()">{{ saveMessage() }}</p>
+          }
           <div><label class="text-xs font-bold uppercase text-slate-500">Contract override</label>
             <input type="number" [(ngModel)]="draftContract" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
           <div><label class="text-xs font-bold uppercase text-slate-500">Budget override</label>
@@ -156,9 +168,31 @@ import { DataService } from '../services/data.service';
             <input type="number" [(ngModel)]="draftEfc" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
           <div><label class="text-xs font-bold uppercase text-slate-500">Cost to complete override</label>
             <input type="number" [(ngModel)]="draftCtc" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
+          <div>
+            <label class="text-xs font-bold uppercase text-slate-500">Forecast treatment</label>
+            <select [(ngModel)]="draftForecastTreatment" class="w-full border rounded-lg px-3 py-2 text-sm mt-1">
+              <option value="">Not set</option>
+              <option value="Forecast backlog">Forecast backlog</option>
+              <option value="Collections only">Collections only</option>
+              <option value="Needs contract">Needs contract</option>
+              <option value="PreCon forecast">PreCon forecast</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-3 gap-3">
+            <div><label class="text-xs font-bold uppercase text-slate-500">Low %</label>
+              <input type="number" step="0.01" [(ngModel)]="draftForecastLowPct" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">Base %</label>
+              <input type="number" step="0.01" [(ngModel)]="draftForecastBasePct" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
+            <div><label class="text-xs font-bold uppercase text-slate-500">High %</label>
+              <input type="number" step="0.01" [(ngModel)]="draftForecastHighPct" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></div>
+          </div>
+          <div><label class="text-xs font-bold uppercase text-slate-500">Forecast notes</label>
+            <textarea [(ngModel)]="draftForecastNotes" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></textarea></div>
           <div><label class="text-xs font-bold uppercase text-slate-500">Review notes</label>
             <textarea [(ngModel)]="draftNotes" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></textarea></div>
-          <button type="button" (click)="saveAssumptions()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Save</button>
+          <button type="button" (click)="saveAssumptions()" [disabled]="saving()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50">
+            {{ saving() ? 'Saving…' : 'Save assumptions' }}
+          </button>
         </aside>
       }
     </div>
@@ -175,11 +209,19 @@ export class WipTabComponent {
   private router = inject(Router);
 
   drawerOpen = signal(false);
+  saving = signal(false);
+  saveMessage = signal<string | null>(null);
+  saveOk = signal(true);
   draftContract = 0;
   draftBudget = 0;
   draftEfc = 0;
   draftCtc = 0;
   draftNotes = '';
+  draftForecastTreatment = '';
+  draftForecastLowPct: number | null = null;
+  draftForecastBasePct: number | null = null;
+  draftForecastHighPct: number | null = null;
+  draftForecastNotes = '';
 
   record = computed(() => this.wipSvc.forProject(this.project.id));
 
@@ -208,18 +250,40 @@ export class WipTabComponent {
     this.draftEfc = this.project.wipEstimatedFinalCostOverride ?? w?.estimatedFinalCost ?? 0;
     this.draftCtc = this.project.wipCostToComplete ?? w?.costToComplete ?? 0;
     this.draftNotes = this.project.wipReviewNotes ?? '';
+    this.draftForecastTreatment = this.project.forecastTreatment ?? '';
+    this.draftForecastLowPct = this.project.forecastLowPct ?? null;
+    this.draftForecastBasePct = this.project.forecastBasePct ?? null;
+    this.draftForecastHighPct = this.project.forecastHighPct ?? null;
+    this.draftForecastNotes = this.project.wipForecastNotes ?? '';
+    this.saveMessage.set(null);
     this.drawerOpen.set(true);
   }
 
   async saveAssumptions(): Promise<void> {
-    await this.wipSvc.saveAssumptions(this.project.id, {
-      wipContractOverride: this.draftContract || undefined,
-      wipBudgetOverride: this.draftBudget || undefined,
-      wipEstimatedFinalCostOverride: this.draftEfc || undefined,
-      wipCostToComplete: this.draftCtc || undefined,
-      wipReviewNotes: this.draftNotes || undefined,
-    });
-    this.drawerOpen.set(false);
+    this.saving.set(true);
+    this.saveMessage.set(null);
+    try {
+      await this.wipSvc.saveAssumptions(this.project.id, {
+        wipContractOverride: this.draftContract || undefined,
+        wipBudgetOverride: this.draftBudget || undefined,
+        wipEstimatedFinalCostOverride: this.draftEfc || undefined,
+        wipCostToComplete: this.draftCtc || undefined,
+        wipReviewNotes: this.draftNotes.trim() || undefined,
+        forecastTreatment: this.draftForecastTreatment.trim() || undefined,
+        forecastLowPct: this.draftForecastLowPct ?? undefined,
+        forecastBasePct: this.draftForecastBasePct ?? undefined,
+        forecastHighPct: this.draftForecastHighPct ?? undefined,
+        wipForecastNotes: this.draftForecastNotes.trim() || undefined,
+      });
+      this.saveOk.set(true);
+      this.saveMessage.set('WIP assumptions saved.');
+      this.drawerOpen.set(false);
+    } catch {
+      this.saveOk.set(false);
+      this.saveMessage.set('Save failed — check your connection and try again.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   async setGroup(group: WipGroup): Promise<void> {

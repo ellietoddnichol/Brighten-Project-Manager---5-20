@@ -9,11 +9,13 @@ import {
   FILE_VIEW_TO_CATEGORY,
 } from '../models/project-documents.types';
 import { Project, ProjectFile, RequiredDocument } from '../models/types';
+import { SeedCompletenessGap } from '../models/project-lifecycle.types';
 import {
   ProjectRequirementsContext,
   buildFolderRequirementRows,
   folderRequirementLevel,
 } from './project-requirements.compute';
+import { setupGapsToMissingRequired } from './setup-gap-items';
 
 const GENERATED_DOC_TYPES = new Set([
   'ChangeOrder', 'PayApp', 'Pay Application', 'CertifiedPayroll', 'RFI', 'Submittal',
@@ -308,6 +310,7 @@ export function filterDocumentList(
   ctx: ProjectRequirementsContext,
   requiredDocs: RequiredDocument[],
   search = '',
+  setupGaps: SeedCompletenessGap[] = [],
 ): DocumentListItem[] {
   const requiredCategories = requiredFileCategories(ctx);
   const pid = ctx.project.id;
@@ -316,9 +319,17 @@ export function filterDocumentList(
   let items: DocumentListItem[] = scoped.map(projectFileToListItem);
 
   if (view === 'required') {
-    const missing = missingRequiredDocuments(ctx, scoped, requiredDocs);
+    const missingDocs = missingRequiredDocuments(ctx, scoped, requiredDocs);
+    const missingSetup = setupGapsToMissingRequired(setupGaps);
     items = [
-      ...missing.map(m => ({
+      ...missingSetup.map(m => ({
+        id: m.id,
+        kind: 'missing' as const,
+        fileName: m.label,
+        fileCategory: m.fileCategory,
+        actionLabel: m.actionLabel,
+      })),
+      ...missingDocs.map(m => ({
         id: m.id,
         kind: 'missing' as const,
         fileName: m.label,
@@ -352,8 +363,9 @@ export function countFilesForView(
   view: FileView,
   ctx: ProjectRequirementsContext,
   requiredDocs: RequiredDocument[],
+  setupGaps: SeedCompletenessGap[] = [],
 ): number {
-  return filterDocumentList(files, view, ctx, requiredDocs).length;
+  return filterDocumentList(files, view, ctx, requiredDocs, '', setupGaps).length;
 }
 
 export function fileViewVisibleInNav(

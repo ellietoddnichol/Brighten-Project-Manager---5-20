@@ -373,12 +373,13 @@ export class BudgetTabComponent {
 
   categoryCards = computed(() => {
     const fin = this.financialSvc.computeForProject(this.project);
+    const otherBudget = fin.equipmentBudget + fin.otherBudget;
+    const otherActual = fin.equipmentCostToDate + fin.otherCostToDate;
     return [
-      { label: 'Self-Performed', budget: fin.selfPerformedBudget, actual: fin.selfPerformedCostToDate, variance: fin.selfPerformedBudget - fin.selfPerformedCostToDate },
+      { label: 'Labor', budget: fin.selfPerformedBudget, actual: fin.selfPerformedCostToDate, variance: fin.selfPerformedBudget - fin.selfPerformedCostToDate },
       { label: 'Materials', budget: fin.materialBudget, actual: fin.materialCostToDate, variance: fin.materialBudget - fin.materialCostToDate },
       { label: 'Subcontractors', budget: fin.subcontractorBudget, actual: fin.subcontractorCostToDate, variance: fin.subcontractorBudget - fin.subcontractorCostToDate },
-      { label: 'Equipment', budget: fin.equipmentBudget, actual: fin.equipmentCostToDate, variance: fin.equipmentBudget - fin.equipmentCostToDate },
-      { label: 'Other / GC', budget: fin.otherBudget, actual: fin.otherCostToDate, variance: fin.otherBudget - fin.otherCostToDate },
+      { label: 'Other / Equipment Rental', budget: otherBudget, actual: otherActual, variance: otherBudget - otherActual },
     ];
   });
 

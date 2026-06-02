@@ -151,6 +151,51 @@ export function parseInvoiceDetailRows(rows: string[][]): QuickBooksInvoiceLine[
   return out;
 }
 
+/** Parse QuickBooks "A/R Aging Summary Report" export (label in col A, buckets in B–G). */
+export function parseArAgingSummaryReportRows(rows: string[][]): QuickBooksArAging[] {
+  const out: QuickBooksArAging[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    const label = cellStr(row[0]);
+    if (!label) continue;
+
+    const lower = label.toLowerCase();
+    if (lower.includes('as of') || lower.includes('accrual basis') || lower.includes('aging summary report')) {
+      continue;
+    }
+    if (label === 'CURRENT' || lower === 'total' || lower.startsWith('total for')) continue;
+
+    const { jobNumber } = parseJobFromLabel(label);
+    if (!jobNumber) continue;
+
+    const current = parseMoney(row[1]);
+    const days1To30 = parseMoney(row[2]);
+    const days31To60 = parseMoney(row[3]);
+    const days61To90 = parseMoney(row[4]);
+    const days91Plus = parseMoney(row[5]);
+    const total = parseMoney(row[6]) || current + days1To30 + days31To60 + days61To90 + days91Plus;
+    if (!total) continue;
+
+    out.push({
+      id: uuidv4(),
+      jobNumber,
+      customerLabel: label,
+      current,
+      days1To30,
+      days31To60,
+      days61To90,
+      days91Plus,
+      total,
+      sourceRow: i + 1,
+      status: 'Imported',
+      importKey: stableQbKey(['ar-summary', jobNumber, total]),
+    });
+  }
+
+  return out;
+}
+
 export function parseArAgingRows(rows: string[][]): QuickBooksArAging[] {
   const records = recordsFromSheetRows(rows);
   const out: QuickBooksArAging[] = [];

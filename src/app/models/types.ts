@@ -398,6 +398,18 @@ export interface Billing {
   payAppLink?: string;
   changeOrderIds?: string[];
   submittedAt?: string;
+  /** Stable key for billing/SOV workbook re-imports */
+  importSourceKey?: string;
+  /** Contract sum from pay app G702 (may differ from project contract override) */
+  payAppContractSum?: number;
+  sourceFileName?: string;
+  sourceType?: string;
+  completedToDate?: number;
+  balanceToFinishIncludingRetainage?: number;
+  percentCompleteCalculated?: number;
+  billingNotes?: string;
+  reviewFlag?: string;
+  reviewLocked?: boolean;
   createdAt?: any;
   updatedAt?: any;
   ownerId?: string;

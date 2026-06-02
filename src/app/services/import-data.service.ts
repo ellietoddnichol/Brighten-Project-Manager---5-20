@@ -11,12 +11,21 @@ export interface SOVLine {
   id: string;
   projectId?: string;
   jobNumber: string;
+  payAppNumber?: string;
   lineNumber?: number;
+  costCode?: string;
   description?: string;
   scheduledValue?: number;
+  previousCompleted?: number;
+  thisPeriod?: number;
+  storedMaterials?: number;
   percentComplete?: number;
   billedAmount?: number;
   remainingAmount?: number;
+  retainage?: number;
+  categoryGuess?: string;
+  confidence?: string;
+  reviewNote?: string;
   sourceFileName: string;
   sourceSheetName: string;
   createdAt: string;
@@ -112,9 +121,11 @@ export class ImportDataService {
 
   upsertSovLines(lines: Omit<SOVLine, 'id' | 'createdAt' | 'updatedAt'>[]): void {
     const now = new Date().toISOString();
-    const map = new Map(this.store().sovLines.map(l => [`${l.jobNumber}|${l.sourceFileName}|${l.description}`, l]));
+    const sovKey = (l: Pick<SOVLine, 'jobNumber' | 'sourceFileName' | 'payAppNumber' | 'lineNumber' | 'description'>) =>
+      `${l.jobNumber}|${l.payAppNumber ?? ''}|${l.lineNumber ?? ''}|${l.sourceFileName}|${l.description ?? ''}`;
+    const map = new Map(this.store().sovLines.map(l => [sovKey(l), l]));
     for (const line of lines) {
-      const k = `${line.jobNumber}|${line.sourceFileName}|${line.description ?? ''}`;
+      const k = sovKey(line);
       const existing = map.get(k);
       map.set(k, {
         id: existing?.id ?? uuidv4(),

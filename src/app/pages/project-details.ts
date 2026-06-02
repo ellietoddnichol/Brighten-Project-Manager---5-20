@@ -350,6 +350,7 @@ export class ProjectDetails {
   projectExceptions = computed(() => {
     const p = this.project();
     if (!p) return [];
+    const lifecycleMap = this.lifecycleSvc.snapshotMap();
     return collectProjectActionItems(p, {
       changeOrders: this.changeOrders() || [],
       billings: this.billings() || [],
@@ -361,6 +362,7 @@ export class ProjectDetails {
       issues: this.issues() || [],
       tasks: this.tasks() || [],
       milestones: this.milestones() || [],
+      lifecycleByProjectId: lifecycleMap,
     });
   });
 

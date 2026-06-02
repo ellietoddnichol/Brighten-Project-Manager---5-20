@@ -20,6 +20,7 @@ import {
   shouldApplyImportFinancialPatch,
   shouldCreateProjectFromImport,
 } from '../utils/lifecycle-import.guard';
+import { rollupJobCostBudgetLines } from '../utils/job-cost-budget-parser';
 
 const SEED = seedBundle as JobCostBudgetSeedBundle;
 
@@ -365,7 +366,7 @@ export class BudgetSeedService {
       await firstValueFrom(this.dataService.deleteBudgetLine(line.id));
     }
 
-    for (const line of budget.lines) {
+    for (const line of rollupJobCostBudgetLines(budget.lines)) {
       await firstValueFrom(this.dataService.createBudgetLine({
         projectId,
         costCode: line.costCode,

@@ -16,6 +16,9 @@ import { WorkflowDocumentsSectionComponent } from '../components/workflow-docume
 import { BillingSegment } from '../utils/project-money.compute';
 import { ArTabComponent } from './ar-tab';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { firstValueFrom } from 'rxjs';
+import { ImportDataService } from '../services/import-data.service';
+import { ImportReviewService } from '../services/import-review.service';
 
 @Component({
   selector: 'app-billing-tab',
@@ -77,6 +80,41 @@ import { toSignal } from '@angular/core/rxjs-interop';
         <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
           Budget estimated at 80% of contract (20% target profit).
         </div>
+      }
+
+      @if (segment === 'summary' && latestImportedPayApp(); as latest) {
+        <section class="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-indigo-100 bg-indigo-50 flex justify-between items-center">
+            <h3 class="text-sm font-bold text-indigo-900">Latest Pay App Baseline</h3>
+            <span class="text-xs font-bold text-indigo-700">{{ latest.payAppNumber }}</span>
+          </div>
+          <div class="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold">Period</p>
+              <p>{{ latest.billingPeriod || '—' }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold">% Complete</p>
+              <p>{{ percentCompleteLabel(latest) }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold">Current Due</p>
+              <p class="font-mono">{{ (latest.netDue ?? latest.currentApplication) | currency }}</p>
+            </div>
+            <div>
+              <p class="text-[10px] uppercase text-slate-500 font-bold">Billed to Date</p>
+              <p class="font-mono">{{ (latest.completedToDate ?? latest.totalBilledToDate) | currency }}</p>
+            </div>
+            @if (latest.payAppContractSum != null && latest.payAppContractSum !== financial().currentContractAmount) {
+              <div class="col-span-2 md:col-span-4 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Pay app contract sum {{ latest.payAppContractSum | currency }} differs from project contract {{ financial().currentContractAmount | currency }} — both are stored.
+              </div>
+            }
+            @if (latest.billingNotes) {
+              <div class="col-span-2 md:col-span-4 text-xs text-slate-600">{{ latest.billingNotes }}</div>
+            }
+          </div>
+        </section>
       }
 
       @if (segment === 'pay-apps' || segment === 'summary' || !simplified) {
@@ -147,6 +185,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
                     <div>
                       <p class="font-bold text-slate-900">{{ b.payAppNumber }}</p>
                       <p class="text-xs text-slate-500">{{ b.billingPeriod }} · {{ b.status }}</p>
+                      @if (b.sourceFileName) {
+                        <p class="text-xs text-slate-400 mt-0.5">Source: {{ b.sourceFileName }}</p>
+                      }
                       @if (cosForPayApp(b).length) {
                         <p class="text-xs text-slate-600 mt-1">COs: {{ coLabelsForPayApp(b) }}</p>
                       }
@@ -192,6 +233,112 @@ import { toSignal } from '@angular/core/rxjs-interop';
       }
       }
 
+      @if (segment === 'sov') {
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <h3 class="text-sm font-bold text-slate-900">Schedule of Values (G703)</h3>
+            <span class="text-xs font-bold text-slate-500">{{ sovLines().length }} line(s)</span>
+          </div>
+          @if (sovLines().length) {
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm min-w-[900px]">
+                <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold">
+                  <tr>
+                    <th class="px-3 py-2 text-left">#</th>
+                    <th class="px-3 py-2 text-left">Description</th>
+                    <th class="px-3 py-2 text-right">Scheduled</th>
+                    <th class="px-3 py-2 text-right">Completed</th>
+                    <th class="px-3 py-2 text-right">This Period</th>
+                    <th class="px-3 py-2 text-right">%</th>
+                    <th class="px-3 py-2 text-left">Confidence</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (sov of sovLines(); track sov.id) {
+                    <tr [class.bg-amber-50]="sov.confidence === 'Medium'">
+                      <td class="px-3 py-2">{{ sov.lineNumber }}</td>
+                      <td class="px-3 py-2">
+                        <p>{{ sov.description }}</p>
+                        @if (sov.costCode) { <p class="text-xs text-slate-400">{{ sov.costCode }}</p> }
+                        @if (sov.reviewNote) { <p class="text-xs text-amber-700">{{ sov.reviewNote }}</p> }
+                      </td>
+                      <td class="px-3 py-2 text-right font-mono">{{ sov.scheduledValue | currency }}</td>
+                      <td class="px-3 py-2 text-right font-mono">{{ sov.billedAmount | currency }}</td>
+                      <td class="px-3 py-2 text-right font-mono">{{ sov.thisPeriod | currency }}</td>
+                      <td class="px-3 py-2 text-right">{{ sov.percentComplete != null ? (sov.percentComplete * 100 | number:'1.0-2') + '%' : '—' }}</td>
+                      <td class="px-3 py-2">
+                        <span class="text-xs font-semibold"
+                              [class.text-emerald-700]="sov.confidence === 'High'"
+                              [class.text-amber-700]="sov.confidence === 'Medium'"
+                              [class.text-slate-500]="!sov.confidence">{{ sov.confidence || '—' }}</span>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <p class="px-5 py-6 text-sm text-slate-400 italic">No SOV lines imported for this project.</p>
+          }
+        </section>
+      }
+
+      @if (segment === 'source') {
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+            <h3 class="text-sm font-bold text-slate-900">Source Files</h3>
+          </div>
+          @if (importedPayApps().length) {
+            <ul class="divide-y divide-slate-100">
+              @for (b of importedPayApps(); track b.id) {
+                <li class="px-5 py-4 text-sm">
+                  <p class="font-bold text-slate-900">{{ b.payAppNumber }}</p>
+                  <p class="text-slate-600">{{ b.sourceFileName || 'Unknown source file' }}</p>
+                  @if (b.sourceType) { <p class="text-xs text-slate-400">{{ b.sourceType }}</p> }
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="px-5 py-6 text-sm text-slate-400 italic">No imported pay app source on file.</p>
+          }
+        </section>
+      }
+
+      @if (segment === 'review') {
+        <section class="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-amber-100 bg-amber-50 flex justify-between items-center">
+            <h3 class="text-sm font-bold text-amber-900">Review / Lock</h3>
+            <span class="text-xs font-bold text-amber-700">{{ billingReviewItems().length }} item(s)</span>
+          </div>
+          @if (billingReviewItems().length) {
+            <ul class="divide-y divide-slate-100">
+              @for (item of billingReviewItems(); track item.id) {
+                <li class="px-5 py-4 text-sm">
+                  <p class="text-slate-800">{{ item.message }}</p>
+                  <p class="text-xs text-slate-400 mt-1">{{ item.status }}</p>
+                </li>
+              }
+            </ul>
+          } @else if (reviewLockedPayApps().length) {
+            <ul class="divide-y divide-slate-100">
+              @for (b of reviewLockedPayApps(); track b.id) {
+                <li class="px-5 py-4 text-sm flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p class="font-medium">{{ b.payAppNumber }}</p>
+                    <p class="text-xs text-slate-500">{{ b.reviewFlag }} — review before locking</p>
+                  </div>
+                  <button type="button" (click)="toggleReviewLock(b)" class="text-xs font-bold text-indigo-700 hover:underline">
+                    {{ b.reviewLocked ? 'Unlock' : 'Mark reviewed' }}
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="px-5 py-6 text-sm text-slate-400 italic">No billing review flags for this project.</p>
+          }
+        </section>
+      }
+
       @if (segment === 'ar') {
         <app-ar-tab [project]="project" />
       }
@@ -217,6 +364,8 @@ export class BillingTabComponent implements OnInit {
   private data = inject(DataService);
   private payApps = inject(PayAppService);
   private financialSvc = inject(ProjectFinancialService);
+  private importData = inject(ImportDataService);
+  private importReview = inject(ImportReviewService);
 
   billings = toSignal(this.data.getBillings(), { initialValue: [] });
   changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] });
@@ -236,6 +385,32 @@ export class BillingTabComponent implements OnInit {
 
   projectBillings = computed(() =>
     this.billings().filter(b => b.projectId === this.project.id && b.status !== 'Void'),
+  );
+
+  sovLines = computed(() => this.importData.sovForJob(this.project.projectNumber));
+
+  importedPayApps = computed(() =>
+    this.projectBillings().filter(b => b.importSourceKey || b.sourceFileName),
+  );
+
+  latestImportedPayApp = computed(() => {
+    const imported = this.importedPayApps();
+    if (!imported.length) return undefined;
+    return imported.sort((a, b) =>
+      (b.billingPeriodEnd ?? b.billingPeriod ?? '').localeCompare(a.billingPeriodEnd ?? a.billingPeriod ?? ''),
+    )[0];
+  });
+
+  billingReviewItems = computed(() =>
+    this.importReview.exceptions().filter(e =>
+      e.source === 'BillingSovWorkbook'
+      && e.jobNumber === this.project.projectNumber
+      && (e.status === 'NeedsReview' || e.status === 'Imported'),
+    ),
+  );
+
+  reviewLockedPayApps = computed(() =>
+    this.importedPayApps().filter(b => b.reviewFlag && b.reviewFlag !== 'OK'),
   );
 
   draftPayApp = computed(() => this.projectBillings().find(b => b.status === 'Draft'));
@@ -304,5 +479,17 @@ export class BillingTabComponent implements OnInit {
   async markPaid(b: Billing): Promise<void> {
     await this.payApps.markPayAppPaid(b);
     void this.payApps.refreshPayAppAutomation(this.project.id);
+  }
+
+  percentCompleteLabel(b: Billing): string {
+    const pct = b.percentCompleteCalculated;
+    if (pct == null) return '—';
+    return `${(pct * 100).toFixed(2)}%`;
+  }
+
+  async toggleReviewLock(b: Billing): Promise<void> {
+    await firstValueFrom(this.data.updateBilling(b.id, {
+      reviewLocked: !b.reviewLocked,
+    }));
   }
 }

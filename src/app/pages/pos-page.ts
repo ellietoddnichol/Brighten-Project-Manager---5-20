@@ -31,7 +31,7 @@ interface EnrichedPo extends PO {
   ],
   template: `
     <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
-      <app-page-header title="POs / Commitments" subtitle="Purchase orders and subcontract commitments" />
+      <app-page-header title="Purchase Orders" subtitle="Purchase orders, attachments, and subcontractor costs" />
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Total POs" [value]="poCount()" icon="receipt" />
@@ -84,7 +84,7 @@ export class PosPage {
       let nextAction = 'Review PO';
       if (unmatched) nextAction = 'Match project in Import Review';
       else if (po.invoiceExceedsPo) nextAction = 'Invoice exceeds PO';
-      else if (po.status === 'Open' || po.status === 'Issued') nextAction = 'Track commitment';
+      else if (po.status === 'Open' || po.status === 'Issued') nextAction = 'Track PO';
 
       return {
         ...po,

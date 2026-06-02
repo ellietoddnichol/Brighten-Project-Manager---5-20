@@ -10,6 +10,7 @@ export type ImportSource =
   | 'TimeDataSheet'
   | 'PoSheet'
   | 'WipForecast'
+  | 'BillingSovWorkbook'
   | 'Manual';
 
 export type ImportRecordStatus = 'Imported' | 'Matched' | 'NeedsReview' | 'Ignored';
@@ -40,7 +41,9 @@ export type ImportExceptionType =
   | 'unmappedLaborCode'
   | 'unassignedLaborCode'
   | 'unmatchedVendor'
-  | 'manualValueConflict';
+  | 'manualValueConflict'
+  | 'billingSovReview'
+  | 'payAppContractMismatch';
 
 export interface ImportException {
   id: string;

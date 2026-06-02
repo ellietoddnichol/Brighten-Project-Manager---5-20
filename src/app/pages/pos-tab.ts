@@ -38,7 +38,7 @@ type PosSegment = 'pos' | 'subcontractors';
                 [class.text-blue-700]="segment() === 'pos'"
                 [class.border]="segment() === 'pos'"
                 [class.border-slate-200]="segment() === 'pos'">
-          POs / Commitments
+          Purchase Orders
         </button>
         <button type="button" (click)="segment.set('subcontractors')"
                 class="px-4 py-2 text-sm font-semibold rounded-t-lg"
@@ -114,6 +114,7 @@ type PosSegment = 'pos' | 'subcontractors';
                 <th class="px-5 py-3 text-right">Remaining</th>
                 <th class="px-5 py-3 text-left">Status</th>
                 <th class="px-5 py-3 text-left">Links</th>
+                <th class="px-5 py-3 text-center">Attach</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -141,9 +142,18 @@ type PosSegment = 'pos' | 'subcontractors';
                     @if (row.po.linkedBudgetLineId) { · BL }
                     @if (row.overBudget) { · <span class="text-amber-700 font-bold">Over</span> }
                   </td>
+                  <td class="px-5 py-3 text-center">
+                    @if (row.attachmentCount) {
+                      <span class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
+                        <mat-icon class="!text-[16px]">attach_file</mat-icon>{{ row.attachmentCount }}
+                      </span>
+                    } @else {
+                      <span class="text-xs text-slate-300">—</span>
+                    }
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="px-5 py-12 text-center text-slate-400 italic">No purchase orders match this filter.</td></tr>
+                <tr><td colspan="9" class="px-5 py-12 text-center text-slate-400 italic">No purchase orders match this filter.</td></tr>
               }
             </tbody>
           </table>
@@ -257,13 +267,21 @@ type PosSegment = 'pos' | 'subcontractors';
               }
             </div>
 
-            @if (editingId()) {
-              <app-workflow-documents-section
-                [project]="project"
-                workflowType="purchase_order"
-                [sourceRecordId]="editingId()!"
-                documentType="PO Attachment" />
-            }
+            <div class="border-t border-slate-200 pt-4">
+              @if (editingId()) {
+                <app-workflow-documents-section
+                  [project]="project"
+                  workflowType="purchase_order"
+                  [sourceRecordId]="editingId()!"
+                  documentType="PO Attachment"
+                  [backupUpload]="true" />
+              } @else {
+                <div class="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                  <p class="font-semibold text-slate-800">Attachments</p>
+                  <p class="text-xs mt-1">Save this purchase order first, then upload quotes, signed POs, or invoice backups here.</p>
+                </div>
+              }
+            </div>
           </div>
         </aside>
       }
@@ -288,6 +306,7 @@ export class PosTabComponent implements OnInit {
   private financialSvc = inject(ProjectFinancialService);
 
   pos = toSignal(this.data.getPOs(), { initialValue: [] });
+  projectFiles = toSignal(this.data.getProjectFiles(), { initialValue: [] });
   changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] });
   submittals = toSignal(this.data.getSubmittals(), { initialValue: [] });
 
@@ -314,9 +333,14 @@ export class PosTabComponent implements OnInit {
 
   projectPos = computed(() => (this.pos() || []).filter(p => p.projectId === this.project.id));
 
-  enrichedPos = computed(() =>
-    this.projectPos().map(po => {
+  enrichedPos = computed(() => {
+    const files = (this.projectFiles() ?? []).filter(f => f.projectId === this.project.id);
+    return this.projectPos().map(po => {
       const status = derivePoStatus(po);
+      const attachmentCount = files.filter(f =>
+        f.poId === po.id
+        || (f.workflowType === 'purchase_order' && f.sourceRecordId === po.id),
+      ).length;
       return {
         po,
         status,
@@ -324,9 +348,10 @@ export class PosTabComponent implements OnInit {
         invoiced: poInvoicedAmount(po),
         remaining: poRemainingCommitment({ ...po, status }),
         overBudget: this.poService.isOverBudget(this.project.id, po),
+        attachmentCount,
       };
-    }),
-  );
+    });
+  });
 
   filteredPos = computed(() => {
     const filter = this.activeFilter();

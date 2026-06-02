@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseJobFromLabel, parseArAgingRows, parseIncomeByCustomerRows, parseQuickBooksProjectCostDetailRows, classifyQbCostCategory } from './qb-sync-parsers';
+import { parseJobFromLabel, parseArAgingRows, parseArAgingSummaryReportRows, parseIncomeByCustomerRows, parseQuickBooksProjectCostDetailRows, classifyQbCostCategory } from './qb-sync-parsers';
 
 describe('parseJobFromLabel', () => {
   it('parses standard job prefix', () => {
@@ -72,5 +72,24 @@ describe('parseArAgingRows', () => {
     expect(parsed[0].jobNumber).toBe('216');
     expect(parsed[0].total).toBe(1500);
     expect(parsed[0].days1To30).toBe(500);
+  });
+});
+
+describe('parseArAgingSummaryReportRows', () => {
+  it('reads QuickBooks A/R Aging Summary Report layout', () => {
+    const rows = [
+      ['A/R Aging Summary Report', '', '', '', '', '', ''],
+      ['As of Jun 2, 2026', '', '', '', '', '', ''],
+      ['', 'CURRENT', '1 - 30', '31 - 60', '61 - 90', '91 AND OVER', 'Total'],
+      ['BKM Contruction LLC', '', '', '', '', '', ''],
+      ['215 - 2306 Visitor Center', 12720, '', '', '', '', 12720],
+      ['Total for BKM Contruction LLC', 12720, 0, 0, 0, 0, 12720],
+      ['TOTAL', 12720, 0, 0, 0, 0, 12720],
+    ];
+    const parsed = parseArAgingSummaryReportRows(rows);
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0].jobNumber).toBe('215');
+    expect(parsed[0].total).toBe(12720);
+    expect(parsed[0].current).toBe(12720);
   });
 });

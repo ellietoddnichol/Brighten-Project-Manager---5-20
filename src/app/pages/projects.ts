@@ -17,6 +17,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { dedupeProjectsForDisplay, findProjectMatches, pickCanonicalProject } from '../utils/project-dedupe';
 
 import { projectSearchText, formatProjectDate } from '../utils/project';
+import { effectiveForeman } from '../utils/project-setup.util';
 
 import { ProjectControlsService } from '../services/project-controls.service';
 
@@ -94,7 +95,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   { id: 'under20Margin', label: 'Under 20% margin' },
 
-  { id: 'cprDecision', label: 'CPR decision needed' },
+  { id: 'cprDecision', label: 'Missing wage order' },
 
   { id: 'sourceReview', label: 'Source review issues' },
 
@@ -500,15 +501,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
           <app-drawer-section title="Setup">
 
-            <app-drawer-field label="PM" [value]="row.project.projectManager || '—'" />
-
-            <app-drawer-field label="Foreman" [value]="row.project.superintendent || '—'" />
+            <app-drawer-field label="Foreman" [value]="drawerForeman(row)" />
 
             <app-drawer-field label="Address" [value]="row.project.address || '—'" />
 
             <app-drawer-field label="County" [value]="row.project.county || '—'" />
 
-            <app-drawer-field label="Start" [value]="formatDate(row.project.startDate)" />
+            <app-drawer-field label="Start" [value]="formatDate(row.lifecycle.derivedStartDate || row.project.startDate)" />
 
             <app-drawer-field label="Target end" [value]="formatDate(row.project.targetCompletionDate)" />
 
@@ -783,6 +782,10 @@ export class Projects implements OnInit {
   advancedFilterOptions = ADVANCED_FILTER_OPTIONS;
 
   formatDate = formatProjectDate;
+
+  drawerForeman(row: ProjectListRow): string {
+    return effectiveForeman(row.project) || '—';
+  }
 
 
 

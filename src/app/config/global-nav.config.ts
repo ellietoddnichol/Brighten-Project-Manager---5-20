@@ -103,7 +103,7 @@ export const FINANCIALS_HUB_LINKS: HubLink[] = [
   { title: 'WIP', description: 'Earned revenue vs billed — job-level WIP review.', route: '/wip', icon: 'monitoring' },
   { title: 'Accounts Receivable', description: 'Open invoices, aging, and collections follow-up.', route: '/ar', icon: 'receipt_long' },
   { title: 'Billing', description: 'Pay apps, billing status, and left-to-bill.', route: '/billing', icon: 'request_quote' },
-  { title: 'POs & Commitments', description: 'Purchase orders and committed costs.', route: '/pos', icon: 'shopping_cart' },
+  { title: 'Purchase Orders', description: 'Purchase orders and committed costs.', route: '/pos', icon: 'shopping_cart' },
   { title: 'Foreman Bonuses', description: 'Bonus eligibility, calculations, and exports.', route: '/foreman-bonuses', icon: 'military_tech' },
 ];
 

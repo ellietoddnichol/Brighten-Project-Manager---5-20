@@ -45,7 +45,7 @@ export class ProjectPrimaryNavComponent {
   readonly items: PrimaryNavItem[] = [
     { id: 'overview', label: 'Overview', icon: 'dashboard', description: 'Status, margin, next action' },
     { id: 'workflows', label: 'Work', icon: 'construction', description: 'Tasks, changes, field work' },
-    { id: 'financials', label: 'Money', icon: 'account_balance', description: 'Budget, billing, commitments' },
+    { id: 'financials', label: 'Money', icon: 'account_balance', description: 'Budget, billing, purchase orders' },
     { id: 'documents', label: 'Files', icon: 'folder_open', description: 'Documents and Drive' },
   ];
 }

@@ -23,6 +23,7 @@ import {
   ChangeOrder,
   ProjectBudgetLine,
 } from '../models/types';
+import { effectiveForeman, isForemanSetupMissing } from './project-setup.util';
 import {
   ProjectSubcontractor,
   Subcontractor,
@@ -144,8 +145,16 @@ function deriveBillingStatus(financial: ProjectFinancial, hasApprovedCoNotBilled
   return 'Current';
 }
 
-function deriveCprStatus(_project: Project): { required: boolean; status: string; missingSetup: boolean } {
-  return { required: false, status: 'Not required', missingSetup: false };
+function deriveCprStatus(project: Project): { required: boolean; status: string; missingSetup: boolean } {
+  if (!project.prevailingWage) {
+    return { required: false, status: 'Not required', missingSetup: false };
+  }
+  const missingSetup = !project.wageOrderNumber?.trim();
+  return {
+    required: true,
+    status: missingSetup ? 'Setup needed' : 'Configured',
+    missingSetup,
+  };
 }
 
 const COMPLETE_JOB_STATUSES = new Set(['Complete', 'Closed', 'Closeout']);
@@ -253,8 +262,7 @@ export function isSetupNeededRow(row: Pick<Active2026ControlRow,
   | 'status' | 'lifecycleGroup' | 'billedToDate' | 'currentContract' | 'leftToBill'
 >): boolean {
   if (isFullyBilledCompleteJob(row)) return false;
-  return !row.pm.trim()
-    || !row.foreman.trim()
+  return !row.foreman.trim()
     || !row.driveLinked
     || row.missingBudget
     || row.missingLaborBudget;
@@ -307,8 +315,7 @@ export function deriveHealthStatus(input: {
     return 'Red';
   }
   if (
-    input.missingPm
-    || input.missingForeman
+    input.missingForeman
     || input.missingDrive
     || input.missingBudget
     || input.missingLaborBudget
@@ -417,8 +424,8 @@ export function buildActive2026ControlRow(
     arPastDue,
     billedOverContract,
     budgetBasis,
-    missingPm: !project.projectManager?.trim(),
-    missingForeman: !foremanAssignment && !project.superintendent?.trim(),
+    missingPm: false,
+    missingForeman: isForemanSetupMissing(project, !!foremanAssignment),
     missingDrive: !driveLinked,
     missingBudget,
     missingLaborBudget,
@@ -458,7 +465,7 @@ export function buildActive2026ControlRow(
     status: project.status ?? lifecycle.normalizedStatus,
     lifecycleGroup: lifecycle.projectLifecycleGroup,
     pm: project.projectManager ?? '',
-    foreman: foremanAssignment?.foremanName ?? project.superintendent ?? '',
+    foreman: foremanAssignment?.foremanName ?? effectiveForeman(project) ?? '',
     budgetType: meta?.budgetType ?? 'FullConstruction',
 
     currentContract: financial.currentContractAmount,

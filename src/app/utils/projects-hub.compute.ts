@@ -163,11 +163,8 @@ export function buildProjectWarnings(input: {
   if (!input.project.projectProfile) {
     push('missing-profile', 'Missing profile', 'setup');
   }
-  if (!input.project.targetCompletionDate?.trim()) {
-    push('missing-end', 'Missing target end', 'setup');
-  }
-  if (input.project.prevailingWage && input.project.certifiedPayrollRequired == null) {
-    push('cpr-decision', 'CPR decision needed', 'setup');
+  if (input.project.prevailingWage && !input.project.wageOrderNumber?.trim()) {
+    push('missing-wage-order', 'Missing wage order', 'setup');
   }
   if (input.financial.budgetIsEstimated || input.financial.budgetBasis === 'EstimatedFrom20PercentTarget') {
     push('budget-estimate', 'Confirm budget estimate', 'setup');
@@ -302,7 +299,7 @@ export function matchesProjectsAdvancedFilters(
         if (!(financial.currentContractAmount > 0 && financial.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100)) return false;
         break;
       case 'cprDecision':
-        if (!(project.prevailingWage && project.certifiedPayrollRequired == null)) return false;
+        if (!(project.prevailingWage && !project.wageOrderNumber?.trim())) return false;
         break;
       case 'sourceReview':
         if (!row.warnings.some(w => w.id === 'source-review')) return false;

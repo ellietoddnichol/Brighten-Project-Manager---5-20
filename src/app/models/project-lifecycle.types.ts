@@ -67,6 +67,8 @@ export interface ProjectLifecycleSnapshot {
   hasOpenCompliance: boolean;
   seedCompletenessStatus: SeedCompletenessStatus;
   seedGaps: SeedCompletenessGap[];
+  /** Earliest detected start from time, billing, or manual override. */
+  derivedStartDate?: string;
   /** 2026 financial rollups for Closed 2026 view */
   billed2026?: number;
   cost2026?: number;

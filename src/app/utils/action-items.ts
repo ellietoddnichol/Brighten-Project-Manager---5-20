@@ -18,6 +18,7 @@ import {
 } from './subcontractor-compliance.compute';
 import { invoiceTaskDescriptors, coIsApprovedForInvoice } from './subcontractor-invoice.compute';
 import { bonusTaskDescriptors, detectForemanBonusFlags } from './foreman-bonus.compute';
+import { setupGapActionItems } from './setup-gap-items';
 import { ProjectRequirementsContext } from './project-requirements.compute';
 import { computeBudgetRollup, derivePoStatus } from './budget-line.compute';
 import { isApprovedCo, normalizeCoStatus, coNumber } from './change-management';
@@ -115,18 +116,6 @@ function projectInfoExceptions(project: Project): ActionItem[] {
       title: 'WIP Needs Review',
       description: 'Job is flagged for WIP review.',
       type: 'WIP',
-      severity: 'warning',
-    });
-  }
-
-  if (isFieldActive(project) && !project.startDate) {
-    items.push({
-      id: `start-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Missing Start Date',
-      description: 'Start date has not been set.',
-      type: 'Schedule',
       severity: 'warning',
     });
   }
@@ -628,11 +617,12 @@ function globalLaborCodeHealthItems(
 }
 
 function driveFolderHealthItems(
-  _project: Project,
+  project: Project,
   _ctx: ProjectRequirementsContext,
-  _lifecycle?: ProjectLifecycleSnapshot,
+  lifecycle?: ProjectLifecycleSnapshot,
 ): ActionItem[] {
-  return [];
+  if (!lifecycle?.seedGaps?.length) return [];
+  return setupGapActionItems(project, lifecycle.seedGaps);
 }
 
 function poExceptions(pos: PO[], projectMap: Map<string, Project>): ActionItem[] {

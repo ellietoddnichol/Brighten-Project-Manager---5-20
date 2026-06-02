@@ -2,9 +2,11 @@ import { Component, Input, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Project, ProjectFile, RequiredDocument } from '../models/types';
 import { DataService } from '../services/data.service';
 import { ProjectRequirementsService } from '../services/project-requirements.service';
+import { ProjectLifecycleService } from '../services/project-lifecycle.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FileView } from '../components/project/project-detail.types';
 import { ProjectEnabledModules } from '../models/project-needs.types';
@@ -22,6 +24,7 @@ import {
   categoryForFileView,
 } from '../utils/project-documents.compute';
 import { FILE_VIEW_LABELS } from '../components/project/project-detail.types';
+import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
 
 @Component({
   selector: 'app-documents-tab',
@@ -121,7 +124,7 @@ import { FILE_VIEW_LABELS } from '../components/project/project-detail.types';
                   <p class="text-xs text-amber-700">{{ categoryLabel(item.fileCategory) }}</p>
                 </div>
               </div>
-              <button type="button" (click)="openNewFileForCategory(item.fileCategory)"
+              <button type="button" (click)="openMissingItem(item)"
                       class="text-xs font-bold text-indigo-700 underline shrink-0">
                 {{ item.actionLabel || 'Upload' }}
               </button>
@@ -206,6 +209,9 @@ export class DocumentsTabComponent {
 
   private dataService = inject(DataService);
   private requirements = inject(ProjectRequirementsService);
+  private lifecycle = inject(ProjectLifecycleService);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   searchQuery = '';
   showNewReq = false;
@@ -222,6 +228,8 @@ export class DocumentsTabComponent {
 
   reqCtx = computed(() => this.requirements.buildContext(this.project));
 
+  setupGaps = computed(() => this.lifecycle.forProject(this.project)?.seedGaps ?? []);
+
   filteredItems = computed((): DocumentListItem[] =>
     filterDocumentList(
       this.allFiles() ?? [],
@@ -229,6 +237,7 @@ export class DocumentsTabComponent {
       this.reqCtx(),
       this.requiredDocs(),
       this.searchQuery,
+      this.setupGaps(),
     ),
   );
 
@@ -256,7 +265,7 @@ export class DocumentsTabComponent {
 
   emptyTitle(): string {
     switch (this.fileView) {
-      case 'required': return 'Nothing required right now.';
+      case 'required': return 'Nothing missing right now.';
       case 'generated': return 'No generated documents yet.';
       case 'uploads': return 'No uploads yet.';
       default: return 'No files in this view.';
@@ -265,7 +274,9 @@ export class DocumentsTabComponent {
 
   emptyMessage(): string {
     if (this.searchQuery.trim()) return 'Try a different search term.';
-    if (this.fileView === 'required') return 'Required documents will appear here when the project profile needs them.';
+    if (this.fileView === 'required') {
+      return 'Setup gaps, required folders, and tracked document requirements appear here.';
+    }
     return 'Add a file link or generate a document from Work or Money.';
   }
 
@@ -293,6 +304,30 @@ export class DocumentsTabComponent {
     const fk = folderKeyForCategory(category as never);
     if (fk) this.newFile.folderKey = fk;
     this.showNewFile = true;
+  }
+
+  openMissingItem(item: DocumentListItem): void {
+    if (item.id.startsWith('setup-')) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: 'setup', section: null, view: null },
+        queryParamsHandling: 'merge',
+      });
+      return;
+    }
+    if (item.id.startsWith('folder-') && item.fileCategory === 'Contract') {
+      this.openNewFileForCategory(item.fileCategory);
+      return;
+    }
+    if (item.id.startsWith('folder-')) {
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: 'drive-mapping', section: null, view: null },
+        queryParamsHandling: 'merge',
+      });
+      return;
+    }
+    this.openNewFileForCategory(item.fileCategory);
   }
 
   onFolderChange(folderKey: string): void {
@@ -384,7 +419,14 @@ export function fileCountForView(
   project: Project,
   requiredDocs: RequiredDocument[],
   requirements: ProjectRequirementsService,
+  lifecycle?: ProjectLifecycleSnapshot,
 ): number {
   const ctx = requirements.buildContext(project);
-  return countFilesForView(files, view, ctx, requiredDocs.filter(r => r.projectId === project.id));
+  return countFilesForView(
+    files,
+    view,
+    ctx,
+    requiredDocs.filter(r => r.projectId === project.id),
+    lifecycle?.seedGaps ?? [],
+  );
 }

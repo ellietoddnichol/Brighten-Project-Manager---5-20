@@ -12,8 +12,60 @@ const SECTION_MAP: Record<string, JobCostBudgetCategory> = {
   labor: 'Labor',
   material: 'Materials',
   subcontractors: 'Subcontractors',
+  equipment: 'Other',
   other: 'Other',
 };
+
+const SUMMARY_CATEGORIES: JobCostBudgetCategory[] = ['Labor', 'Materials', 'Subcontractors', 'Other'];
+
+function normalizeSummaryCategory(category: string): JobCostBudgetCategory {
+  switch (category) {
+    case 'Labor': return 'Labor';
+    case 'Materials': return 'Materials';
+    case 'Subcontractors': return 'Subcontractors';
+    default: return 'Other';
+  }
+}
+
+/** Collapse detailed workbook lines into Labor, Materials, Subcontractors, and Other. */
+export function rollupJobCostBudgetLines(lines: JobCostBudgetLineSeed[]): JobCostBudgetLineSeed[] {
+  const buckets = new Map<JobCostBudgetCategory, JobCostBudgetLineSeed>();
+
+  for (const line of lines) {
+    const category = normalizeSummaryCategory(line.category);
+    const existing = buckets.get(category);
+    if (!existing) {
+      buckets.set(category, {
+        costCode: category,
+        category,
+        originalBudget: line.originalBudget,
+        approvedCOBudget: line.approvedCOBudget,
+        revisedBudget: line.revisedBudget,
+        actualCost: line.actualCost,
+        costToComplete: line.costToComplete,
+        projectedFinalCost: line.projectedFinalCost,
+        variance: line.variance,
+        hoursBudgeted: line.hoursBudgeted,
+        hoursActual: line.hoursActual,
+      });
+      continue;
+    }
+
+    existing.originalBudget += line.originalBudget;
+    existing.approvedCOBudget += line.approvedCOBudget;
+    existing.revisedBudget += line.revisedBudget;
+    existing.actualCost += line.actualCost;
+    existing.costToComplete += line.costToComplete;
+    existing.projectedFinalCost += line.projectedFinalCost;
+    existing.variance += line.variance;
+    if (line.hoursBudgeted) existing.hoursBudgeted = (existing.hoursBudgeted ?? 0) + line.hoursBudgeted;
+    if (line.hoursActual) existing.hoursActual = (existing.hoursActual ?? 0) + line.hoursActual;
+  }
+
+  return SUMMARY_CATEGORIES
+    .filter(cat => buckets.has(cat))
+    .map(cat => buckets.get(cat)!);
+}
 
 function rowVal(row: RawRow, ...keys: string[]): unknown {
   for (const key of keys) {
@@ -183,6 +235,8 @@ export function parseUpdatedBudgetSheet(
 
   if (!jobNumber) return null;
 
+  const summaryLines = rollupJobCostBudgetLines(lines);
+
   return {
     jobNumber,
     projectName: projectName || sourceFile.replace(/\.xlsx$/i, ''),
@@ -198,7 +252,7 @@ export function parseUpdatedBudgetSheet(
     estMaterialCost,
     estSubCost,
     estOtherCost,
-    lines,
+    lines: summaryLines,
   };
 }
 

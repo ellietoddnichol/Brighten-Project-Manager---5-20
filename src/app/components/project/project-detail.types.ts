@@ -206,7 +206,7 @@ export const FINANCIAL_VIEW_LABELS: Partial<Record<FinancialView, string>> = {
 
   billing: 'Billing',
 
-  pos: 'Commitments',
+  pos: 'Purchase Orders',
 
   wip: 'WIP Detail',
 

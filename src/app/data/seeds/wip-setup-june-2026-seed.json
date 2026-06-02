@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "sourceFile": "wip-setup-june-2026",
+    "importedAt": "2026-06-02"
+  },
+  "projects": [
+    { "jobNumber": "158", "address": "Multiple Locations", "county": "JOH", "profileLabel": "L&W / Prevailing Wage", "customer": "McCown Gordon", "prevailingWage": true },
+    { "jobNumber": "186", "address": "9100 Park St. Lenexa, KS 66215", "county": "JOH", "profileLabel": "Other", "customer": "Lakeview Village", "foreman": "Kyle", "prevailingWage": false },
+    { "jobNumber": "189", "address": "3451 N. Garfield Ave, Topeka, KS 66604", "county": "SHA", "profileLabel": "L&W / Prevailing Wage", "customer": "BKM Construction LLC", "prevailingWage": true },
+    { "jobNumber": "193", "address": "4622 Pennsylvania Ave, Ste 1050 Kansas City, MO 64112", "county": "JAC", "profileLabel": "L&W", "customer": "Newkirk Novak", "prevailingWage": false, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "197", "address": "9100 Park St. Lenexa, KS 66215", "county": "JOH", "profileLabel": "Other", "customer": "Lakeview Village", "foreman": "Kyle", "prevailingWage": false, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "204", "address": "9050 NE Underground Dr. Pillar 312, Kansas City, MO 64161", "county": "CL", "profileLabel": "Other", "customer": "XEC, Inc", "foreman": "Dustin", "prevailingWage": false },
+    { "jobNumber": "206", "address": "9100 Park St. Lenexa, KS 66215", "county": "JOH", "profileLabel": "Other", "customer": "Lakeview Village", "foreman": "Kyle", "prevailingWage": false },
+    { "jobNumber": "208", "address": "Southwest - 4500 NW River Park Dr, Riverside, MO 64150-9648", "county": "PLA", "profileLabel": "L&W / Prevailing Wage", "customer": "Universal Construction", "prevailingWage": true },
+    { "jobNumber": "209", "address": "530 Sunshine, Kansas City, KS 66115", "county": "WY", "profileLabel": "T&M / Other", "customer": "CWA Specialties, INC.", "foreman": "AJ", "prevailingWage": false, "billingType": "T&M", "arStatus": "Waiting on A/R" },
+    { "jobNumber": "210", "address": "1020 N 2nd St, Atchison, KS 66002", "county": "ATC", "profileLabel": "Other", "customer": "CWA Specialties, INC.", "foreman": "AJ", "prevailingWage": false },
+    { "jobNumber": "212", "address": "1407 Nashua Rd, Liberty, MO 64068", "county": "CL", "profileLabel": "Other", "customer": "Newkirk Novak", "prevailingWage": false },
+    { "jobNumber": "215", "address": "2306 Banister Road, Kansas City MO 64131", "county": "JAC", "profileLabel": "Other / Prevailing Wage", "customer": "BKM Construction LLC", "prevailingWage": true, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "216", "address": "13000 East 35th St. S, Independence, MO", "county": "JAC", "profileLabel": "Other", "customer": "Purdum", "prevailingWage": false, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "217", "address": "10245 Hickman Mills Drive, Kansas City, MO 64137", "county": "JAC", "profileLabel": "Other / Shutdown", "customer": "Purdum", "prevailingWage": false, "originalContractAmount": 85044.15 },
+    { "jobNumber": "218", "address": "500 State Ave, Kansas City, KS 66101", "county": "WY", "profileLabel": "Other", "customer": "U.S. General Services Administration", "prevailingWage": false, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "219", "address": "1920 Fox Ridge Dr. Kansas City, KS 66101", "county": "WY", "profileLabel": "T&M / Other", "customer": "CWA Specialties, INC.", "foreman": "AJ", "prevailingWage": false, "billingType": "T&M" },
+    { "jobNumber": "220", "address": "4801 Linwood Blvd, Kansas City, MO 64128", "county": "JAC", "profileLabel": "Other / Prevailing Wage", "customer": "Direct", "prevailingWage": true },
+    { "jobNumber": "221", "address": "400 E 9th St, Kansas City, MO 64106", "county": "JAC", "profileLabel": "Other / Prevailing Wage", "customer": "BKM Construction LLC", "prevailingWage": true, "arStatus": "Waiting on A/R" },
+    { "jobNumber": "222", "address": "120 N Cedar Avenue Independence, MO 64053", "county": "JAC", "profileLabel": "Other", "customer": "Newkirk Novak", "prevailingWage": false },
+    { "jobNumber": "223", "address": "1815 S Jefferson St, Kearney, MO 64060", "county": "CL", "profileLabel": "Other / Prevailing Wage", "customer": "Newkirk Novak", "prevailingWage": true, "arStatus": "In progress" },
+    { "jobNumber": "224", "address": "3901 Rainbow Blvd, Kansas City, KS 66160", "county": "WY", "profileLabel": "Other", "customer": "XEC", "prevailingWage": false, "arStatus": "In progress" },
+    { "jobNumber": "225", "address": "4101 4th Street Trafficway, Leavenworth, KS 66048", "county": "LEA", "profileLabel": "Other", "customer": "BKM Construction LLC", "prevailingWage": false, "originalContractAmount": 26500 },
+    { "jobNumber": "226", "address": "1000 E. 50th Street Kansas City, MO 64110", "county": "JAC", "profileLabel": "Other", "customer": "Direct", "prevailingWage": false },
+    { "jobNumber": "227", "address": "500 State Ave, Kansas City, KS 66101", "county": "WY", "profileLabel": "Other", "customer": "U.S. General Services Administration", "prevailingWage": false },
+    { "jobNumber": "228", "address": "201 Main Street Kansas City, MO", "county": "JAC", "profileLabel": "Other / Private Commercial", "customer": "Direct with Owners", "prevailingWage": false, "originalContractAmount": 525000 },
+    { "jobNumber": "229", "projectName": "Gardenview", "profileLabel": "Other", "customer": "Brighten Builders LLC", "prevailingWage": false, "originalContractAmount": 725000 },
+    { "jobNumber": "230", "projectName": "Whittaker USDC - Fitness Center", "originalContractAmount": 22950 },
+    { "jobNumber": "231", "projectName": "OPM 2nd Floor Office Renovation", "originalContractAmount": 12150 }
+  ]
+}

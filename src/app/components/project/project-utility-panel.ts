@@ -8,6 +8,7 @@ import { DriveMappingTabComponent } from '../../pages/drive-mapping-tab';
 import { ScheduleTabComponent } from '../../pages/schedule-tab';
 import { IssuesTasksTabComponent } from '../../pages/issues-tasks-tab';
 import { CertifiedPayrollTabComponent } from '../../pages/certified-payroll-tab';
+import { ProjectRecordPanelComponent } from './project-record-panel';
 import { DriveFile } from '../../services/drive.service';
 import { formatProjectDate } from '../../utils/project';
 
@@ -17,6 +18,7 @@ import { formatProjectDate } from '../../utils/project';
   imports: [
     CommonModule, FormsModule, MatIconModule,
     DriveMappingTabComponent, ScheduleTabComponent, IssuesTasksTabComponent, CertifiedPayrollTabComponent,
+    ProjectRecordPanelComponent,
   ],
   template: `
     <div class="space-y-4">
@@ -29,46 +31,11 @@ import { formatProjectDate } from '../../utils/project';
       </div>
 
       @if (view === 'setup') {
-        <div class="max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest">Core Details</h3>
-              <button type="button" (click)="editProject.emit()" class="text-xs font-bold text-blue-600">Edit</button>
-            </div>
-            <dl class="space-y-3 text-sm">
-              <div><dt class="text-slate-500">Job #</dt><dd class="font-bold">{{ project.projectNumber }}</dd></div>
-              <div><dt class="text-slate-500">Customer</dt><dd class="font-bold">{{ project.customer }}</dd></div>
-              <div><dt class="text-slate-500">Status</dt><dd class="font-bold">{{ project.status }}</dd></div>
-              <div><dt class="text-slate-500">Address</dt><dd class="font-bold">{{ project.address || '—' }}</dd></div>
-              <div><dt class="text-slate-500">PM</dt><dd class="font-bold">{{ project.projectManager || 'Unassigned' }}</dd></div>
-            </dl>
-          </div>
-          <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm md:col-span-2">
-            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Integrations</h3>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Google Drive Folder ID</label>
-                <div class="flex gap-2">
-                  <input type="text" [(ngModel)]="tempDriveId" (ngModelChange)="driveDirty.set(true)"
-                         class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
-                  <button type="button" (click)="saveDrive.emit(tempDriveId)" [disabled]="!driveDirty()"
-                          class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">Save</button>
-                </div>
-              </div>
-              <div>
-                <label class="block text-[10px] font-bold text-slate-500 uppercase mb-2">Google Sheet ID</label>
-                <div class="flex gap-2">
-                  <input type="text" [(ngModel)]="tempSheetId" (ngModelChange)="sheetDirty.set(true)"
-                         class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
-                  <button type="button" (click)="saveSheet.emit(tempSheetId)" [disabled]="!sheetDirty()"
-                          class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50">Save</button>
-                </div>
-              </div>
-              <button type="button" (click)="openUtility.emit('drive-mapping')"
-                      class="text-sm font-semibold text-orange-600 hover:underline">Open Drive Mapping →</button>
-            </div>
-          </div>
-        </div>
+        <app-project-record-panel
+          [project]="project"
+          (saveDrive)="saveDrive.emit($event)"
+          (saveSheet)="saveSheet.emit($event)"
+          (openUtility)="openUtility.emit($event)" />
       }
 
       @if (view === 'drive-mapping') {
@@ -150,7 +117,7 @@ export class ProjectUtilityPanelComponent {
 
   title = computed(() => {
     const titles: Record<UtilityView, string> = {
-      setup: 'Project Setup',
+      setup: 'Job Record',
       'drive-mapping': 'Drive Mapping',
       directory: 'Project Directory',
       'certified-payroll-setup': 'Certified Payroll Setup',

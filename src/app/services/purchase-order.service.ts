@@ -171,7 +171,7 @@ export class PurchaseOrderService {
           await this.controls.ensureSystemTask(
             projectId,
             `po-open-${po.id}`,
-            `Review open commitment: PO ${po.poNumber}`,
+            `Review open PO: ${po.poNumber}`,
             'Budget / POs',
             { type: 'PO', id: po.id },
           );

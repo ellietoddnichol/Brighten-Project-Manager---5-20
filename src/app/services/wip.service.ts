@@ -59,6 +59,11 @@ export class WipService {
     wipEstimatedFinalCostOverride?: number;
     wipCostToComplete?: number;
     wipReviewNotes?: string;
+    forecastTreatment?: string;
+    forecastLowPct?: number;
+    forecastBasePct?: number;
+    forecastHighPct?: number;
+    wipForecastNotes?: string;
   }): Promise<void> {
     await this.saveOverride(projectId, draft);
   }

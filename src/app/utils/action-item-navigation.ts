@@ -15,6 +15,7 @@ export function resolveActionItemNav(item: Pick<ActionItem, 'id' | 'type' | 'tit
 function resolveNavState(item: Pick<ActionItem, 'id' | 'type' | 'title'>): ProjectNavState {
   const id = item.id;
 
+  if (id.startsWith('setup-gap-')) return openUtility('setup');
   if (id.startsWith('cpr-wage-order') || id.startsWith('cpr-county') || id.startsWith('cpr-exceptions') || id.startsWith('cpr-final')) {
     return openWorkflow('certified-payroll');
   }
@@ -78,7 +79,7 @@ function navLabel(state: ProjectNavState): string {
       case 'wip': return 'Open WIP';
       case 'billing': return 'Open billing';
       case 'ar': return 'Open AR';
-      case 'pos': return 'Open commitments';
+      case 'pos': return 'Open purchase orders';
       case 'labor-bonus': return 'Open foreman bonus';
       case 'import-source': return 'Open sources';
       default: return 'Open money';

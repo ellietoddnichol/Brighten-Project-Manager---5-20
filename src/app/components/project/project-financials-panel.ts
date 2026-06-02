@@ -215,7 +215,7 @@ import {
               <app-drawer-field label="Sub Cost to Date" [value]="fmt(financial().subcontractorCostToDate)" [mono]="true" />
               <app-drawer-field label="Sub Budget" [value]="fmt(financial().subcontractorBudget)" [mono]="true" />
               <button type="button" (click)="viewChange.emit('pos'); drawerType.set(null)"
-                      class="text-sm font-semibold text-indigo-700 underline mt-2">Open Commitments</button>
+                      class="text-sm font-semibold text-indigo-700 underline mt-2">Open Purchase Orders</button>
             </app-drawer-section>
           }
           @case ('source') {
@@ -263,7 +263,10 @@ export class ProjectFinancialsPanelComponent {
 
   readonly billingSegmentOptions: SegmentOption<BillingSegment>[] = [
     { id: 'summary', label: 'Billing Summary' },
-    { id: 'pay-apps', label: 'Pay Apps / Invoices' },
+    { id: 'pay-apps', label: 'Pay App History' },
+    { id: 'sov', label: 'SOV Lines' },
+    { id: 'source', label: 'Source File' },
+    { id: 'review', label: 'Review / Lock' },
     { id: 'ar', label: 'AR' },
     { id: 'retainage', label: 'Retainage' },
   ];

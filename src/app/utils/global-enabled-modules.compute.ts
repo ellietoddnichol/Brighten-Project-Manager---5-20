@@ -45,7 +45,7 @@ const NAV: Record<GlobalModuleId, GlobalNavItem> = {
   wip: nav('wip', 'WIP', '/wip'),
   ar: nav('ar', 'AR', '/ar'),
   billing: nav('billing', 'Billing', '/billing'),
-  pos: nav('pos', 'POs / Commitments', '/pos'),
+  pos: nav('pos', 'Purchase Orders', '/pos'),
   'cost-transactions': nav('cost-transactions', 'Cost Transactions', '/wip'),
   'sub-invoices': nav('sub-invoices', 'Sub Invoices', '/subcontractors'),
   'import-source': nav('import-source', 'Import Source Detail', '/settings', { fragment: 'import-review' }),

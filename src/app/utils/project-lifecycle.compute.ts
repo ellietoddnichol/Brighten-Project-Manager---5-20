@@ -12,6 +12,7 @@ import { isActive2026ControlJob } from '../config/active-2026-jobs.config';
 import { isArchiveJobNumber, isOpenArRecord } from './wip.compute';
 import { isOverheadJob, isClosedProject } from './project';
 import { isPendingCo } from './change-management';
+import { isForemanSetupMissing, deriveProjectStartDate } from './project-setup.util';
 
 export const LIFECYCLE_ACTIVITY_YEAR = 2026;
 
@@ -343,17 +344,16 @@ export function computeSeedGaps(input: ProjectLifecycleInput, group: ProjectLife
   if (!input.qbCustomerLinked && activeLike && !project.customer?.trim()) {
     push('qboCustomer', 'QBO customer reference', 'identity');
   }
-  if (!project.startDate && activeLike) push('startDate', 'Start date', 'reporting');
-  if (!project.targetCompletionDate && activeLike) push('targetCompletionDate', 'Target completion', 'reporting');
   if (['Complete', 'Closed', 'Archived'].includes(normalizeProjectStatus(project)) && !project.closedDate && !inferClosedDate(input)) {
     push('closedDate', 'Closed date', 'status');
   }
-  if (!project.projectManager?.trim()) push('projectManager', 'PM / internal owner', 'team');
-  if (!project.superintendent?.trim() && !input.hasForemanAssignment) push('foreman', 'Foreman', 'team', input.bonusEligible === true);
-  if (project.prevailingWage && !project.certifiedPayrollRequired && !project.wageOrderNumber) {
-    push('certifiedPayrollRequired', 'Certified payroll setup', 'compliance', group === 'Active');
+  if (isForemanSetupMissing(project, !!input.hasForemanAssignment)) {
+    push('foreman', 'Foreman', 'team', input.bonusEligible === true);
   }
-  if (input.subcontractorsExpected && !(project.estSubCost ?? 0)) {
+  if (project.prevailingWage && !project.wageOrderNumber?.trim()) {
+    push('wageOrderNumber', 'Wage order #', 'compliance', group === 'Active');
+  }
+  if (project.prevailingWage && !(project.estSubCost ?? 0)) {
     push('estSubCost', 'Subcontractor budget', 'financials');
   }
   if (activeLike && !(project.billedToDate ?? 0) && !(input.billings ?? []).some(b => b.projectId === project.id) && !input.qbBillingPresent) {
@@ -479,6 +479,7 @@ export function computeProjectLifecycle(input: ProjectLifecycleInput): ProjectLi
   });
   const seedGaps = trackControls ? computeSeedGaps(input, group) : [];
   const seedCompletenessStatus = deriveSeedCompletenessStatus(seedGaps);
+  const derivedStartDate = deriveProjectStartDate(input);
 
   return {
     projectId: project.id,
@@ -495,7 +496,7 @@ export function computeProjectLifecycle(input: ProjectLifecycleInput): ProjectLi
     includeInClosed2026,
     includeInArchive,
     closedDate,
-    fiscalYear: closedYear ?? yearFrom(project.startDate),
+    fiscalYear: closedYear ?? yearFrom(derivedStartDate ?? project.startDate),
     has2026Activity: activity2026.has2026Activity || closedYear === LIFECYCLE_ACTIVITY_YEAR,
     hasOpenWipWork: openWipWork,
     hasOpenAr,
@@ -503,6 +504,7 @@ export function computeProjectLifecycle(input: ProjectLifecycleInput): ProjectLi
     hasOpenCompliance: false,
     seedCompletenessStatus,
     seedGaps,
+    derivedStartDate,
     billed2026: activity2026.billed2026,
     cost2026: activity2026.cost2026,
     ar2026: activity2026.ar2026,

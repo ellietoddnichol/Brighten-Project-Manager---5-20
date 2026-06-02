@@ -116,7 +116,7 @@ import { WipGroup } from '../models/financial.types';
 
         title="Financials"
 
-        subtitle="WIP, AR, billing, commitments, and job margin"
+        subtitle="WIP, AR, billing, purchase orders, and job margin"
 
         primaryActionLabel="Open WIP"
 
@@ -570,7 +570,7 @@ import { WipGroup } from '../models/financial.types';
 
               } @empty {
 
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No commitments match this filter</div>
+                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No purchase orders match this filter</div>
 
               }
 

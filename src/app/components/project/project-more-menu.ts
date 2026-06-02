@@ -45,8 +45,8 @@ export class ProjectMoreMenuComponent {
   open = signal(false);
 
   readonly items: MoreItem[] = [
+    { id: 'setup', label: 'Job Record', icon: 'edit_note', description: 'Contract, budget, COs, setup — saved in app' },
     { id: 'drive-mapping', label: 'Drive Mapping', icon: 'folder_special', description: 'Link workflow folders' },
-    { id: 'setup', label: 'Project Setup', icon: 'settings', description: 'Details, integrations, sync' },
     { id: 'directory', label: 'Project Directory', icon: 'contacts', description: 'Key contacts & team' },
     { id: 'certified-payroll-setup', label: 'Certified Payroll Setup', icon: 'gavel', description: 'Compliance configuration' },
     { id: 'files', label: 'Browse Drive Files', icon: 'folder', description: 'Raw folder listing' },

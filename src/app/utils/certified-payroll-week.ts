@@ -1,7 +1,7 @@
 import { Project } from '../models/types';
 
-export function isCertifiedPayrollProject(project: Pick<Project, 'prevailingWage' | 'certifiedPayrollRequired'>): boolean {
-  return !!(project.prevailingWage || project.certifiedPayrollRequired);
+export function isCertifiedPayrollProject(project: Pick<Project, 'prevailingWage'>): boolean {
+  return !!project.prevailingWage;
 }
 
 /** CPR tools hidden for now — re-enable when certified payroll returns. */
