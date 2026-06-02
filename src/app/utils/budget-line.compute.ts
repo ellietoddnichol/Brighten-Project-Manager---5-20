@@ -207,7 +207,7 @@ export function computeBudgetRollup(
   } else if (!budgetAmount && project.estCostBudget) {
     budgetAmount = project.estCostBudget;
     budgetBasis = 'Manual';
-  } else if (!budgetAmount && !currentContract) {
+  } else if (!budgetAmount && !currentContract && !project.contractPending) {
     budgetBasis = 'MissingContract';
   }
 

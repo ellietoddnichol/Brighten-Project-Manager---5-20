@@ -40,6 +40,7 @@ import {
 } from './subcontractor-compliance.compute';
 import { laborBudgetFromLines, wagesAndFringeFromActuals } from './foreman-bonus.compute';
 import { arPastDueForProject } from './ar.compute';
+import { isMissingContract } from './project-money.compute';
 
 export interface Active2026ControlBuildInput {
   projects: Project[];
@@ -74,11 +75,6 @@ function mapBudgetBasis(financial: ProjectFinancial): ControlBudgetBasis {
       if (financial.budgetAmount > 0) return 'Manual';
       return 'Missing';
   }
-}
-
-function isMissingContract(financial: ProjectFinancial): boolean {
-  return !financial.currentContractAmount
-    || financial.budgetBasis === 'MissingContract';
 }
 
 function isMissingBudget(financial: ProjectFinancial, budgetBasis: ControlBudgetBasis): boolean {
@@ -365,7 +361,7 @@ export function buildActive2026ControlRow(
   const wip = ctx.wipByProjectId.get(project.id);
   const meta = active2026JobMeta(project.projectNumber);
   const budgetBasis = mapBudgetBasis(financial);
-  const missingContract = isMissingContract(financial);
+  const missingContract = isMissingContract(financial, project);
   const missingBudget = isMissingBudget(financial, budgetBasis);
 
   const projectCos = ctx.changeOrders.filter(co => co.projectId === project.id);
@@ -515,6 +511,8 @@ export function buildActive2026ControlRow(
     nextAction,
     hasApprovedCoNotBilled,
     missingContract,
+    contractPending: !!project.contractPending,
+    contractPendingNote: project.contractPendingNote,
     missingBudget,
     missingLaborBudget,
     needsReview: lifecycle.projectLifecycleGroup === 'NeedsReview' || (wip?.needsReview ?? false),
@@ -684,7 +682,8 @@ export function matchesControlSegment(row: Active2026ControlRow, segment: Contro
 export function rowWarningChips(row: Active2026ControlRow): string[] {
   if (isFullyBilledCompleteJob(row)) return [];
   const chips: string[] = [];
-  if (row.missingContract) chips.push('No contract');
+  if (row.contractPending) chips.push('Contract pending');
+  else if (row.missingContract) chips.push('No contract');
   if (row.arPastDue > 0) chips.push('AR past due');
   if (row.hasApprovedCoNotBilled) chips.push('CO not billed');
   if (row.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && row.currentContract > 0) chips.push('Low margin');

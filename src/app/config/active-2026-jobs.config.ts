@@ -53,6 +53,9 @@ export const ACTIVE_2026_JOBS: Active2026JobMeta[] = [
   { jobNumber: '226', project: 'Stowers Grad Classroom Ceilings', focus: 'Subs/material/labor, submittals, billing', budgetType: 'SpecialtySubHeavy' },
   { jobNumber: '227', project: 'Dole Misc Painting 4th & 6th', focus: 'Small/T&M job, labor/sub cost, billing', budgetType: 'TmDemoRepair' },
   { jobNumber: '228', project: 'Third Space Yoga Studio', focus: 'Full private project controls, VE, contract, billing, WIP', budgetType: 'FullConstruction' },
+  { jobNumber: '229', project: 'Gardenview', focus: 'Lakeview Village renovation, contract, billing, WIP', budgetType: 'FullConstruction' },
+  { jobNumber: '230', project: 'Whittaker USDC - Fitness Center', focus: 'Prevailing wage, separate from J221, billing, WIP', budgetType: 'FullConstruction' },
+  { jobNumber: '231', project: 'OPM 2nd Floor Office Renovation', focus: 'Davis Bacon / tax-exempt, separate from J227, billing, WIP', budgetType: 'FullConstruction' },
 ];
 
 export const ACTIVE_2026_JOB_NUMBERS = new Set(ACTIVE_2026_JOBS.map(j => j.jobNumber));

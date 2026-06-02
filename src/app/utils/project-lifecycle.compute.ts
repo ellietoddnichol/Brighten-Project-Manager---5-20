@@ -13,6 +13,26 @@ import { isArchiveJobNumber, isOpenArRecord } from './wip.compute';
 import { isOverheadJob, isClosedProject } from './project';
 import { isPendingCo } from './change-management';
 import { isForemanSetupMissing, deriveProjectStartDate } from './project-setup.util';
+import { PROJECT_SETUP_DEFAULTS } from '../config/project-setup-defaults.config';
+
+/** Gaps that should not block project setup completion (June 2026 rules). */
+const SETUP_INFORMATIONAL_FIELDS = new Set([
+  'contractPending',
+  'billingHistory',
+  'arStatus',
+  'actualCostSummary',
+  'totalBudget',
+  'estLaborCost',
+  'estSubCost',
+  'qboCustomer',
+  'closedDate',
+]);
+
+export function isSetupBlockingGap(gap: SeedCompletenessGap): boolean {
+  if (SETUP_INFORMATIONAL_FIELDS.has(gap.field)) return false;
+  if (gap.field === 'contractPending') return false;
+  return gap.blocksWorkflow || ['identity', 'drive', 'team'].includes(gap.category);
+}
 
 export const LIFECYCLE_ACTIVITY_YEAR = 2026;
 
@@ -327,22 +347,32 @@ export function computeSeedGaps(input: ProjectLifecycleInput, group: ProjectLife
   if (!project.projectName?.trim()) push('projectName', 'Project name', 'identity');
   if (!project.customer?.trim()) push('customer', 'Customer', 'identity', activeLike);
   if (!project.address?.trim()) push('address', 'Address', 'identity');
+  if (!project.county?.trim() && activeLike) push('county', 'County', 'identity', activeLike);
   if (!project.status?.trim()) push('status', 'Project status', 'status', activeLike);
   if (!project.projectProfile && activeLike) push('projectProfile', 'Project profile', 'drive');
   if (!project.driveFolderId && !project.driveFolderUrl && activeLike) {
     push('driveFolderId', 'Drive folder link', 'drive', group === 'Active' || group === 'Closeout');
   }
-  if (!(project.originalContractAmount ?? project.fullContractReference)) {
+  if (project.contractPending) {
+    push(
+      'contractPending',
+      project.contractPendingNote ?? 'Pending — waiting on awarded contract / proposal amount.',
+      'financials',
+      false,
+    );
+  } else if (!(project.originalContractAmount ?? project.fullContractReference)) {
     push('originalContractAmount', 'Original contract amount', 'financials', group === 'Active');
   }
-  if (!(project.estCostBudget ?? project.estLaborCost) && !input.budgetImported) {
-    push('totalBudget', 'Total budget', 'financials', group === 'Active');
+  if (!PROJECT_SETUP_DEFAULTS.budgetRequiredForSetup
+    && !(project.estCostBudget ?? project.estLaborCost)
+    && !input.budgetImported) {
+    push('totalBudget', 'Total budget', 'financials', false);
   }
   if (!(project.estLaborCost ?? 0) && input.bonusEligible && !input.laborBudgetImported) {
-    push('estLaborCost', 'Labor budget', 'financials', group === 'Active');
+    push('estLaborCost', 'Labor budget', 'financials', false);
   }
-  if (!input.qbCustomerLinked && activeLike && !project.customer?.trim()) {
-    push('qboCustomer', 'QBO customer reference', 'identity');
+  if (!PROJECT_SETUP_DEFAULTS.qboSyncBlocksSetup && !input.qbCustomerLinked && activeLike && !project.customer?.trim()) {
+    push('qboCustomer', 'QBO customer reference', 'identity', false);
   }
   if (['Complete', 'Closed', 'Archived'].includes(normalizeProjectStatus(project)) && !project.closedDate && !inferClosedDate(input)) {
     push('closedDate', 'Closed date', 'status');
@@ -350,33 +380,36 @@ export function computeSeedGaps(input: ProjectLifecycleInput, group: ProjectLife
   if (isForemanSetupMissing(project, !!input.hasForemanAssignment)) {
     push('foreman', 'Foreman', 'team', input.bonusEligible === true);
   }
-  if (project.prevailingWage && !project.wageOrderNumber?.trim()) {
-    push('wageOrderNumber', 'Wage order #', 'compliance', group === 'Active');
-  }
+  // Wage order numbers are future compliance items — not setup completion blockers (June 2026).
   if (project.prevailingWage && !(project.estSubCost ?? 0)) {
-    push('estSubCost', 'Subcontractor budget', 'financials');
+    push('estSubCost', 'Subcontractor budget', 'financials', false);
   }
-  if (activeLike && !(project.billedToDate ?? 0) && !(input.billings ?? []).some(b => b.projectId === project.id) && !input.qbBillingPresent) {
-    push('billingHistory', 'Billing / pay app history', 'reporting');
+  if (activeLike && !project.billingNotStarted && !(project.billedToDate ?? 0) && !(input.billings ?? []).some(b => b.projectId === project.id) && !input.qbBillingPresent) {
+    push('billingHistory', 'Billing / pay app history', 'reporting', false);
   }
-  if (activeLike && !(input.arRecords ?? []).some(a => a.projectId === project.id) && !input.qbArPresent) {
-    push('arStatus', 'AR status', 'reporting');
+  if (!PROJECT_SETUP_DEFAULTS.qboSyncBlocksSetup && activeLike && !(input.arRecords ?? []).some(a => a.projectId === project.id) && !input.qbArPresent) {
+    push('arStatus', 'AR status', 'reporting', false);
   }
-  if (!input.actualCostsImported && !input.qbIncomeSummaryPresent && !input.qbDetailCostPresent && activeLike && !(project.actualCostToDate ?? 0)) {
-    push('actualCostSummary', 'Actual cost summary', 'financials');
+  if (!PROJECT_SETUP_DEFAULTS.qboSyncBlocksSetup && !input.actualCostsImported && !input.qbIncomeSummaryPresent && !input.qbDetailCostPresent && activeLike && !(project.actualCostToDate ?? 0)) {
+    push('actualCostSummary', 'Actual cost summary', 'financials', false);
   }
 
   return gaps;
 }
 
 export function deriveSeedCompletenessStatus(gaps: SeedCompletenessGap[]): SeedCompletenessStatus {
-  if (!gaps.length) return 'Complete';
-  if (gaps.some(g => g.field === 'customer')) return 'MissingCustomer';
-  if (gaps.some(g => g.field === 'status')) return 'MissingStatus';
-  if (gaps.some(g => g.field === 'driveFolderId' || g.field === 'projectProfile')) return 'MissingDrive';
-  if (gaps.some(g => g.blocksWorkflow)) return 'NeedsReview';
-  if (gaps.some(g => g.category === 'financials')) return 'MissingFinancials';
+  const blocking = gaps.filter(isSetupBlockingGap);
+  if (!blocking.length) return 'Complete';
+  if (blocking.some(g => g.field === 'customer')) return 'MissingCustomer';
+  if (blocking.some(g => g.field === 'status')) return 'MissingStatus';
+  if (blocking.some(g => g.field === 'driveFolderId' || g.field === 'projectProfile')) return 'MissingDrive';
+  if (blocking.some(g => g.blocksWorkflow)) return 'NeedsReview';
+  if (blocking.some(g => g.category === 'financials' && g.field !== 'contractPending')) return 'MissingFinancials';
   return 'NeedsReview';
+}
+
+export function setupBlockingGaps(gaps: SeedCompletenessGap[]): SeedCompletenessGap[] {
+  return gaps.filter(isSetupBlockingGap);
 }
 
 export function computeProjectLifecycle(input: ProjectLifecycleInput): ProjectLifecycleSnapshot {

@@ -9,11 +9,12 @@ describe('global-nav.config', () => {
   it('defines construction-style sidebar sections', () => {
     expect(GLOBAL_MAIN_NAV.map(n => n.label)).toEqual([
       'Home',
-      'Projects',
-      'Tasks',
-      'Financials',
+      'Jobs',
+      'Money',
+      'Field',
       'Documents',
-      'Directory',
+      'People & Subs',
+      'Payroll',
     ]);
   });
 
@@ -24,25 +25,32 @@ describe('global-nav.config', () => {
     expect(home.isActive('/projects')).toBe(false);
   });
 
-  it('highlights Financials for child financial routes', () => {
-    const fin = GLOBAL_MAIN_NAV.find(n => n.id === 'financials')!;
-    expect(fin.isActive('/financials')).toBe(true);
-    expect(fin.isActive('/wip')).toBe(true);
-    expect(fin.isActive('/ar')).toBe(true);
-    expect(fin.isActive('/foreman-bonuses')).toBe(true);
+  it('highlights Money for child financial routes', () => {
+    const money = GLOBAL_MAIN_NAV.find(n => n.id === 'money')!;
+    expect(money.isActive('/financials')).toBe(true);
+    expect(money.isActive('/wip')).toBe(true);
+    expect(money.isActive('/ar')).toBe(true);
+    expect(money.isActive('/foreman-bonuses')).toBe(false);
+  });
+
+  it('highlights Payroll for payroll and labor routes', () => {
+    const payroll = GLOBAL_MAIN_NAV.find(n => n.id === 'payroll')!;
+    expect(payroll.isActive('/certified-payroll')).toBe(true);
+    expect(payroll.isActive('/labor-actuals')).toBe(true);
+    expect(payroll.isActive('/foreman-bonuses')).toBe(true);
   });
 
   it('shows no badge when counts are zero', () => {
-    const tasks = GLOBAL_MAIN_NAV.find(n => n.id === 'tasks')!;
-    expect(sidebarBadgeForNavItem(tasks, {})).toBeUndefined();
+    const field = GLOBAL_MAIN_NAV.find(n => n.id === 'field')!;
+    expect(sidebarBadgeForNavItem(field, {})).toBeUndefined();
   });
 
-  it('aggregates urgent badges for tasks section', () => {
-    const tasks = GLOBAL_MAIN_NAV.find(n => n.id === 'tasks')!;
+  it('aggregates urgent badges for field section', () => {
+    const field = GLOBAL_MAIN_NAV.find(n => n.id === 'field')!;
     const badges: Partial<Record<string, GlobalModuleBadge>> = {
       tasks: { count: 2, tone: 'urgent' },
       changes: { count: 3, tone: 'review' },
     };
-    expect(sidebarBadgeForNavItem(tasks, badges)).toEqual({ count: 2, tone: 'urgent' });
+    expect(sidebarBadgeForNavItem(field, badges)).toEqual({ count: 2, tone: 'urgent' });
   });
 });

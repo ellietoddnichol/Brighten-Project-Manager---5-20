@@ -58,6 +58,7 @@ function baseRow(overrides: Partial<Active2026ControlRow> = {}): Active2026Contr
     nextAction: { label: 'Review job', route: '/projects/p1' },
     hasApprovedCoNotBilled: false,
     missingContract: false,
+    contractPending: false,
     missingBudget: false,
     missingLaborBudget: false,
     needsReview: false,

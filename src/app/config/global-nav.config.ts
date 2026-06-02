@@ -2,21 +2,36 @@ import { GlobalModuleBadge, GlobalModuleId } from '../models/global-enabled-modu
 
 export type GlobalNavSectionId =
   | 'home'
-  | 'projects'
-  | 'tasks'
-  | 'financials'
+  | 'jobs'
+  | 'money'
+  | 'field'
   | 'documents'
-  | 'directory'
+  | 'people'
+  | 'payroll'
   | 'settings';
+
+export type GlobalNavGroupId =
+  | 'command'
+  | 'operations'
+  | 'money'
+  | 'field'
+  | 'people'
+  | 'admin';
 
 export interface GlobalNavItemConfig {
   id: GlobalNavSectionId;
   label: string;
   route: string;
   icon: string;
-  /** Badge sources — only urgent counts are shown in the sidebar. */
+  group: GlobalNavGroupId;
+  /** Badge sources. Only urgent and review counts are shown in the sidebar. */
   badgeSources?: GlobalModuleId[];
   isActive: (path: string) => boolean;
+}
+
+export interface GlobalNavGroupConfig {
+  id: GlobalNavGroupId;
+  label: string;
 }
 
 function pathMatches(path: string, prefix: string): boolean {
@@ -30,56 +45,82 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     label: 'Home',
     route: '/',
     icon: 'home',
+    group: 'command',
     isActive: path => path === '/' || path === '/active-2026-control',
   },
   {
-    id: 'projects',
-    label: 'Projects',
+    id: 'jobs',
+    label: 'Jobs',
     route: '/projects',
     icon: 'folder',
-    isActive: path => pathMatches(path, '/projects'),
-  },
-  {
-    id: 'tasks',
-    label: 'Tasks',
-    route: '/tasks',
-    icon: 'task_alt',
-    badgeSources: ['tasks', 'changes'],
+    group: 'operations',
+    badgeSources: ['active-2026-control'],
     isActive: path =>
-      path === '/tasks'
-      || pathMatches(path, '/tasks/board')
-      || pathMatches(path, '/changes'),
+      pathMatches(path, '/projects')
+      || pathMatches(path, '/active-2026-control'),
   },
   {
-    id: 'financials',
-    label: 'Financials',
+    id: 'money',
+    label: 'Money',
     route: '/financials',
     icon: 'payments',
-    badgeSources: ['ar'],
+    group: 'money',
+    badgeSources: ['ar', 'billing', 'wip', 'pos'],
     isActive: path =>
       pathMatches(path, '/financials')
       || pathMatches(path, '/wip')
       || pathMatches(path, '/ar')
       || pathMatches(path, '/billing')
-      || pathMatches(path, '/pos')
-      || pathMatches(path, '/foreman-bonuses')
-      || pathMatches(path, '/labor'),
+      || pathMatches(path, '/pos'),
+  },
+  {
+    id: 'field',
+    label: 'Field',
+    route: '/tasks',
+    icon: 'assignment',
+    group: 'field',
+    badgeSources: ['tasks', 'changes', 'rfis', 'submittals', 'daily-logs', 'field-issues'],
+    isActive: path =>
+      path === '/tasks'
+      || pathMatches(path, '/tasks/board')
+      || pathMatches(path, '/changes')
+      || pathMatches(path, '/rfis')
+      || pathMatches(path, '/submittals')
+      || pathMatches(path, '/daily-logs')
+      || pathMatches(path, '/field-issues'),
   },
   {
     id: 'documents',
     label: 'Documents',
     route: '/documents',
     icon: 'description',
+    group: 'field',
     badgeSources: ['missing-required-docs'],
     isActive: path => pathMatches(path, '/documents'),
   },
   {
-    id: 'directory',
-    label: 'Directory',
+    id: 'people',
+    label: 'People & Subs',
     route: '/directory',
     icon: 'contacts',
-    badgeSources: ['subcontractors'],
-    isActive: path => pathMatches(path, '/directory') || pathMatches(path, '/subcontractors'),
+    group: 'people',
+    badgeSources: ['subcontractors', 'sub-invoices'],
+    isActive: path =>
+      pathMatches(path, '/directory')
+      || pathMatches(path, '/subcontractors'),
+  },
+  {
+    id: 'payroll',
+    label: 'Payroll',
+    route: '/certified-payroll',
+    icon: 'badge',
+    group: 'people',
+    badgeSources: ['certified-payroll', 'labor', 'labor-actuals', 'foreman-bonuses'],
+    isActive: path =>
+      pathMatches(path, '/certified-payroll')
+      || pathMatches(path, '/labor-actuals')
+      || pathMatches(path, '/labor')
+      || pathMatches(path, '/foreman-bonuses'),
   },
 ];
 
@@ -88,8 +129,17 @@ export const GLOBAL_SETTINGS_NAV: GlobalNavItemConfig = {
   label: 'Settings',
   route: '/settings',
   icon: 'settings',
+  group: 'admin',
   isActive: path => pathMatches(path, '/settings'),
 };
+
+export const GLOBAL_NAV_GROUPS: GlobalNavGroupConfig[] = [
+  { id: 'command', label: 'Command' },
+  { id: 'operations', label: 'Operations' },
+  { id: 'money', label: 'Money' },
+  { id: 'field', label: 'Field' },
+  { id: 'people', label: 'People' },
+];
 
 export interface HubLink {
   title: string;
@@ -100,7 +150,7 @@ export interface HubLink {
 }
 
 export const FINANCIALS_HUB_LINKS: HubLink[] = [
-  { title: 'WIP', description: 'Earned revenue vs billed — job-level WIP review.', route: '/wip', icon: 'monitoring' },
+  { title: 'WIP', description: 'Earned revenue vs billed - job-level WIP review.', route: '/wip', icon: 'monitoring' },
   { title: 'Accounts Receivable', description: 'Open invoices, aging, and collections follow-up.', route: '/ar', icon: 'receipt_long' },
   { title: 'Billing', description: 'Pay apps, billing status, and left-to-bill.', route: '/billing', icon: 'request_quote' },
   { title: 'Purchase Orders', description: 'Purchase orders and committed costs.', route: '/pos', icon: 'shopping_cart' },

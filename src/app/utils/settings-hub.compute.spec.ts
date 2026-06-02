@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buildSettingsOverviewRows,
   settingsSegmentFromFragment,
   settingsFragmentForSegment,
   summarizeSettingsHub,
@@ -18,10 +17,13 @@ function row(overrides: Partial<SyncHealthRow> = {}): SyncHealthRow {
 }
 
 describe('settings-hub.compute', () => {
-  it('maps legacy fragments to segments', () => {
-    expect(settingsSegmentFromFragment('import-review')).toBe('sourceReview');
-    expect(settingsSegmentFromFragment('seed-completeness')).toBe('setup');
-    expect(settingsFragmentForSegment('sourceReview')).toBe('source-review');
+  it('maps legacy fragments to new segments', () => {
+    expect(settingsSegmentFromFragment('import-review')).toBe('reviewCenter');
+    expect(settingsSegmentFromFragment('seed-completeness')).toBe('reviewCenter');
+    expect(settingsSegmentFromFragment('sync-health')).toBe('sourceHealth');
+    expect(settingsSegmentFromFragment('quickbooks-sync')).toBe('sourceHealth');
+    expect(settingsSegmentFromFragment('labor-codes')).toBe('importCenter');
+    expect(settingsFragmentForSegment('reviewCenter')).toBe('review-center');
   });
 
   it('summarizes connected sources', () => {
@@ -35,26 +37,14 @@ describe('settings-hub.compute', () => {
         row({ id: 'firestore', status: 'connected' }),
         row({ id: 'budget-import', status: 'not_connected' }),
       ],
-      sourceReviewCount: 2,
+      reviewItemCount: 2,
       setupMissing: 3,
     });
     expect(summary.sourcesConnected).toBe(5);
-    expect(summary.sourceReviewItems).toBe(2);
+    expect(summary.reviewItems).toBe(2);
   });
 
   it('labels setup status for display', () => {
     expect(setupStatusLabel('MissingFinancials')).toContain('contract');
-  });
-
-  it('builds overview rows including source review', () => {
-    const rows = buildSettingsOverviewRows({
-      syncRows: [row({ id: 'qb-workbook', status: 'warning', warnings: ['Missing AR Aging'] })],
-      sourceReviewCount: 4,
-      setupMissing: 1,
-      driveIssuesActive: 2,
-      unmappedLaborCodes: 3,
-    });
-    expect(rows.some(r => r.category === 'Source Review')).toBe(true);
-    expect(rows.some(r => r.category === 'Labor Code Discovery')).toBe(true);
   });
 });

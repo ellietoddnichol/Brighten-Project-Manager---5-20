@@ -8,13 +8,16 @@ import { filter, map, startWith } from 'rxjs/operators';
 import { GlobalNeedsService } from '../../services/global-needs.service';
 import {
   GLOBAL_MAIN_NAV,
+  GLOBAL_NAV_GROUPS,
   GLOBAL_SETTINGS_NAV,
+  GlobalNavGroupConfig,
   GlobalNavItemConfig,
   sidebarBadgeForNavItem,
 } from '../../config/global-nav.config';
 import { GlobalModuleBadge } from '../../models/global-enabled-modules.types';
 
 type NavRow = GlobalNavItemConfig & { badge?: GlobalModuleBadge };
+type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
 
 @Component({
   selector: 'app-sidebar',
@@ -31,21 +34,30 @@ type NavRow = GlobalNavItemConfig & { badge?: GlobalModuleBadge };
       </div>
 
       <nav class="flex-1 px-2 py-3 overflow-y-auto">
-        <div class="space-y-0.5">
-          @for (item of mainNav(); track item.id) {
-            <a [routerLink]="item.route"
-               [class.bg-slate-800]="isActive(item)"
-               [class.text-white]="isActive(item)"
-               [class.text-slate-400]="!isActive(item)"
-               class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium min-w-0">
-              <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0 opacity-90">{{ item.icon }}</mat-icon>
-              <span class="truncate flex-1">{{ item.label }}</span>
-              @if (item.badge; as badge) {
-                <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full shrink-0"
-                      [class.bg-rose-600]="badge.tone === 'urgent'"
-                      [class.bg-amber-500]="badge.tone === 'review'">{{ badge.count }}</span>
-              }
-            </a>
+        <div class="space-y-4">
+          @for (group of navGroups(); track group.id) {
+            <section>
+              <div class="px-3 mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                {{ group.label }}
+              </div>
+              <div class="space-y-0.5">
+                @for (item of group.items; track item.id) {
+                  <a [routerLink]="item.route"
+                     [class.bg-slate-800]="isActive(item)"
+                     [class.text-white]="isActive(item)"
+                     [class.text-slate-400]="!isActive(item)"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium min-w-0">
+                    <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0 opacity-90">{{ item.icon }}</mat-icon>
+                    <span class="truncate flex-1">{{ item.label }}</span>
+                    @if (item.badge; as badge) {
+                      <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full shrink-0"
+                            [class.bg-rose-600]="badge.tone === 'urgent'"
+                            [class.bg-amber-500]="badge.tone === 'review'">{{ badge.count }}</span>
+                    }
+                  </a>
+                }
+              </div>
+            </section>
           }
         </div>
       </nav>
@@ -89,6 +101,14 @@ export class SidebarComponent {
       const badge = sidebarBadgeForNavItem(item, badges);
       return badge ? { ...item, badge } : item;
     });
+  });
+
+  navGroups = computed((): NavGroup[] => {
+    const items = this.mainNav();
+    return GLOBAL_NAV_GROUPS.map(group => ({
+      ...group,
+      items: items.filter(item => item.group === group.id),
+    })).filter(group => group.items.length > 0);
   });
 
   isActive(item: GlobalNavItemConfig): boolean {

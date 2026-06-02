@@ -20,6 +20,8 @@ function setupGapActionLabel(gap: SeedCompletenessGap): string {
     case 'wageOrderNumber':
     case 'customer':
       return 'Open Job Record';
+    case 'contractPending':
+      return 'Awaiting contract';
     case 'originalContractAmount':
     case 'totalBudget':
     case 'estLaborCost':

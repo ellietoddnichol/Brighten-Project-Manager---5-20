@@ -25,6 +25,11 @@ export interface BillingSovSummaryRow {
   sovCompletedTotal?: number;
   contractSovDiff?: number;
   reviewFlag?: string;
+  billingType?: string;
+  recordType?: 'PayApp' | 'Invoice';
+  invoiceNumber?: string;
+  invoiceDate?: string;
+  dueDate?: string;
 }
 
 export interface BillingSovLineRow {

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, input } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -32,9 +32,10 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
   template: `
 
-    <section id="import-review" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="import-review" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6" [class.p-4]="compactMode()" [class.rounded-xl]="compactMode()" [class.mb-0]="compactMode()">
       <span id="source-review" class="sr-only"></span>
 
+      @if (!compactMode()) {
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
 
         <div>
@@ -104,7 +105,7 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
                   class="bg-fuchsia-700 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
 
-            {{ billingSov.running() ? 'Importing…' : 'Import Billing/SOV baseline (May 2026)' }}
+            {{ billingSov.running() ? 'Importing…' : 'Import Billing/SOV (May–Jun 2026)' }}
 
           </button>
 
@@ -119,16 +120,15 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
         </div>
 
       </div>
+      }
 
-
-
-      @if (qbSync.lastMessage()) {
+      @if (!compactMode() && qbSync.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ qbSync.lastMessage() }}</p>
 
       }
 
-      @if (qbSync.lastSyncError()) {
+      @if (!compactMode() && qbSync.lastSyncError()) {
 
         <p class="text-sm text-red-600 mb-2">{{ qbSync.lastSyncError() }}</p>
 
@@ -136,31 +136,31 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
 
 
-      @if (invoicePacket.lastMessage()) {
+      @if (!compactMode() && invoicePacket.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ invoicePacket.lastMessage() }}</p>
 
       }
 
-      @if (wipForecast.lastMessage()) {
+      @if (!compactMode() && wipForecast.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ wipForecast.lastMessage() }}</p>
 
       }
 
-      @if (wipSetup.lastMessage()) {
+      @if (!compactMode() && wipSetup.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ wipSetup.lastMessage() }}</p>
 
       }
 
-      @if (arAging.lastMessage()) {
+      @if (!compactMode() && arAging.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ arAging.lastMessage() }}</p>
 
       }
 
-      @if (billingSov.lastMessage()) {
+      @if (!compactMode() && billingSov.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-2">{{ billingSov.lastMessage() }}</p>
 
@@ -168,7 +168,7 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
 
 
-      @if (importSeed.lastMessage()) {
+      @if (!compactMode() && importSeed.lastMessage()) {
 
         <p class="text-sm text-emerald-700 mb-4">{{ importSeed.lastMessage() }}</p>
 
@@ -176,7 +176,7 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
 
 
-      @if (importSeed.sourceWarnings().length || qbSyncWarnings().length) {
+      @if (!compactMode() && (importSeed.sourceWarnings().length || qbSyncWarnings().length)) {
 
         <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 mb-4">
 
@@ -198,6 +198,7 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 
 
 
+      @if (!compactMode()) {
       <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-6">
 
         <h3 class="text-sm font-bold text-slate-700 mb-2">QuickBooks Project Mgmt Sync</h3>
@@ -264,6 +265,7 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
         </div>
 
       </div>
+      }
 
 
 
@@ -468,6 +470,8 @@ import { QB_DETAIL_COST_WARNING } from '../config/qb-project-mgmt-sync.config';
 })
 
 export class SettingsImportReview {
+
+  compactMode = input(false);
 
   review = inject(ImportReviewService);
 

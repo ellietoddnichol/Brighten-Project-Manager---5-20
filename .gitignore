@@ -9,6 +9,13 @@
 gen-lang-client-*.json
 serviceAccountKey.json
 
+# Local reference files and downloaded business reports
+/reference-files/
+/*.xlsx
+/*.xls
+/*.csv
+/*.pdf
+
 # Compiled output
 /dist
 /tmp

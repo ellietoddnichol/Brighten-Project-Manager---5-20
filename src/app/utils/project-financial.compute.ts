@@ -221,7 +221,7 @@ export function buildProjectFinancial(
     needsReview: !!project.seedActionRequired
       || project.wipStatus === 'Needs Review'
       || (effectiveContract > 0 && forecastMargin < 20)
-      || budgetBasis === 'MissingContract',
+      || (budgetBasis === 'MissingContract' && !project.contractPending),
     reviewNotes: project.seedActionRequired,
     budgetIsEstimated,
     budgetBasis,

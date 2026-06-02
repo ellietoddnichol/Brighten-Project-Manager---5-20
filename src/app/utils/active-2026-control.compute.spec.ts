@@ -64,6 +64,7 @@ function sampleRow(overrides: Partial<Active2026ControlRow> = {}): Active2026Con
     nextAction: { label: 'On track', route: '/projects/p1' },
     hasApprovedCoNotBilled: false,
     missingContract: false,
+    contractPending: false,
     missingBudget: false,
     missingLaborBudget: false,
     needsReview: false,

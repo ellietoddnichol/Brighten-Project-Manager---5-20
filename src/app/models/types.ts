@@ -22,6 +22,11 @@ export interface Project {
   superintendent?: string;
   contractType?: string;
   originalContractAmount?: number;
+  /** Awarded contract not yet finalized — do not treat as missing-contract blocker. */
+  contractPending?: boolean;
+  contractPendingNote?: string;
+  /** Job has not started billing; SOV/pay app history not required until first invoice. */
+  billingNotStarted?: boolean;
   retainagePercent?: number;
   taxable?: boolean;
   taxExempt?: boolean;
@@ -410,6 +415,10 @@ export interface Billing {
   billingNotes?: string;
   reviewFlag?: string;
   reviewLocked?: boolean;
+  billingRecordType?: 'PayApp' | 'Invoice';
+  billingTypeLabel?: string;
+  invoiceDate?: string;
+  dueDate?: string;
   createdAt?: any;
   updatedAt?: any;
   ownerId?: string;

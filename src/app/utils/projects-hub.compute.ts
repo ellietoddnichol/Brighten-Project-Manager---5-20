@@ -144,7 +144,7 @@ export function buildProjectWarnings(input: {
 
   const contract = input.financial.currentContractAmount;
 
-  if (!contract || input.financial.budgetBasis === 'MissingContract') {
+  if ((!contract || input.financial.budgetBasis === 'MissingContract') && !input.project.contractPending) {
     push('missing-contract', 'Missing contract', 'critical');
   }
   if (input.arPastDueAmount > 0) {
@@ -162,9 +162,6 @@ export function buildProjectWarnings(input: {
   }
   if (!input.project.projectProfile) {
     push('missing-profile', 'Missing profile', 'setup');
-  }
-  if (input.project.prevailingWage && !input.project.wageOrderNumber?.trim()) {
-    push('missing-wage-order', 'Missing wage order', 'setup');
   }
   if (input.financial.budgetIsEstimated || input.financial.budgetBasis === 'EstimatedFrom20PercentTarget') {
     push('budget-estimate', 'Confirm budget estimate', 'setup');
@@ -250,7 +247,8 @@ export function summarizeProjectsHub(
   const activeScope = rows.filter(r => r.lifecycle.includeInDefaultScope);
   const missingDrive = activeScope.filter(r => !r.driveLinked).length;
   const missingContract = activeScope.filter(r =>
-    !r.financial.currentContractAmount || r.financial.budgetBasis === 'MissingContract',
+    !r.project.contractPending
+    && (!r.financial.currentContractAmount || r.financial.budgetBasis === 'MissingContract'),
   ).length;
   const missingSetup = activeScope.filter(r =>
     r.warnings.some(w => w.kind === 'setup'),
@@ -284,6 +282,7 @@ export function matchesProjectsAdvancedFilters(
   for (const flag of filters.flags) {
     switch (flag) {
       case 'missingContract':
+        if (project.contractPending) return false;
         if (financial.currentContractAmount && financial.budgetBasis !== 'MissingContract') return false;
         break;
       case 'missingBudget':

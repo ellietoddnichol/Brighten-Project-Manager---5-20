@@ -50,7 +50,11 @@ function openFinancial(pid: string, view: FinancialView): ControlNextAction {
   };
 }
 
-export function isMissingContract(financial: ProjectFinancial): boolean {
+export function isMissingContract(
+  financial: ProjectFinancial,
+  project?: Pick<Project, 'contractPending'>,
+): boolean {
+  if (project?.contractPending) return false;
   return !financial.currentContractAmount || financial.budgetBasis === 'MissingContract';
 }
 
@@ -67,7 +71,14 @@ export function missingMoneyPrompts(
   hasApprovedCoNotBilled: boolean,
 ): MoneyMissingPrompt[] {
   const prompts: MoneyMissingPrompt[] = [];
-  if (isMissingContract(financial)) {
+  if (project.contractPending) {
+    prompts.push({
+      id: 'contract-pending',
+      label: project.contractPendingNote ?? 'Pending — waiting on awarded contract / proposal amount.',
+      actionLabel: 'Awaiting contract',
+      view: 'summary',
+    });
+  } else if (isMissingContract(financial, project)) {
     prompts.push({
       id: 'missing-contract',
       label: 'Contract amount missing',
@@ -146,7 +157,10 @@ export function deriveMoneyNextAction(input: {
   return { label: 'On track', route: `/projects/${pid}`, view: 'summary' };
 }
 
-export function moneyOverviewCards(financial: ProjectFinancial): MoneyOverviewCard[] {
+export function moneyOverviewCards(
+  financial: ProjectFinancial,
+  project?: Pick<Project, 'contractPending' | 'contractPendingNote'>,
+): MoneyOverviewCard[] {
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
   const marginAlert = financial.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100 && financial.currentContractAmount > 0;
@@ -154,8 +168,12 @@ export function moneyOverviewCards(financial: ProjectFinancial): MoneyOverviewCa
     ? { label: 'Open AR', value: fmt(financial.arBalance), id: 'ar' as const, alert: true }
     : { label: 'Left to Bill', value: fmt(financial.leftToBill), id: 'billing' as const };
 
+  const contractValue = project?.contractPending
+    ? (project.contractPendingNote ?? 'Pending')
+    : fmt(financial.currentContractAmount);
+
   return [
-    { id: 'contract', label: 'Contract', value: fmt(financial.currentContractAmount), subtext: financial.approvedChangeOrderAmount ? `+${fmt(financial.approvedChangeOrderAmount)} COs` : undefined },
+    { id: 'contract', label: 'Contract', value: contractValue, subtext: project?.contractPending ? undefined : (financial.approvedChangeOrderAmount ? `+${fmt(financial.approvedChangeOrderAmount)} COs` : undefined) },
     { id: 'actual-cost', label: 'Actual Cost', value: fmt(financial.costToDate), subtext: `Est final ${fmt(financial.estimatedFinalCost)}` },
     { id: 'margin', label: 'Projected Margin', value: `${financial.forecastMargin.toFixed(1)}%`, subtext: fmt(financial.forecastGrossProfit) + ' profit', alert: marginAlert },
     { id: arOrLeft.id, label: arOrLeft.label, value: arOrLeft.value, alert: arOrLeft.alert },

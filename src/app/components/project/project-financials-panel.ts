@@ -171,10 +171,14 @@ import {
         @switch (drawerType()) {
           @case ('contract') {
             <app-drawer-section title="Contract">
-              <app-drawer-field label="Original" [value]="fmt(financial().originalContractAmount)" [mono]="true" />
-              <app-drawer-field label="Approved COs" [value]="fmt(financial().approvedChangeOrderAmount)" [mono]="true" />
-              <app-drawer-field label="Pending COs" [value]="fmt(financial().pendingChangeOrderAmount)" [mono]="true" />
-              <app-drawer-field label="Current Contract" [value]="fmt(financial().currentContractAmount)" [mono]="true" />
+              @if (project.contractPending) {
+                <app-drawer-field label="Status" [value]="project.contractPendingNote ?? 'Pending — waiting on awarded contract / proposal amount.'" />
+              } @else {
+                <app-drawer-field label="Original" [value]="fmt(financial().originalContractAmount)" [mono]="true" />
+                <app-drawer-field label="Approved COs" [value]="fmt(financial().approvedChangeOrderAmount)" [mono]="true" />
+                <app-drawer-field label="Pending COs" [value]="fmt(financial().pendingChangeOrderAmount)" [mono]="true" />
+                <app-drawer-field label="Current Contract" [value]="fmt(financial().currentContractAmount)" [mono]="true" />
+              }
             </app-drawer-section>
           }
           @case ('budget') {
@@ -284,7 +288,7 @@ export class ProjectFinancialsPanelComponent {
     return missingMoneyPrompts(this.project, fin, this.approvedUnbilledCount() > 0);
   });
 
-  overviewCards = computed(() => moneyOverviewCards(this.financial()));
+  overviewCards = computed(() => moneyOverviewCards(this.financial(), this.project));
 
   nextAction = computed(() => {
     const fin = this.financial();
@@ -294,7 +298,7 @@ export class ProjectFinancialsPanelComponent {
     return deriveMoneyNextAction({
       projectId: this.project.id,
       financial: fin,
-      missingContract: isMissingContract(fin),
+      missingContract: isMissingContract(fin, this.project),
       missingRealBudget: isMissingRealBudget(fin),
       hasApprovedCoNotBilled: this.approvedUnbilledCount() > 0,
       arPastDue: arPastDueForProject(this.project.id, this.arRecords() ?? []),

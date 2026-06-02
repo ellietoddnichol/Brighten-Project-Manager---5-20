@@ -1,46 +1,29 @@
 import { SyncHealthRow, SyncHealthStatus } from '../services/sync-health.service';
 import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
 import { Project } from '../models/types';
+import { setupBlockingGaps } from './project-lifecycle.compute';
 
 export type SettingsSegmentId =
-  | 'overview'
-  | 'syncHealth'
-  | 'setup'
-  | 'sourceReview'
-  | 'laborCodes'
-  | 'driveLinks'
-  | 'quickbooks'
-  | 'features'
+  | 'sourceHealth'
+  | 'setupDefaults'
+  | 'reviewCenter'
+  | 'importCenter'
   | 'advanced';
 
 export interface SettingsHubSummary {
   sourcesConnected: number;
   sourcesTotal: number;
-  sourceReviewItems: number;
+  reviewItems: number;
   setupMissing: number;
   syncWarnings: number;
 }
 
-export interface SettingsOverviewRow {
-  id: string;
-  category: string;
-  status: string;
-  explanation: string;
-  nextAction: string;
-  severity: 'error' | 'warning' | 'neutral';
-  segment: SettingsSegmentId;
-}
-
-export const SETTINGS_SEGMENT_OPTIONS: { id: SettingsSegmentId; label: string }[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'syncHealth', label: 'Sync Health' },
-  { id: 'setup', label: 'Setup Completeness' },
-  { id: 'sourceReview', label: 'Source Review' },
-  { id: 'laborCodes', label: 'Labor Codes' },
-  { id: 'driveLinks', label: 'Drive Links' },
-  { id: 'quickbooks', label: 'QuickBooks' },
-  { id: 'features', label: 'Features' },
-  { id: 'advanced', label: 'Advanced' },
+export const SETTINGS_SEGMENT_OPTIONS: { id: SettingsSegmentId; label: string; description: string }[] = [
+  { id: 'sourceHealth', label: 'Source Health', description: 'Drive, QuickBooks, Timekeeper, billing, and app database status' },
+  { id: 'setupDefaults', label: 'Setup Defaults', description: 'Foreman rules, required fields, and prevailing wage logic' },
+  { id: 'reviewCenter', label: 'Review Center', description: 'Exceptions grouped by what needs attention' },
+  { id: 'importCenter', label: 'Import Center', description: 'Active imports — pay apps, invoices, budgets, labor' },
+  { id: 'advanced', label: 'Advanced', description: 'One-time baseline tools and developer options' },
 ];
 
 const PRIMARY_SOURCE_IDS = new Set([
@@ -53,37 +36,38 @@ const PRIMARY_SOURCE_IDS = new Set([
 ]);
 
 const FRAGMENT_TO_SEGMENT: Record<string, SettingsSegmentId> = {
-  overview: 'overview',
-  'sync-health': 'syncHealth',
-  'setup-completeness': 'setup',
-  'seed-completeness': 'setup',
-  'import-review': 'sourceReview',
-  'source-review': 'sourceReview',
-  'labor-codes': 'laborCodes',
-  'drive-folders': 'driveLinks',
-  'drive-links': 'driveLinks',
-  'quickbooks-sync': 'quickbooks',
-  quickbooks: 'quickbooks',
-  'feature-setup': 'features',
+  'source-health': 'sourceHealth',
+  'sync-health': 'sourceHealth',
+  'setup-defaults': 'setupDefaults',
+  'review-center': 'reviewCenter',
+  'setup-completeness': 'reviewCenter',
+  'seed-completeness': 'reviewCenter',
+  'import-review': 'reviewCenter',
+  'source-review': 'reviewCenter',
+  'import-center': 'importCenter',
+  'labor-codes': 'importCenter',
+  'drive-folders': 'sourceHealth',
+  'drive-links': 'sourceHealth',
+  'quickbooks-sync': 'sourceHealth',
+  quickbooks: 'sourceHealth',
+  'feature-setup': 'advanced',
+  features: 'advanced',
   advanced: 'advanced',
+  overview: 'sourceHealth',
 };
 
 const SEGMENT_TO_FRAGMENT: Record<SettingsSegmentId, string> = {
-  overview: 'overview',
-  syncHealth: 'sync-health',
-  setup: 'setup-completeness',
-  sourceReview: 'source-review',
-  laborCodes: 'labor-codes',
-  driveLinks: 'drive-links',
-  quickbooks: 'quickbooks-sync',
-  features: 'feature-setup',
+  sourceHealth: 'source-health',
+  setupDefaults: 'setup-defaults',
+  reviewCenter: 'review-center',
+  importCenter: 'import-center',
   advanced: 'advanced',
 };
 
 export function normalizeSettingsSegment(value: string | null | undefined): SettingsSegmentId {
-  if (!value) return 'overview';
+  if (!value) return 'sourceHealth';
   const allowed = new Set(SETTINGS_SEGMENT_OPTIONS.map(o => o.id));
-  return allowed.has(value as SettingsSegmentId) ? (value as SettingsSegmentId) : 'overview';
+  return allowed.has(value as SettingsSegmentId) ? (value as SettingsSegmentId) : 'sourceHealth';
 }
 
 export function settingsSegmentFromFragment(fragment: string | null | undefined): SettingsSegmentId | null {
@@ -116,9 +100,9 @@ export function setupStatusLabel(status: string): string {
 export function syncStatusLabel(status: SyncHealthStatus): string {
   switch (status) {
     case 'connected': return 'Connected';
-    case 'warning': return 'Warning';
+    case 'warning': return 'Needs attention';
     case 'error': return 'Error';
-    case 'not_connected': return 'Not connected';
+    case 'not_connected': return 'Not configured';
     default: return status;
   }
 }
@@ -127,13 +111,13 @@ export function countSetupMissing(projects: Project[], lifecycleFor: (p: Project
   return projects.filter(p => {
     const snap = lifecycleFor(p);
     if (!isActiveSetupProject(snap)) return false;
-    return snap.seedCompletenessStatus !== 'Complete' || snap.seedGaps.length > 0;
+    return setupBlockingGaps(snap.seedGaps).length > 0;
   }).length;
 }
 
 export function summarizeSettingsHub(input: {
   syncRows: SyncHealthRow[];
-  sourceReviewCount: number;
+  reviewItemCount: number;
   setupMissing: number;
 }): SettingsHubSummary {
   const primary = input.syncRows.filter(r => PRIMARY_SOURCE_IDS.has(r.id));
@@ -146,132 +130,20 @@ export function summarizeSettingsHub(input: {
   return {
     sourcesConnected: connected,
     sourcesTotal: primary.length,
-    sourceReviewItems: input.sourceReviewCount,
+    reviewItems: input.reviewItemCount,
     setupMissing: input.setupMissing,
     syncWarnings,
   };
 }
 
-export function buildSettingsOverviewRows(input: {
-  syncRows: SyncHealthRow[];
-  sourceReviewCount: number;
-  setupMissing: number;
-  driveIssuesActive: number;
-  unmappedLaborCodes: number;
-}): SettingsOverviewRow[] {
-  const rows: SettingsOverviewRow[] = [];
-
-  const masterTime = input.syncRows.find(r => r.id === 'master-time');
-  if (masterTime && masterTime.status !== 'connected') {
-    rows.push({
-      id: 'action-master-time',
-      category: 'Master Time Sheet',
-      status: syncStatusLabel(masterTime.status),
-      explanation: masterTime.detail ?? 'Labor and time entries sync from the Master Time Sheet.',
-      nextAction: masterTime.nextAction ?? 'Re-sync Master Time Sheet',
-      severity: masterTime.status === 'error' ? 'error' : 'warning',
-      segment: 'syncHealth',
-    });
-  }
-
-  const qb = input.syncRows.find(r => r.id === 'qb-workbook');
-  rows.push({
-    id: 'action-qb',
-    category: 'QuickBooks workbook',
-    status: qb ? syncStatusLabel(qb.status) : 'Not connected',
-    explanation: qb?.detail ?? 'Accounting sync from the QuickBooks Project Mgmt Sync Workbook.',
-    nextAction: qb?.nextAction ?? 'Re-sync QuickBooks workbook',
-    severity: qb?.status === 'error' ? 'error' : (qb?.status === 'warning' ? 'warning' : 'neutral'),
-    segment: 'quickbooks',
-  });
-
-  if (input.unmappedLaborCodes > 0) {
-    rows.push({
-      id: 'action-labor',
-      category: 'Labor Code Discovery',
-      status: `${input.unmappedLaborCodes} unmapped`,
-      explanation: 'Labor codes are discovered from the Master Time Sheet, not bundled files.',
-      nextAction: 'Discover labor codes',
-      severity: 'warning',
-      segment: 'laborCodes',
-    });
-  } else {
-    rows.push({
-      id: 'action-labor-discover',
-      category: 'Labor Code Discovery',
-      status: 'Review mappings',
-      explanation: 'Discover and classify labor codes from the Master Time Sheet.',
-      nextAction: 'Discover labor codes',
-      severity: 'neutral',
-      segment: 'laborCodes',
-    });
-  }
-
-  rows.push({
-    id: 'action-subs',
-    category: 'Subcontractor Discovery',
-    status: 'QuickBooks / Drive',
-    explanation: 'Discover vendors from QuickBooks sync and Drive Subs folders.',
-    nextAction: 'Discover subcontractors',
-    severity: 'neutral',
-    segment: 'syncHealth',
-  });
-
-  if (input.sourceReviewCount > 0) {
-    rows.push({
-      id: 'action-review',
-      category: 'Source Review',
-      status: `${input.sourceReviewCount} unresolved`,
-      explanation: 'Unmatched projects, vendors, labor codes, and manual conflicts need review.',
-      nextAction: 'Review unmatched source rows',
-      severity: 'warning',
-      segment: 'sourceReview',
-    });
-  }
-
-  if (input.driveIssuesActive > 0) {
-    rows.push({
-      id: 'action-drive',
-      category: 'Drive Links',
-      status: `${input.driveIssuesActive} active job(s)`,
-      explanation: 'Google Drive stores files; Firestore stores folder links and file metadata.',
-      nextAction: 'Fix missing Drive links',
-      severity: 'warning',
-      segment: 'driveLinks',
-    });
-  }
-
-  if (input.setupMissing > 0) {
-    rows.push({
-      id: 'action-setup',
-      category: 'Setup Completeness',
-      status: `${input.setupMissing} active job(s)`,
-      explanation: 'Missing contract, profile, PM/foreman, Drive, or CPR decisions on active jobs.',
-      nextAction: 'Review setup completeness',
-      severity: 'warning',
-      segment: 'setup',
-    });
-  }
-
-  rows.push({
-    id: 'action-features',
-    category: 'Feature Setup',
-    status: 'Rollout matrix',
-    explanation: 'See which modules are active, hidden, or need verification.',
-    nextAction: 'Open Feature Setup',
-    severity: 'neutral',
-    segment: 'features',
-  });
-
-  return rows;
-}
-
-export function settingsHubCsvRows(summary: SettingsHubSummary, overview: SettingsOverviewRow[]): string[][] {
+export function settingsHubCsvRows(summary: SettingsHubSummary): string[][] {
   return [
     ['Sources connected', `${summary.sourcesConnected}/${summary.sourcesTotal}`],
-    ['Source review items', String(summary.sourceReviewItems)],
+    ['Review items', String(summary.reviewItems)],
     ['Setup missing (active)', String(summary.setupMissing)],
     ['Sync warnings', String(summary.syncWarnings)],
-    ...overview.map(r => [r.category, r.status, r.explanation, r.nextAction]),
   ];
 }
+
+/** @deprecated Use reviewCenter segment */
+export type LegacySettingsSegmentId = SettingsSegmentId;

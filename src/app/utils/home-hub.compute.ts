@@ -89,13 +89,13 @@ export function homeSourceHealthFragment(id: string): string | undefined {
   switch (id) {
     case 'master-time':
     case 'qb-workbook':
-      return 'quickbooks-sync';
+      return 'source-health';
     case 'drive-folders':
-      return 'drive-folders';
+      return 'import-center';
     case 'labor-codes':
-      return 'labor-codes';
+      return 'import-center';
     case 'import-exceptions':
-      return 'import-review';
+      return 'review-center';
     default:
       return undefined;
   }
@@ -109,7 +109,7 @@ export function buildHomePriorities(input: {
   const items: HomePriorityItem[] = [];
 
   for (const row of input.rows) {
-    if (row.missingContract) {
+    if (row.missingContract && !row.contractPending) {
       items.push({
         id: `${row.projectId}-missing-contract`,
         jobNumber: row.jobNumber,
@@ -209,7 +209,7 @@ export function buildHomePriorities(input: {
       severity: 'warning',
       nextActionLabel: 'Re-sync QuickBooks',
       route: '/settings',
-      fragment: 'quickbooks-sync',
+      fragment: 'source-health',
       source: 'QB',
       rank: 50,
     });
@@ -222,7 +222,7 @@ export function buildHomePriorities(input: {
       severity: 'warning',
       nextActionLabel: 'Review sources',
       route: '/settings',
-      fragment: 'import-review',
+      fragment: 'review-center',
       source: 'Manual',
       rank: 60,
     });

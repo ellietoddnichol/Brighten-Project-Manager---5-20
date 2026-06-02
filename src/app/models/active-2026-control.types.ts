@@ -103,6 +103,8 @@ export interface Active2026ControlRow {
   nextAction: ControlNextAction;
   hasApprovedCoNotBilled: boolean;
   missingContract: boolean;
+  contractPending: boolean;
+  contractPendingNote?: string;
   missingBudget: boolean;
   missingLaborBudget: boolean;
   needsReview: boolean;

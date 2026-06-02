@@ -121,7 +121,7 @@ export function detectWipReviewFlags(ctx: WipComputeContext, wipGroup: WipGroup)
   const flags: string[] = [];
   const isActiveGroup = wipGroup === 'ActiveWIP' || wipGroup === 'UpcomingWIP';
 
-  if (!financial.currentContractAmount && isActiveGroup && project.status === 'Active') {
+  if (!financial.currentContractAmount && isActiveGroup && project.status === 'Active' && !project.contractPending) {
     flags.push('Missing contract amount');
   }
   if (!financial.budgetAmount && !financial.budgetIsEstimated && isActiveGroup) {

@@ -11,7 +11,17 @@ export interface WipSetupProjectRow {
   prevailingWage?: boolean;
   arStatus?: string;
   originalContractAmount?: number;
+  /** @deprecated Use contractPending */
+  contractTbd?: boolean;
+  contractPending?: boolean;
+  contractPendingNote?: string;
+  billingNotStarted?: boolean;
   billingType?: 'T&M' | 'Lump Sum' | 'Progress Billing';
+  driveFolderUrl?: string;
+  targetCompletionDate?: string;
+  taxExempt?: boolean;
+  setupComplete?: boolean;
+  setupNotes?: string;
 }
 
 export interface WipSetupSeed {
@@ -24,6 +34,7 @@ export interface WipSetupSeed {
 
 export interface WipSetupImportResult {
   projectsPatched: number;
+  projectsCreated: number;
   foremanDefaultsApplied: number;
   unmatched: number;
 }

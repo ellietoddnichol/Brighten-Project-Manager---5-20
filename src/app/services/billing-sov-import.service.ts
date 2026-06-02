@@ -23,13 +23,15 @@ function billingImportKey(jobNumber: string, payAppNumber: string): string {
   return `billing-sov|${normalizeJobNumber(jobNumber)}|${payAppNumber.trim()}`;
 }
 
-function mapBillingStatus(raw?: string): Billing['status'] {
+function mapBillingStatus(raw?: string, recordType?: string): Billing['status'] {
   const s = (raw ?? '').toLowerCase();
+  if (s.includes('complete')) return 'Approved';
   if (s.includes('waiting on a/r') || s.includes('waiting on ar')) return 'Invoiced';
   if (s.includes('paid')) return 'Paid';
   if (s.includes('approved')) return 'Approved';
   if (s.includes('past due')) return 'Past Due';
   if (s.includes('void')) return 'Void';
+  if (recordType === 'Invoice') return 'Invoiced';
   return 'Submitted';
 }
 
@@ -155,7 +157,7 @@ export class BillingSovImportService {
       );
 
       this.importReview.logRun({
-        label: 'Billing / SOV baseline (May 2026)',
+        label: 'Billing / SOV baseline (May–Jun 2026)',
         created: result.billingsCreated + result.sovLinesUpserted,
         updated: result.billingsUpdated + result.projectsPatched,
         skipped: 0,
@@ -190,7 +192,7 @@ export class BillingSovImportService {
       billingPeriod: periodLabel,
       billingPeriodStart: row.periodStart ?? undefined,
       billingPeriodEnd: row.periodEnd ?? undefined,
-      status: mapBillingStatus(row.billingStatus),
+      status: mapBillingStatus(row.billingStatus, row.recordType),
       importSourceKey,
       payAppContractSum: row.payAppContractSum,
       originalContractAmount: row.originalContract,
@@ -212,6 +214,11 @@ export class BillingSovImportService {
       billingNotes: row.notes,
       reviewFlag: row.reviewFlag,
       reviewLocked: false,
+      billingRecordType: row.recordType ?? 'PayApp',
+      billingTypeLabel: row.billingType,
+      invoiceNumber: row.invoiceNumber,
+      invoiceDate: row.invoiceDate,
+      dueDate: row.dueDate,
     };
 
     if (existing) {
@@ -244,6 +251,8 @@ export class BillingSovImportService {
       incoming.originalContractAmount = row.appContractOverride;
     } else if (row.payAppContractSum != null && !project.originalContractAmount) {
       incoming.originalContractAmount = row.payAppContractSum;
+    } else if (row.jobNumber === '212' && project.originalContractAmount) {
+      // J212: do not overwrite project contract from pay app — review flag only
     }
 
     const { patch, conflicts } = mergeImportProjectPatch(project, incoming);
