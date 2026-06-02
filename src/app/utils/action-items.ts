@@ -71,6 +71,11 @@ function isFieldActive(project: Project): boolean {
   return project.status === 'Active' || project.status === 'Closeout';
 }
 
+function isBillingNotStarted(project: Project): boolean {
+  return project.billingNotStarted === true
+    || project.billingStatus === 'Not started / No billing yet';
+}
+
 function isSetupEligible(project: Project): boolean {
   return project.status === 'Active' || project.status === 'Closeout' || project.status === 'Awarded' || project.status === 'Setup Needed';
 }
@@ -96,7 +101,7 @@ function projectInfoExceptions(project: Project): ActionItem[] {
     });
   }
 
-  if (isFieldActive(project) && !project.originalContractAmount) {
+  if (isFieldActive(project) && !project.originalContractAmount && !project.contractPending) {
     items.push({
       id: `contract-${project.id}`,
       projectId: project.id,
@@ -149,7 +154,7 @@ function budgetPoHealthItems(
     });
   }
 
-  if (rollup.budgetAmount > 0 && rollup.estimatedFinalCost > rollup.budgetAmount) {
+  if (!rollup.budgetIsEstimated && rollup.budgetAmount > 0 && rollup.estimatedFinalCost > rollup.budgetAmount) {
     items.push({
       id: `budget-over-${project.id}`,
       projectId: project.id,
@@ -215,17 +220,8 @@ function wipArHealthItems(
     project, changeOrders, billings, budgetLines, pos, [], arRecords, laborActuals,
   );
 
-  if (fin.overUnderBilling > 500) {
-    items.push({
-      id: `overbill-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Overbilling',
-      description: 'Billed amount exceeds earned revenue.',
-      type: 'WIP',
-      severity: 'warning',
-    });
-  }
+  if (isBillingNotStarted(project)) return items;
+  return items;
   if (fin.billedToDate > fin.currentContractAmount && fin.currentContractAmount > 0) {
     items.push({
       id: `billed-over-${project.id}`,
@@ -370,7 +366,7 @@ function cprHealthItems(
     });
   }
 
-  if (isCertifiedPayrollProject(project) && !project.wageOrderNumber) {
+  if (false && isCertifiedPayrollProject(project) && !project.wageOrderNumber) {
     items.push({
       id: `cpr-wage-order-${project.id}`,
       projectId: project.id,
@@ -542,7 +538,7 @@ function foremanBonusHealthItems(
   const projectRecords = records.filter(r => r.projectId === project.id);
   const projectAssignments = assignments.filter(a => a.projectId === project.id && a.bonusEligible);
 
-  if (!projectAssignments.length && isFieldActive(project)) {
+  if (false && !projectAssignments.length && isFieldActive(project)) {
     items.push({
       id: `foreman-bonus-assign-${project.id}`,
       projectId: project.id,

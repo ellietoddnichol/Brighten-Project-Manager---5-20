@@ -9,6 +9,17 @@ import type { NormalizedProjectStatus, ProjectLifecycleGroup, SeedCompletenessSt
 
 export type ProjectStatus = 'Lead / Precon' | 'Awarded' | 'Setup Needed' | 'Active' | 'Closeout' | 'Closed';
 export type BillingType = 'Lump Sum' | 'T&M' | 'Progress Billing';
+export type ProjectBillingFrequency = 'Monthly' | 'OneTime' | 'AsNeeded';
+export type ProjectBillingStatus =
+  | 'Not started / No billing yet'
+  | 'Progress billing'
+  | 'Current pay app submitted'
+  | 'Waiting on AR'
+  | 'Paid'
+  | 'Retainage release'
+  | 'Final billing'
+  | 'T&M invoice'
+  | 'Invoice-only';
 export type WipStatus = 'Pre Con' | 'In Progress' | 'Needs Review' | 'Complete' | 'Closed' | 'T&M';
 
 export interface Project {
@@ -27,6 +38,12 @@ export interface Project {
   contractPendingNote?: string;
   /** Job has not started billing; SOV/pay app history not required until first invoice. */
   billingNotStarted?: boolean;
+  billingStatus?: ProjectBillingStatus | string;
+  billingDay?: number;
+  billingFrequency?: ProjectBillingFrequency;
+  /** QuickBooks/source project start date; not necessarily actual field start. */
+  qboStartDate?: string;
+  sourceStartDate?: string;
   retainagePercent?: number;
   taxable?: boolean;
   taxExempt?: boolean;

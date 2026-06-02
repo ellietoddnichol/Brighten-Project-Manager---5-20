@@ -23,7 +23,8 @@
       "customer": "Lakeview Village",
       "foreman": "Kyle",
       "prevailingWage": false,
-      "originalContractAmount": 740000
+      "originalContractAmount": 740000,
+      "qboStartDate": "2025-09-02"
     },
     {
       "jobNumber": "189",
@@ -34,6 +35,7 @@
       "customer": "BKM Construction LLC",
       "prevailingWage": true,
       "originalContractAmount": 85020,
+      "qboStartDate": "2025-10-01",
       "setupNotes": "Pay App 001 workbook appears blank/zero template; billing/SOV not imported until confirmed."
     },
     {
@@ -44,7 +46,8 @@
       "profileLabel": "L&W",
       "customer": "Newkirk Novak",
       "prevailingWage": false,
-      "originalContractAmount": 77491
+      "originalContractAmount": 77491,
+      "qboStartDate": "2025-10-16"
     },
     {
       "jobNumber": "197",
@@ -55,7 +58,8 @@
       "customer": "Lakeview Village",
       "foreman": "Kyle",
       "prevailingWage": false,
-      "originalContractAmount": 34000
+      "originalContractAmount": 34000,
+      "qboStartDate": "2025-11-13"
     },
     {
       "jobNumber": "204",
@@ -66,7 +70,8 @@
       "customer": "XEC, Inc",
       "foreman": "Dustin",
       "prevailingWage": false,
-      "originalContractAmount": 335450
+      "originalContractAmount": 335450,
+      "qboStartDate": "2026-01-01"
     },
     {
       "jobNumber": "206",
@@ -77,7 +82,8 @@
       "customer": "Lakeview Village",
       "foreman": "Kyle",
       "prevailingWage": false,
-      "originalContractAmount": 665000
+      "originalContractAmount": 665000,
+      "qboStartDate": "2026-02-09"
     },
     {
       "jobNumber": "208",
@@ -87,7 +93,8 @@
       "profileLabel": "L&W / Prevailing Wage",
       "customer": "Universal Construction",
       "prevailingWage": true,
-      "originalContractAmount": 360220
+      "originalContractAmount": 360220,
+      "qboStartDate": "2026-05-01"
     },
     {
       "jobNumber": "209",
@@ -99,7 +106,8 @@
       "foreman": "AJ",
       "prevailingWage": false,
       "billingType": "T&M",
-      "originalContractAmount": 17350
+      "originalContractAmount": 17350,
+      "qboStartDate": "2026-02-09"
     },
     {
       "jobNumber": "210",
@@ -121,7 +129,8 @@
       "profileLabel": "Other",
       "customer": "Newkirk Novak",
       "prevailingWage": false,
-      "originalContractAmount": 91775,
+      "originalContractAmount": 79250,
+      "qboStartDate": "2026-03-09",
       "setupNotes": "Project contract $91,775; pay app contract sum $79,250 — confirm before overwriting."
     },
     {
@@ -132,7 +141,8 @@
       "profileLabel": "Other / Prevailing Wage",
       "customer": "BKM Construction LLC",
       "prevailingWage": true,
-      "originalContractAmount": 12720
+      "originalContractAmount": 12720,
+      "qboStartDate": "2026-04-29"
     },
     {
       "jobNumber": "216",
@@ -142,7 +152,8 @@
       "profileLabel": "Other",
       "customer": "Purdum",
       "prevailingWage": false,
-      "originalContractAmount": 3478.7
+      "originalContractAmount": 3478.7,
+      "qboStartDate": "2026-03-31"
     },
     {
       "jobNumber": "217",
@@ -153,7 +164,9 @@
       "customer": "Purdum",
       "prevailingWage": false,
       "originalContractAmount": 85044.15,
-      "billingNotStarted": true
+      "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
+      "qboStartDate": "2026-03-31"
     },
     {
       "jobNumber": "218",
@@ -189,6 +202,7 @@
       "contractPending": true,
       "contractPendingNote": "Pending — waiting on awarded contract / proposal amount.",
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/19SI9dVwLxQiiqJjtYNNWIW4xT0RmNUpS",
       "setupNotes": "No billing yet."
     },
@@ -201,6 +215,7 @@
       "customer": "BKM Construction LLC",
       "prevailingWage": true,
       "originalContractAmount": 600,
+      "qboStartDate": "2026-04-26",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1PMvbuc113dXd8bLt67_aTUW7qXye69Hj",
       "setupNotes": "Keep separate from J230 Whittaker USDC Fitness Center."
     },
@@ -213,6 +228,7 @@
       "customer": "Newkirk Novak",
       "prevailingWage": false,
       "originalContractAmount": 2010000,
+      "qboStartDate": "2026-04-26",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1mmXgOPUlDegiAqn9L3rGhSPQLWlEBOS3"
     },
     {
@@ -224,6 +240,7 @@
       "customer": "Newkirk Novak",
       "prevailingWage": true,
       "originalContractAmount": 10550,
+      "qboStartDate": "2026-05-16",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1Kw2zpJ3v9f_E4Az0JhZ77xjnUaZ7PakH"
     },
     {
@@ -248,6 +265,7 @@
       "originalContractAmount": 26500,
       "targetCompletionDate": "2026-11-20",
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/17qkjBuSZeiw4pZpjcFfA8k0uz9WqrFMA"
     },
     {
@@ -260,6 +278,7 @@
       "prevailingWage": false,
       "originalContractAmount": 6695,
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1iGIWX7nmD3fAXudFmc_QzF4-Dm-v-i7a",
       "setupNotes": "PO 101200447. Billing not started."
     },
@@ -273,6 +292,7 @@
       "prevailingWage": false,
       "originalContractAmount": 1977.6,
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1gYkV44Tim2QIVf08i7qvC0ZVVqCIp9oR",
       "setupNotes": "Proposal: 4th Floor Office Painting $618; 6th Floor Visiting Judge's Office $824; Court Room Portraits $535.60; Total $1,977.60. Keep separate from J231 OPM."
     },
@@ -286,6 +306,8 @@
       "prevailingWage": false,
       "originalContractAmount": 525000,
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
+      "qboStartDate": "2026-04-30",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1dIv9gk3Uds_6YgHggyTLiMPqXeaPAEZk"
     },
     {
@@ -299,6 +321,7 @@
       "prevailingWage": false,
       "originalContractAmount": 725000,
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1yqh_mob4ZTOpTNZiSS0TRt4R-K2bTiMP"
     },
     {
@@ -312,22 +335,25 @@
       "originalContractAmount": 22950,
       "targetCompletionDate": "2026-09-11",
       "billingNotStarted": true,
-      "setupNotes": "Drive folder unresolved — do not assign J232 link until user confirms. Keep separate from J221."
+      "billingStatus": "Not started / No billing yet",
+      "driveFolderId": "manual-j230-confirmed",
+      "setupNotes": "Drive linked per user confirmation. Keep separate from J221."
     },
     {
       "jobNumber": "231",
       "projectName": "OPM 2nd Floor Office Renovation",
-      "address": "601 E 12th St Kansas City MO 64106",
+      "address": "601 E. 12th St, Kansas City, MO 64106",
       "county": "JAC",
       "profileLabel": "Other / Prevailing Wage",
-      "customer": "TBD — confirm BKM/GSA",
+      "customer": "BKM",
       "prevailingWage": true,
       "taxExempt": true,
       "originalContractAmount": 12150,
       "targetCompletionDate": "2026-06-03",
       "billingNotStarted": true,
+      "billingStatus": "Not started / No billing yet",
       "driveFolderUrl": "https://drive.google.com/drive/folders/1RNk1L3w69w_aaktiX8L12TwafzE9MvXb",
-      "setupNotes": "Customer/GC TBD — confirm BKM/GSA. Keep separate from J227."
+      "setupNotes": "Tax-exempt Davis-Bacon job. Keep separate from J227."
     }
   ]
 }

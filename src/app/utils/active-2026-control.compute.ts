@@ -132,12 +132,29 @@ function subComplianceCounts(
   };
 }
 
-function deriveBillingStatus(financial: ProjectFinancial, hasApprovedCoNotBilled: boolean): string {
-  if (financial.billedToDate > financial.currentContractAmount && financial.currentContractAmount > 0) {
-    return 'Overbilled';
-  }
-  if (hasApprovedCoNotBilled || financial.leftToBill > 5000) return 'Needs billing';
+const DEFAULT_BILLING_DAY = 20;
+
+function billingDateForMonth(today = new Date(), billingDay = DEFAULT_BILLING_DAY): Date {
+  return new Date(today.getFullYear(), today.getMonth(), billingDay);
+}
+
+function hasBillingCycleArrived(project: Project, today = new Date()): boolean {
+  return today >= billingDateForMonth(today, project.billingDay ?? DEFAULT_BILLING_DAY);
+}
+
+function hasBillableActivity(project: Project, financial: ProjectFinancial): boolean {
+  return !project.billingNotStarted
+    && ((financial.billedToDate ?? 0) > 0
+      || (financial.costToDate ?? 0) > 0
+      || (project.actualCostToDate ?? 0) > 0);
+}
+
+function deriveBillingStatus(project: Project, financial: ProjectFinancial): string {
+  if (project.billingStatus?.trim()) return project.billingStatus.trim();
+  if (project.billingNotStarted) return 'Not started / No billing yet';
   if (financial.arBalance > 0) return 'Open AR';
+  if (financial.billedToDate > 0) return 'Progress billing';
+  if (hasBillingCycleArrived(project) && hasBillableActivity(project, financial)) return 'Billing review';
   return 'Current';
 }
 
@@ -145,11 +162,10 @@ function deriveCprStatus(project: Project): { required: boolean; status: string;
   if (!project.prevailingWage) {
     return { required: false, status: 'Not required', missingSetup: false };
   }
-  const missingSetup = !project.wageOrderNumber?.trim();
   return {
     required: true,
-    status: missingSetup ? 'Setup needed' : 'Configured',
-    missingSetup,
+    status: 'Compliance tab',
+    missingSetup: false,
   };
 }
 
@@ -201,12 +217,6 @@ export function deriveNextAction(input: {
   if (input.budgetBasis === 'EstimatedFrom20PercentTarget') {
     return { ...openProject('budget'), label: 'Confirm budget estimate' };
   }
-  if (input.financial.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100 && input.financial.currentContractAmount > 0) {
-    return { ...openProject('wip'), label: 'Review margin under 20%' };
-  }
-  if (input.hasApprovedCoNotBilled) {
-    return { ...openProject('billing'), label: 'Bill approved CO' };
-  }
   if (input.arPastDue > 0) {
     return { ...openProject('ar'), label: 'Follow up AR (past due)' };
   }
@@ -247,10 +257,7 @@ export function isCriticalRisk(input: {
   if (input.fullyBilledComplete) return false;
   if (input.closedInActiveView) return true;
   return input.missingContract
-    || (input.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && input.currentContract > 0)
-    || input.budgetVariance < -1000
-    || input.arPastDue > 0
-    || input.billedOverContract;
+    || input.arPastDue > 0;
 }
 
 export function isSetupNeededRow(row: Pick<Active2026ControlRow,
@@ -259,9 +266,7 @@ export function isSetupNeededRow(row: Pick<Active2026ControlRow,
 >): boolean {
   if (isFullyBilledCompleteJob(row)) return false;
   return !row.foreman.trim()
-    || !row.driveLinked
-    || row.missingBudget
-    || row.missingLaborBudget;
+    || !row.driveLinked;
 }
 
 export function isReviewNeededRow(row: Pick<Active2026ControlRow,
@@ -271,7 +276,6 @@ export function isReviewNeededRow(row: Pick<Active2026ControlRow,
   if (isFullyBilledCompleteJob(row)) return false;
   return row.budgetBasis === 'EstimatedFrom20PercentTarget'
     || row.needsReview
-    || row.missingItemCount > 0
     || row.missingW9Count > 0
     || row.missingCoiCount > 0
     || row.reviewFlags.some(f => f.toLowerCase().includes('qb') || f.toLowerCase().includes('seed'));
@@ -313,8 +317,6 @@ export function deriveHealthStatus(input: {
   if (
     input.missingForeman
     || input.missingDrive
-    || input.missingBudget
-    || input.missingLaborBudget
     || input.subComplianceGap
     || input.budgetBasis === 'EstimatedFrom20PercentTarget'
     || input.needsReview
@@ -473,7 +475,7 @@ export function buildActive2026ControlRow(
     arBalance: financial.arBalance,
     arPastDue,
     retainage: financial.retainageHeld,
-    billingStatus: deriveBillingStatus(financial, hasApprovedCoNotBilled),
+    billingStatus: deriveBillingStatus(project, financial),
 
     budgetBasis,
     totalBudget: financial.budgetAmount,
@@ -568,7 +570,7 @@ export function summarizeActive2026Control(rows: Active2026ControlRow[]): Active
     billedToDateTotal: billed,
     leftToBillTotal: left,
     openArTotal: ar,
-    jobsUnder20Margin: rows.filter(r => r.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && r.currentContract > 0).length,
+    jobsUnder20Margin: rows.filter(r => r.budgetBasis !== 'EstimatedFrom20PercentTarget' && r.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && r.currentContract > 0).length,
     jobsMissingContract: rows.filter(r => r.missingContract).length,
     jobsMissingBudget: rows.filter(r => r.missingBudget).length,
     jobsMissingLaborBudget: rows.filter(r => r.missingLaborBudget).length,
@@ -669,7 +671,7 @@ export function matchesControlSegment(row: Active2026ControlRow, segment: Contro
     case 'reviewNeeded':
       return isReviewNeededRow(row);
     case 'billing':
-      return row.arBalance > 0 || row.arPastDue > 0 || row.hasApprovedCoNotBilled;
+      return row.arBalance > 0 || row.arPastDue > 0 || row.billingStatus === 'Billing review';
     case 'cpr':
       return row.cprRequired;
     case 'subs':
@@ -685,7 +687,5 @@ export function rowWarningChips(row: Active2026ControlRow): string[] {
   if (row.contractPending) chips.push('Contract pending');
   else if (row.missingContract) chips.push('No contract');
   if (row.arPastDue > 0) chips.push('AR past due');
-  if (row.hasApprovedCoNotBilled) chips.push('CO not billed');
-  if (row.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && row.currentContract > 0) chips.push('Low margin');
   return chips.slice(0, 2);
 }

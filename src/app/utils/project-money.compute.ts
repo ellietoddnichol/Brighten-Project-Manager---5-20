@@ -1,7 +1,6 @@
 import { ControlNextAction } from '../models/active-2026-control.types';
 import { ProjectFinancial } from '../models/financial.types';
 import { Project } from '../models/types';
-import { BRIGHTEN_PROFIT_TARGET } from '../config/active-2026-jobs.config';
 import { ProjectEnabledModules } from '../models/project-needs.types';
 import { FinancialView } from '../components/project/project-detail.types';
 
@@ -130,12 +129,6 @@ export function deriveMoneyNextAction(input: {
   if (fin.budgetIsEstimated && fin.currentContractAmount > 0) {
     return { ...openFinancial(pid, 'budget'), label: 'Confirm 80% budget estimate', view: 'budget' };
   }
-  if (fin.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100 && fin.currentContractAmount > 0) {
-    return { ...openFinancial(pid, 'wip'), label: 'Review margin under 20%', view: 'wip' };
-  }
-  if (input.hasApprovedCoNotBilled) {
-    return { ...openFinancial(pid, 'billing'), label: 'Bill approved CO', view: 'billing' };
-  }
   if (input.arPastDue > 0) {
     return { ...openFinancial(pid, 'ar'), label: 'Follow up AR', view: 'ar' };
   }
@@ -163,7 +156,7 @@ export function moneyOverviewCards(
 ): MoneyOverviewCard[] {
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
-  const marginAlert = financial.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100 && financial.currentContractAmount > 0;
+  const marginAlert = false;
   const arOrLeft = financial.arBalance > 0
     ? { label: 'Open AR', value: fmt(financial.arBalance), id: 'ar' as const, alert: true }
     : { label: 'Left to Bill', value: fmt(financial.leftToBill), id: 'billing' as const };
@@ -196,8 +189,8 @@ export function moneyCompactStats(
   return [
     { label: 'Budget Basis', value: budgetBasis, drawer: 'budget' },
     { label: 'Cost to Complete', value: fmt(financial.costToComplete), drawer: 'actual-cost' },
-    { label: 'Over/Under Billing', value: fmt(financial.overUnderBilling), alert: financial.overUnderBilling > 1000, drawer: 'billing' },
-    { label: 'Approved Unbilled COs', value: String(approvedUnbilledCoCount), alert: approvedUnbilledCoCount > 0, drawer: 'billing' },
+    { label: 'Over/Under Billing', value: fmt(financial.overUnderBilling), drawer: 'billing' },
+    { label: 'Approved Unbilled COs', value: String(approvedUnbilledCoCount), drawer: 'billing' },
     { label: 'Next Action', value: nextActionLabel },
   ];
 }

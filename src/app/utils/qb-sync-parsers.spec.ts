@@ -82,9 +82,9 @@ describe('parseArAgingSummaryReportRows', () => {
       ['As of Jun 2, 2026', '', '', '', '', '', ''],
       ['', 'CURRENT', '1 - 30', '31 - 60', '61 - 90', '91 AND OVER', 'Total'],
       ['BKM Contruction LLC', '', '', '', '', '', ''],
-      ['215 - 2306 Visitor Center', 12720, '', '', '', '', 12720],
-      ['Total for BKM Contruction LLC', 12720, 0, 0, 0, 0, 12720],
-      ['TOTAL', 12720, 0, 0, 0, 0, 12720],
+      ['215 - 2306 Visitor Center', '12720', '', '', '', '', '12720'],
+      ['Total for BKM Contruction LLC', '12720', '0', '0', '0', '0', '12720'],
+      ['TOTAL', '12720', '0', '0', '0', '0', '12720'],
     ];
     const parsed = parseArAgingSummaryReportRows(rows);
     expect(parsed).toHaveLength(1);

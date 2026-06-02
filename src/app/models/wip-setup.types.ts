@@ -17,6 +17,12 @@ export interface WipSetupProjectRow {
   contractPendingNote?: string;
   billingNotStarted?: boolean;
   billingType?: 'T&M' | 'Lump Sum' | 'Progress Billing';
+  billingStatus?: string;
+  billingDay?: number;
+  billingFrequency?: 'Monthly' | 'OneTime' | 'AsNeeded';
+  qboStartDate?: string;
+  sourceStartDate?: string;
+  driveFolderId?: string;
   driveFolderUrl?: string;
   targetCompletionDate?: string;
   taxExempt?: boolean;

@@ -81,8 +81,8 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Active Jobs" [value]="fmtCount(summary().activeJobs)" icon="work" />
-        <app-stat-card label="Critical Risk" [value]="fmtCount(summary().jobsCriticalRisk)"
-                       [subtext]="summary().jobsCriticalRisk ? 'Margin, AR, contract' : 'None critical'"
+        <app-stat-card label="Review Items" [value]="fmtCount(summary().jobsCriticalRisk)"
+                       [subtext]="summary().jobsCriticalRisk ? 'True urgent items' : 'No urgent items'"
                        icon="warning" />
         <app-stat-card label="Open AR" [value]="fmtCurrency(summary().openArTotal)"
                        [subtext]="summary().openArTotal > 0 ? summary().jobsArPastDue + ' past due' : undefined"
@@ -300,7 +300,7 @@ export class Active2026ControlPage {
       seg === 'all' ? rows.length : rows.filter(r => matchesControlSegment(r, seg)).length;
     return [
       { id: 'all' as ControlSegmentId, label: 'All', badge: count('all') || undefined },
-      { id: 'criticalRisk' as ControlSegmentId, label: 'Critical', badge: count('criticalRisk') || undefined },
+      { id: 'criticalRisk' as ControlSegmentId, label: 'Review', badge: count('criticalRisk') || undefined },
       { id: 'billing' as ControlSegmentId, label: 'Billing', badge: count('billing') || undefined },
     ];
   });
@@ -308,7 +308,7 @@ export class Active2026ControlPage {
   compactStats = computed(() => {
     const s = this.summary();
     return [
-      { label: 'Critical Risk', value: String(s.jobsCriticalRisk), alert: s.jobsCriticalRisk > 0 },
+      { label: 'Review Items', value: String(s.jobsCriticalRisk), alert: s.jobsCriticalRisk > 0 },
       { label: 'Open AR', value: this.fmtCurrency(s.openArTotal), alert: s.openArTotal > 0 },
       { label: 'Left to Bill', value: this.fmtCurrency(s.leftToBillTotal), alert: false },
     ];

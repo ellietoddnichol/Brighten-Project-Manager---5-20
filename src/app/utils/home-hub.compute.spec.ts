@@ -96,11 +96,11 @@ describe('home-hub.compute', () => {
     expect(snapshot[0]?.projectId).toBe('red');
   });
 
-  it('counts billing segment jobs', () => {
+  it('does not count approved COs alone as billing actions', () => {
     const rows = [
       baseRow({ projectId: 'bill', hasApprovedCoNotBilled: true }),
       baseRow({ projectId: 'ok', arBalance: 0, hasApprovedCoNotBilled: false, leftToBill: 0 }),
     ];
-    expect(countBillingActions(rows)).toBe(1);
+    expect(countBillingActions(rows)).toBe(0);
   });
 });

@@ -1,4 +1,3 @@
-import { BRIGHTEN_PROFIT_TARGET } from '../config/active-2026-jobs.config';
 import { Active2026ControlRow } from '../models/active-2026-control.types';
 import { matchesControlSegment } from './active-2026-control.compute';
 
@@ -154,21 +153,6 @@ export function buildHomePriorities(input: {
       });
     }
 
-    if (row.hasApprovedCoNotBilled) {
-      items.push({
-        id: `${row.projectId}-co-not-billed`,
-        jobNumber: row.jobNumber,
-        projectName: row.projectName,
-        projectId: row.projectId,
-        issue: 'Approved CO not billed',
-        severity: 'warning',
-        nextActionLabel: 'Bill change order',
-        route: '/billing',
-        source: 'Manual',
-        rank: 40,
-      });
-    }
-
     if (!row.driveLinked) {
       items.push({
         id: `${row.projectId}-missing-drive`,
@@ -239,10 +223,7 @@ export function rankSnapshotImportance(row: Active2026ControlRow): number {
   else if (row.healthStatus === 'Yellow') score += 500;
   if (row.missingContract) score += 400;
   if (row.arPastDue > 0) score += 350;
-  if (row.hasApprovedCoNotBilled) score += 300;
-  if (row.projectedMarginPct < BRIGHTEN_PROFIT_TARGET * 100 && row.currentContract > 0) score += 250;
   score += row.arBalance / 1000;
-  score += row.leftToBill / 2000;
   score += row.missingItemCount * 15;
   return score;
 }

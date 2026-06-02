@@ -149,6 +149,16 @@ export class WipSetupImportService {
     if (row.billingNotStarted) {
       patch.billingNotStarted = true;
     }
+    patch.billingDay = row.billingDay ?? project.billingDay ?? 20;
+    patch.billingFrequency = row.billingFrequency ?? project.billingFrequency ?? 'Monthly';
+    patch.billingType = row.billingType ?? project.billingType ?? 'Progress Billing';
+    if (row.billingStatus?.trim()) {
+      patch.billingStatus = row.billingStatus.trim();
+    } else if (row.billingNotStarted) {
+      patch.billingStatus = 'Not started / No billing yet';
+    }
+    if (row.qboStartDate?.trim()) patch.qboStartDate = row.qboStartDate.trim().slice(0, 10);
+    if (row.sourceStartDate?.trim()) patch.sourceStartDate = row.sourceStartDate.trim().slice(0, 10);
 
     if (row.profileLabel) {
       patch.projectProfile = mapSetupProfileLabel(row.profileLabel, prevailingWage);
@@ -166,7 +176,7 @@ export class WipSetupImportService {
       patch.superintendent = foreman;
     }
 
-    const folderId = driveFolderIdFromUrl(row.driveFolderUrl);
+    const folderId = row.driveFolderId?.trim() || driveFolderIdFromUrl(row.driveFolderUrl);
     if (folderId && !project.driveFolderId) {
       patch.driveFolderId = folderId;
       patch.driveFolderUrl = row.driveFolderUrl;
