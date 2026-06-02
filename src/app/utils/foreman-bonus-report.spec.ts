@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { buildCombinedPayPeriodSummaryHtml } from './foreman-bonus-report';
 import { dustinJob163 } from './foreman-bonus.fixtures';
 import { summarizeForemanBonusRecords } from './foreman-bonus.compute';

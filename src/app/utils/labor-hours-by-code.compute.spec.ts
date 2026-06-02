@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { groupHoursByLaborCode } from './labor-hours-by-code.compute';
 
 describe('labor-hours-by-code.compute', () => {
