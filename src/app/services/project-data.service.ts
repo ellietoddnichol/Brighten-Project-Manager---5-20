@@ -442,19 +442,6 @@ export class ProjectDataService {
         });
       }
     }
-    for (const project of data.projects) {
-      if (project.openAR > 10000) {
-        items.push({
-          id: `ar-sheet-${project.projectId}`,
-          projectId: project.projectId,
-          projectName: `${project.projectNo} — ${project.projectName}`,
-          title: 'Open AR balance',
-          description: `${project.openAR.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })} outstanding`,
-          severity: 'warning',
-          type: 'billing',
-        });
-      }
-    }
     return items;
   }
 }

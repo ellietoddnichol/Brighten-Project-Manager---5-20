@@ -10,7 +10,7 @@ import { ForemanBonusRecord } from '../models/foreman-bonus.types';
 import { Billing, ChangeOrder, PO, Project } from '../models/types';
 import { isApprovedUnbilledCo } from '../utils/change-management';
 import { resolveProjectLabel } from '../utils/project';
-import { budgetBasisDisplayLabel, isOpenArRecord } from '../utils/wip.compute';
+import { budgetBasisDisplayLabel } from '../utils/wip.compute';
 import { ArComputeContext, buildArJobRows } from './ar.compute';
 
 export type FinancialsSegmentId =
@@ -173,7 +173,6 @@ export function buildFinancialsOverviewRows(input: {
   qbWarnings: string[];
 }): FinancialsActionRow[] {
   const rows: FinancialsActionRow[] = [];
-  const today = new Date().toISOString().slice(0, 10);
 
   for (const w of input.wipRecords) {
     if (!['ActiveWIP', 'UpcomingWIP'].includes(w.wipGroup)) continue;
@@ -191,31 +190,6 @@ export function buildFinancialsOverviewRows(input: {
         section: 'underMargin',
       });
     }
-  }
-
-  const openAr = input.arRecords.filter(r => isOpenArRecord(r.status));
-  const arByProject = new Map<string, ARRecord[]>();
-  for (const r of openAr) {
-    const list = arByProject.get(r.projectId) ?? [];
-    list.push(r);
-    arByProject.set(r.projectId, list);
-  }
-  for (const [projectId, recs] of arByProject) {
-    const total = recs.reduce((s, r) => s + r.openBalance, 0);
-    const pastDue = recs.some(r => r.dueDate && r.dueDate.slice(0, 10) < today);
-    const first = recs[0];
-    rows.push({
-      id: `ar-${projectId}`,
-      jobNumber: first.jobNumber ?? '—',
-      projectName: first.projectName ?? '—',
-      projectId,
-      issueType: pastDue ? 'AR past due — collections' : 'Open AR balance',
-      amount: total,
-      severity: pastDue ? 'error' : 'warning',
-      nextAction: 'Follow up AR',
-      route: '/ar',
-      section: 'collections',
-    });
   }
 
   for (const w of input.wipRecords) {

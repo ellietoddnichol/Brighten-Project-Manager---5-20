@@ -129,12 +129,6 @@ export function deriveMoneyNextAction(input: {
   if (fin.budgetIsEstimated && fin.currentContractAmount > 0) {
     return { ...openFinancial(pid, 'budget'), label: 'Confirm 80% budget estimate', view: 'budget' };
   }
-  if (input.arPastDue > 0) {
-    return { ...openFinancial(pid, 'ar'), label: 'Follow up AR', view: 'ar' };
-  }
-  if (input.arBalance > 0) {
-    return { ...openFinancial(pid, 'ar'), label: 'Follow up AR', view: 'ar' };
-  }
   if (input.costOverBudget) {
     return { ...openFinancial(pid, 'budget'), label: 'Review cost over budget', view: 'budget' };
   }
@@ -158,7 +152,7 @@ export function moneyOverviewCards(
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
   const marginAlert = false;
   const arOrLeft = financial.arBalance > 0
-    ? { label: 'Open AR', value: fmt(financial.arBalance), id: 'ar' as const, alert: true }
+    ? { label: 'Open AR', value: fmt(financial.arBalance), id: 'ar' as const }
     : { label: 'Left to Bill', value: fmt(financial.leftToBill), id: 'billing' as const };
 
   const contractValue = project?.contractPending
@@ -169,7 +163,7 @@ export function moneyOverviewCards(
     { id: 'contract', label: 'Contract', value: contractValue, subtext: project?.contractPending ? undefined : (financial.approvedChangeOrderAmount ? `+${fmt(financial.approvedChangeOrderAmount)} COs` : undefined) },
     { id: 'actual-cost', label: 'Actual Cost', value: fmt(financial.costToDate), subtext: `Est final ${fmt(financial.estimatedFinalCost)}` },
     { id: 'margin', label: 'Projected Margin', value: `${financial.forecastMargin.toFixed(1)}%`, subtext: fmt(financial.forecastGrossProfit) + ' profit', alert: marginAlert },
-    { id: arOrLeft.id, label: arOrLeft.label, value: arOrLeft.value, alert: arOrLeft.alert },
+    { id: arOrLeft.id, label: arOrLeft.label, value: arOrLeft.value },
   ];
 }
 

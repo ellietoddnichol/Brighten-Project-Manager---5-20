@@ -87,10 +87,10 @@ describe('home-hub.compute', () => {
     expect(priorities.some(p => p.id === 'unmatched-sources')).toBe(true);
   });
 
-  it('ranks snapshot rows by health and AR', () => {
+  it('ranks snapshot rows by health status', () => {
     const rows = [
-      baseRow({ projectId: 'green', healthStatus: 'Green', arBalance: 0 }),
-      baseRow({ projectId: 'red', healthStatus: 'Red', arBalance: 50_000, jobNumber: '206' }),
+      baseRow({ projectId: 'green', healthStatus: 'Green', arBalance: 50_000 }),
+      baseRow({ projectId: 'red', healthStatus: 'Red', arBalance: 0, jobNumber: '206' }),
     ];
     const snapshot = buildHomeSnapshotRows(rows, 5);
     expect(snapshot[0]?.projectId).toBe('red');

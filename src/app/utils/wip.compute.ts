@@ -154,7 +154,6 @@ export function detectWipReviewFlags(ctx: WipComputeContext, wipGroup: WipGroup)
   if (changeOrders.some(co => co.projectId === pid && isApprovedUnbilledCo(co))) {
     flags.push('Approved CO not billed');
   }
-  if (hasArPastDue(pid, arRecords)) flags.push('AR past due');
   if (project.seedActionRequired) flags.push('Source review needed');
   if (project.wipStatus === 'Needs Review') flags.push('WIP status needs review');
   if (isClosedProject(project) && wipGroup === 'ActiveWIP') {
@@ -239,7 +238,6 @@ export function buildWipWarningChips(
   if (reviewFlags.includes('Projected margin under 20%')) push('Margin under 20%', 'critical');
   if (reviewFlags.includes('Actual cost exceeds budget')) push('Cost exceeds budget', 'critical');
   if (reviewFlags.includes('Billed over contract')) push('Billed over contract', 'critical');
-  if (reviewFlags.includes('AR past due')) push('AR past due', 'critical');
   if (reviewFlags.includes('Closed job in Active WIP')) push('Closed in Active WIP', 'critical');
 
   if (financial.budgetIsEstimated && financial.currentContractAmount > 0) {
@@ -333,9 +331,6 @@ export function deriveWipNextAction(
   if (labels.has('Margin under 20%')) return 'Review margin under 20%';
   if (labels.has('Review over/under billing') || labels.has('Overbilled vs earned')) {
     return 'Review overbilling/underbilling';
-  }
-  if (labels.has('AR past due') || (record.arBalance > 0 && record.wipGroup === 'CloseoutAR')) {
-    return 'Follow up AR';
   }
   if (labels.has('Closed in Active WIP')) return 'Move to Closeout AR';
   if (labels.has('Source review needed')) return 'Source Review';

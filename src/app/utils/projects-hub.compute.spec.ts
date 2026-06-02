@@ -67,7 +67,6 @@ describe('projects-hub.compute', () => {
       project,
       lifecycle,
       financial: { ...financial, currentContractAmount: 0, budgetBasis: 'MissingContract' },
-      arPastDueAmount: 0,
     });
     expect(warnings.some(w => w.id === 'missing-contract' && w.kind === 'critical')).toBe(true);
     expect(warnings.some(w => w.id === 'missing-drive' && w.kind === 'setup')).toBe(true);
@@ -79,7 +78,7 @@ describe('projects-hub.compute', () => {
     const financial = buildProjectFinancial(project, [], [], []);
     const row = buildProjectListRow({ project, lifecycle, financial, arRecords: [] });
     expect(row.quietRow).toBe(true);
-    expect(row.warnings.every(w => w.kind === 'critical')).toBe(true);
+    expect(row.warnings).toHaveLength(0);
   });
 
   it('returns helpful empty state for Active view', () => {

@@ -491,7 +491,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
             <app-drawer-field label="Billed to date" [value]="fmt(row.financial.billedToDate)" [mono]="true" />
 
-            <app-drawer-field label="Open AR" [value]="fmt(row.financial.arBalance)" [mono]="true" [alert]="row.financial.arBalance > 0" />
+            <app-drawer-field label="Open AR" [value]="fmt(row.financial.arBalance)" [mono]="true" />
 
             <app-drawer-field label="Left to bill" [value]="fmt(row.financial.leftToBill)" [mono]="true" />
 

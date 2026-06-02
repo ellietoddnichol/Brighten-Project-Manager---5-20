@@ -22,8 +22,6 @@ import { setupGapActionItems } from './setup-gap-items';
 import { ProjectRequirementsContext } from './project-requirements.compute';
 import { computeBudgetRollup, derivePoStatus } from './budget-line.compute';
 import { isApprovedCo, normalizeCoStatus, coNumber } from './change-management';
-import { buildProjectFinancial } from './project-financial.compute';
-import { isOpenArRecord } from './wip.compute';
 import { detectLaborCodeHealthFlags } from './labor-code-mapping.compute';
 import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
 import { isManualProjectTask } from './project-task.util';
@@ -69,11 +67,6 @@ export interface ActionItemContext {
 
 function isFieldActive(project: Project): boolean {
   return project.status === 'Active' || project.status === 'Closeout';
-}
-
-function isBillingNotStarted(project: Project): boolean {
-  return project.billingNotStarted === true
-    || project.billingStatus === 'Not started / No billing yet';
 }
 
 function isSetupEligible(project: Project): boolean {
@@ -205,106 +198,15 @@ function budgetPoHealthItems(
 }
 
 function wipArHealthItems(
-  project: Project,
-  arRecords: ARRecord[],
-  changeOrders: ChangeOrder[],
-  billings: Billing[],
-  budgetLines: ProjectBudgetLine[],
-  pos: PO[],
-  laborActuals: ProjectLaborActual[] = [],
+  _project: Project,
+  _arRecords: ARRecord[],
+  _changeOrders: ChangeOrder[],
+  _billings: Billing[],
+  _budgetLines: ProjectBudgetLine[],
+  _pos: PO[],
+  _laborActuals: ProjectLaborActual[] = [],
 ): ActionItem[] {
-  if (isOverheadJob(project)) return [];
-
-  const items: ActionItem[] = [];
-  const fin = buildProjectFinancial(
-    project, changeOrders, billings, budgetLines, pos, [], arRecords, laborActuals,
-  );
-
-  if (isBillingNotStarted(project)) return items;
-  return items;
-  if (fin.billedToDate > fin.currentContractAmount && fin.currentContractAmount > 0) {
-    items.push({
-      id: `billed-over-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Billed Over Contract',
-      description: 'Billed to date exceeds revised contract.',
-      type: 'Billing',
-      severity: 'error',
-    });
-  }
-  if (fin.leftToBill < 0) {
-    items.push({
-      id: `neg-ltb-${project.id}`,
-      projectId: project.id,
-      projectName: project.projectName,
-      title: 'Negative Left to Bill',
-      description: 'Left to bill is negative — review billing.',
-      type: 'Billing',
-      severity: 'error',
-    });
-  }
-
-  const projectAr = arRecords.filter(r => r.projectId === project.id && isOpenArRecord(r.status));
-  for (const rec of projectAr) {
-    if (rec.agingBucket === '1-30') {
-      items.push({
-        id: `ar-30-${rec.id}`,
-        projectId: project.id,
-        projectName: project.projectName,
-        title: 'AR Over 30 Days',
-        description: `${rec.invoiceNumber || 'Invoice'} — ${rec.agingBucket} days.`,
-        type: 'AR',
-        severity: 'warning',
-      });
-    }
-    if (rec.agingBucket === '31-60') {
-      items.push({
-        id: `ar-60-${rec.id}`,
-        projectId: project.id,
-        projectName: project.projectName,
-        title: 'AR Over 60 Days',
-        description: `${rec.invoiceNumber || 'Invoice'} — escalate follow-up.`,
-        type: 'AR',
-        severity: 'error',
-      });
-    }
-    if (rec.agingBucket === '61-90' || rec.agingBucket === '90+') {
-      items.push({
-        id: `ar-90-${rec.id}`,
-        projectId: project.id,
-        projectName: project.projectName,
-        title: 'Long-Outstanding AR',
-        description: `${rec.invoiceNumber || 'Invoice'} — ${rec.agingBucket}.`,
-        type: 'AR',
-        severity: 'error',
-      });
-    }
-    if (rec.status === 'Disputed') {
-      items.push({
-        id: `ar-dispute-${rec.id}`,
-        projectId: project.id,
-        projectName: project.projectName,
-        title: 'Disputed AR',
-        description: `${rec.invoiceNumber || 'Invoice'} is disputed.`,
-        type: 'AR',
-        severity: 'warning',
-      });
-    }
-    if ((project.status === 'Closeout' || project.status === 'Closed') && rec.openBalance > 0) {
-      items.push({
-        id: `closeout-ar-${rec.id}`,
-        projectId: project.id,
-        projectName: project.projectName,
-        title: 'Closeout AR',
-        description: 'Open AR on closeout/complete job.',
-        type: 'AR',
-        severity: 'warning',
-      });
-    }
-  }
-
-  return items;
+  return [];
 }
 
 function laborActualHealthItems(

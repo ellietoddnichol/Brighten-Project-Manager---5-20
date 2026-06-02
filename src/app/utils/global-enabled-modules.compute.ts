@@ -148,7 +148,6 @@ function buildBadges(input: GlobalNeedsInput): Partial<Record<GlobalModuleId, Gl
   set('rfis', input.overdueRfiCount || input.openRfiCount, input.overdueRfiCount > 0 ? 'urgent' : 'review');
   set('submittals', input.overdueSubmittalCount || input.openSubmittalCount, input.overdueSubmittalCount > 0 ? 'urgent' : 'review');
   set('field-issues', input.openFieldIssueCount, input.openFieldIssueCount > 0 ? 'urgent' : 'neutral');
-  set('ar', input.arPastDueCount, input.arPastDueCount > 0 ? 'urgent' : 'neutral');
   set('subcontractors', input.subComplianceGapCount, input.subComplianceGapCount > 0 ? 'urgent' : 'review');
   set('missing-required-docs', input.missingRequiredDocCount, 'review');
 
@@ -161,7 +160,6 @@ function buildUrgentModules(input: GlobalNeedsInput): GlobalModuleId[] {
   if (input.changesNeedingActionCount > 0) urgent.push('changes');
   if (input.overdueRfiCount > 0) urgent.push('rfis');
   if (input.openFieldIssueCount > 0) urgent.push('field-issues');
-  if (input.arPastDueCount > 0) urgent.push('ar');
   return urgent;
 }
 
@@ -191,9 +189,7 @@ function buildDashboard(input: GlobalNeedsInput): {
       id: 'open-ar',
       label: 'Open AR',
       value: fmtCurrency(input.openArTotal),
-      subtext: input.arPastDueCount ? `${input.arPastDueCount} past due` : undefined,
       route: '/ar',
-      alert: input.arPastDueCount > 0,
       icon: 'receipt_long',
     },
     {
@@ -225,15 +221,6 @@ function buildDashboard(input: GlobalNeedsInput): {
       description: 'Pricing, approval, or billing follow-up',
       route: '/changes',
       severity: 'warning',
-    });
-  }
-  if (input.arPastDueCount > 0) {
-    list.push({
-      id: 'ar-past-due',
-      title: `${input.arPastDueCount} job${input.arPastDueCount === 1 ? '' : 's'} with past-due AR`,
-      description: 'Follow up on collections',
-      route: '/ar',
-      severity: 'error',
     });
   }
 

@@ -182,7 +182,7 @@ export class WipPage {
       { label: 'Budget / EFC', value: this.fmt(s.budgetEfc) },
       { label: 'Actual Cost', value: this.fmt(s.actualCost) },
       { label: 'Billed to Date', value: this.fmt(s.billedToDate) },
-      { label: 'Open AR', value: this.fmt(s.openAr), alert: s.openAr > 0 },
+      { label: 'Open AR', value: this.fmt(s.openAr) },
       { label: 'Jobs Under 20%', value: String(s.jobsUnder20), alert: s.jobsUnder20 > 0 },
       { label: 'Missing Contract', value: String(s.missingContract), alert: s.missingContract > 0 },
       { label: 'Missing Actual Cost Source', value: String(s.missingActualCostSource), alert: s.missingActualCostSource > 0 },

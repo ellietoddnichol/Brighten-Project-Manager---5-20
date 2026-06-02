@@ -125,34 +125,6 @@ export function buildHomePriorities(input: {
       });
     }
 
-    if (row.arPastDue > 0) {
-      items.push({
-        id: `${row.projectId}-ar-past-due`,
-        jobNumber: row.jobNumber,
-        projectName: row.projectName,
-        projectId: row.projectId,
-        issue: 'Open AR — collection follow-up',
-        severity: 'error',
-        nextActionLabel: 'Follow up AR',
-        route: '/ar',
-        source: 'QB',
-        rank: 30,
-      });
-    } else if (row.arBalance > 0) {
-      items.push({
-        id: `${row.projectId}-ar-open`,
-        jobNumber: row.jobNumber,
-        projectName: row.projectName,
-        projectId: row.projectId,
-        issue: 'Open AR balance',
-        severity: 'warning',
-        nextActionLabel: 'Review AR',
-        route: '/ar',
-        source: 'QB',
-        rank: 35,
-      });
-    }
-
     if (!row.driveLinked) {
       items.push({
         id: `${row.projectId}-missing-drive`,
@@ -222,8 +194,6 @@ export function rankSnapshotImportance(row: Active2026ControlRow): number {
   if (row.healthStatus === 'Red') score += 1000;
   else if (row.healthStatus === 'Yellow') score += 500;
   if (row.missingContract) score += 400;
-  if (row.arPastDue > 0) score += 350;
-  score += row.arBalance / 1000;
   score += row.missingItemCount * 15;
   return score;
 }

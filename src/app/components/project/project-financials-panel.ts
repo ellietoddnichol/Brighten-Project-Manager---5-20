@@ -209,7 +209,7 @@ import {
           }
           @case ('ar') {
             <app-drawer-section title="AR">
-              <app-drawer-field label="Open AR" [value]="fmt(financial().arBalance)" [mono]="true" [alert]="financial().arBalance > 0" />
+              <app-drawer-field label="Open AR" [value]="fmt(financial().arBalance)" [mono]="true" />
               <button type="button" (click)="viewChange.emit('ar'); drawerType.set(null)"
                       class="text-sm font-semibold text-indigo-700 underline mt-2">Open AR detail</button>
             </app-drawer-section>

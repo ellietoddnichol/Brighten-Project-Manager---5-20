@@ -217,12 +217,6 @@ export function deriveNextAction(input: {
   if (input.budgetBasis === 'EstimatedFrom20PercentTarget') {
     return { ...openProject('budget'), label: 'Confirm budget estimate' };
   }
-  if (input.arPastDue > 0) {
-    return { ...openProject('ar'), label: 'Follow up AR (past due)' };
-  }
-  if (input.arBalance > 0) {
-    return { ...openProject('ar'), label: 'Follow up AR' };
-  }
   if (input.bonusEligible && !input.foremanAssigned) {
     return { label: 'Assign foreman', route: `/projects/${pid}`, queryParams: { tab: 'budget' } };
   }
@@ -671,7 +665,7 @@ export function matchesControlSegment(row: Active2026ControlRow, segment: Contro
     case 'reviewNeeded':
       return isReviewNeededRow(row);
     case 'billing':
-      return row.arBalance > 0 || row.arPastDue > 0 || row.billingStatus === 'Billing review';
+      return row.billingStatus === 'Billing review';
     case 'cpr':
       return row.cprRequired;
     case 'subs':
@@ -686,6 +680,5 @@ export function rowWarningChips(row: Active2026ControlRow): string[] {
   const chips: string[] = [];
   if (row.contractPending) chips.push('Contract pending');
   else if (row.missingContract) chips.push('No contract');
-  if (row.arPastDue > 0) chips.push('AR past due');
   return chips.slice(0, 2);
 }

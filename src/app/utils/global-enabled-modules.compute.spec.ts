@@ -66,10 +66,10 @@ describe('global-enabled-modules.compute', () => {
     expect(isGlobalModuleVisible('certified-payroll', input)).toBe(false);
   });
 
-  it('shows AR badge when past due exists', () => {
+  it('does not badge AR as urgent when past due exists', () => {
     const modules = computeGlobalEnabledModules(baseInput({ arPastDueCount: 3 }));
-    expect(modules.badges.ar?.count).toBe(3);
-    expect(modules.badges.ar?.tone).toBe('urgent');
+    expect(modules.badges.ar).toBeUndefined();
+    expect(modules.urgentModules).not.toContain('ar');
   });
 
   it('shows import review when exceptions exist', () => {
@@ -105,6 +105,7 @@ describe('global-enabled-modules.compute', () => {
   it('builds simplified dashboard cards', () => {
     const modules = computeGlobalEnabledModules(baseInput({ atRiskJobCount: 2, arPastDueCount: 1 }));
     expect(modules.dashboardCards).toHaveLength(4);
-    expect(modules.dashboardList.some(i => i.id === 'ar-past-due')).toBe(true);
+    expect(modules.dashboardList.some(i => i.id === 'ar-past-due')).toBe(false);
+    expect(modules.dashboardCards.find(c => c.id === 'open-ar')?.alert).toBeFalsy();
   });
 });

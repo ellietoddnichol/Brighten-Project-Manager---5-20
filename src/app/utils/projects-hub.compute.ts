@@ -4,7 +4,6 @@ import { ProjectLifecycleSnapshot, ProjectsListView } from '../models/project-li
 import { PROJECT_PROFILE_LABELS, ProjectProfile } from '../models/project-requirements.types';
 import { Project } from '../models/types';
 import { matchesProjectsListView } from './project-lifecycle.compute';
-import { isOpenArRecord } from './wip.compute';
 
 export type ProjectWarningKind = 'critical' | 'setup';
 
@@ -110,31 +109,14 @@ function isQuietRow(snapshot: ProjectLifecycleSnapshot): boolean {
     || snapshot.projectLifecycleGroup === 'Closed2026';
 }
 
-function arPastDue(projectId: string, arRecords: { projectId: string; status: string; dueDate?: string; openBalance?: number }[]): number {
-  const today = new Date().toISOString().slice(0, 10);
-  return arRecords
-    .filter(r =>
-      r.projectId === projectId
-      && isOpenArRecord(r.status)
-      && r.dueDate
-      && r.dueDate.slice(0, 10) < today,
-    )
-    .reduce((s, r) => s + (r.openBalance ?? 0), 0);
-}
-
 export function buildProjectWarnings(input: {
   project: Project;
   lifecycle: ProjectLifecycleSnapshot;
   financial: ProjectFinancial;
-  arPastDueAmount: number;
   sourceReviewIssue?: boolean;
 }): ProjectListWarning[] {
   if (isQuietRow(input.lifecycle)) {
-    const quiet: ProjectListWarning[] = [];
-    if (input.arPastDueAmount > 0) {
-      quiet.push({ id: 'ar-past-due', label: 'AR past due', kind: 'critical' });
-    }
-    return quiet.slice(0, 2);
+    return [];
   }
 
   const warnings: ProjectListWarning[] = [];
@@ -146,9 +128,6 @@ export function buildProjectWarnings(input: {
 
   if ((!contract || input.financial.budgetBasis === 'MissingContract') && !input.project.contractPending) {
     push('missing-contract', 'Missing contract', 'critical');
-  }
-  if (input.arPastDueAmount > 0) {
-    push('ar-past-due', 'AR past due', 'critical');
   }
   if (input.financial.billedToDate > contract && contract > 0) {
     push('billed-over', 'Billed over contract', 'critical');
@@ -185,7 +164,6 @@ function deriveNextAction(project: Project, lifecycle: ProjectLifecycleSnapshot,
   const pid = project.id;
   const top = warnings[0];
   if (top?.id === 'missing-contract') return { label: 'Add contract', route: `/projects/${pid}`, };
-  if (top?.id === 'ar-past-due') return { label: 'Follow up AR', route: `/projects/${pid}`, };
   if (top?.id === 'missing-drive') return { label: 'Link Drive', route: `/projects/${pid}`, };
   if (financial.leftToBill > 0 && lifecycle.projectLifecycleGroup !== 'Archive') {
     return { label: 'Review billing', route: `/projects/${pid}`, };
@@ -206,18 +184,14 @@ export function buildProjectListRow(input: {
   arRecords: { projectId: string; status: string; dueDate?: string; openBalance?: number }[];
   sourceReviewIssue?: boolean;
 }): ProjectListRow {
-  const arPastDueAmount = arPastDue(input.project.id, input.arRecords);
   const warnings = buildProjectWarnings({
     project: input.project,
     lifecycle: input.lifecycle,
     financial: input.financial,
-    arPastDueAmount,
     sourceReviewIssue: input.sourceReviewIssue,
   });
   const next = deriveNextAction(input.project, input.lifecycle, input.financial, warnings);
-  const arBalance = input.financial.arBalance ?? 0;
   const leftToBill = input.financial.leftToBill ?? 0;
-  const useAr = arBalance > 0 || input.lifecycle.hasOpenAr;
 
   return {
     project: input.project,
@@ -229,9 +203,9 @@ export function buildProjectListRow(input: {
     warnings,
     nextActionLabel: next.label,
     nextActionRoute: next.route,
-    moneySecondaryLabel: useAr ? 'AR' : 'Left to bill',
-    moneySecondaryValue: useAr ? arBalance : leftToBill,
-    moneySecondaryAlert: useAr ? arPastDueAmount > 0 : leftToBill > 0,
+    moneySecondaryLabel: 'Left to bill',
+    moneySecondaryValue: leftToBill,
+    moneySecondaryAlert: false,
     quietRow: isQuietRow(input.lifecycle),
     driveLinked: !!(input.project.driveFolderId || input.project.driveFolderUrl),
   };

@@ -174,8 +174,8 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
           <app-drawer-field label="Pending COs" [value]="fmtCurrency(row.pendingCos)" [mono]="true" />
           <app-drawer-field label="Billed" [value]="fmtCurrency(row.billedToDate)" [mono]="true" />
           <app-drawer-field label="Left to Bill" [value]="fmtCurrency(row.leftToBill)" [mono]="true" />
-          <app-drawer-field label="AR" [value]="fmtCurrency(row.arBalance)" [mono]="true" [alert]="row.arBalance > 0" />
-          <app-drawer-field label="AR Past Due" [value]="fmtCurrency(row.arPastDue)" [mono]="true" [alert]="row.arPastDue > 0" />
+          <app-drawer-field label="AR" [value]="fmtCurrency(row.arBalance)" [mono]="true" />
+          <app-drawer-field label="AR Past Due" [value]="fmtCurrency(row.arPastDue)" [mono]="true" />
           <app-drawer-field label="Retainage" [value]="fmtCurrency(row.retainage)" [mono]="true" />
           <app-drawer-field label="Billing Status" [value]="row.billingStatus" />
           <app-drawer-field label="Over/Under" [value]="fmtCurrency(row.overUnderBilling)" [mono]="true" />
@@ -309,7 +309,7 @@ export class Active2026ControlPage {
     const s = this.summary();
     return [
       { label: 'Review Items', value: String(s.jobsCriticalRisk), alert: s.jobsCriticalRisk > 0 },
-      { label: 'Open AR', value: this.fmtCurrency(s.openArTotal), alert: s.openArTotal > 0 },
+      { label: 'Open AR', value: this.fmtCurrency(s.openArTotal) },
       { label: 'Left to Bill', value: this.fmtCurrency(s.leftToBillTotal), alert: false },
     ];
   });
@@ -327,7 +327,7 @@ export class Active2026ControlPage {
       { label: 'Contract', value: this.fmtCurrency(row.currentContract) },
       { label: 'Billed', value: this.fmtCurrency(row.billedToDate) },
       { label: 'Left', value: this.fmtCurrency(row.leftToBill) },
-      { label: 'AR', value: this.fmtCurrency(row.arBalance), alert: row.arBalance > 0 },
+      { label: 'AR', value: this.fmtCurrency(row.arBalance) },
       { label: 'Margin', value: `${row.projectedMarginPct.toFixed(1)}%`, alert: row.projectedMarginPct < this.profitTargetPct },
     ];
   }
