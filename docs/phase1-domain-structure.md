@@ -46,7 +46,7 @@ node scripts/phase1-fix-sibling-imports.mjs # ./foo.service → correct @core/@f
 
 ## Routes
 
-`app.routes.ts` lazy-loads via `@features/.../pages/...` paths. Per-feature `*.routes.ts` files are **Phase 2**.
+`app.routes.ts` spreads per-feature `*.routes.ts` files under each domain (Phase 2). Each route still lazy-loads via `@features/.../pages/...`.
 
 ## Not moved (Phase 3+)
 

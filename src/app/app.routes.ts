@@ -1,30 +1,21 @@
 import { Routes } from '@angular/router';
+import { DASHBOARD_ROUTES } from '@features/dashboard/dashboard.routes';
+import { PROJECTS_ROUTES } from '@features/projects/projects.routes';
+import { FINANCIALS_ROUTES } from '@features/financials/financials.routes';
+import { SUBCONTRACTORS_ROUTES } from '@features/subcontractors/subcontractors.routes';
+import { WORKFLOWS_ROUTES } from '@features/workflows/workflows.routes';
+import { DOCUMENTS_ROUTES } from '@features/documents/documents.routes';
+import { LABOR_ROUTES } from '@features/labor/labor.routes';
+import { SETTINGS_ROUTES } from '@features/settings/settings.routes';
 
 export const routes: Routes = [
-  { path: '', loadComponent: () => import('@features/dashboard/pages/dashboard').then(m => m.Dashboard) },
-  { path: 'active-2026-control', loadComponent: () => import('@features/dashboard/pages/active-2026-control-page').then(m => m.Active2026ControlPage) },
-  { path: 'projects', loadComponent: () => import('@features/projects/pages/projects').then(m => m.Projects) },
-  { path: 'projects/:id', loadComponent: () => import('@features/projects/pages/project-details').then(m => m.ProjectDetails) },
-  { path: 'financials', loadComponent: () => import('@features/financials/pages/financials-hub-page').then(m => m.FinancialsHubPage) },
-  { path: 'directory', loadComponent: () => import('@features/subcontractors/pages/directory-hub-page').then(m => m.DirectoryHubPage) },
-  { path: 'billing', loadComponent: () => import('@features/financials/pages/billing').then(m => m.Billing) },
-  { path: 'wip', loadComponent: () => import('@features/financials/pages/wip-page').then(m => m.WipPage) },
-  { path: 'ar', loadComponent: () => import('@features/financials/pages/ar-page').then(m => m.ArPage) },
-  { path: 'pos', loadComponent: () => import('@features/financials/pages/pos-page').then(m => m.PosPage) },
-  { path: 'changes', loadComponent: () => import('@features/financials/pages/changes').then(m => m.Changes) },
-  { path: 'tasks', loadComponent: () => import('@features/workflows/pages/tasks-hub-page').then(m => m.TasksHubPage) },
-  { path: 'tasks/board', loadComponent: () => import('@features/workflows/pages/tasks').then(m => m.Tasks) },
-  { path: 'rfis', loadComponent: () => import('@features/workflows/pages/rfis').then(m => m.Rfis) },
-  { path: 'submittals', loadComponent: () => import('@features/workflows/pages/submittals-page').then(m => m.Submittals) },
-  { path: 'daily-logs', loadComponent: () => import('@features/workflows/pages/daily-logs').then(m => m.DailyLogs) },
-  { path: 'field-issues', loadComponent: () => import('@features/workflows/pages/field-issues-page').then(m => m.FieldIssuesPage) },
-  { path: 'documents', loadComponent: () => import('@features/documents/pages/documents-page').then(m => m.Documents) },
-  { path: 'subcontractors', loadComponent: () => import('@features/subcontractors/pages/subcontractors-page').then(m => m.SubcontractorsPage) },
-  { path: 'certified-payroll', loadComponent: () => import('@features/labor/pages/certified-payroll').then(m => m.CertifiedPayroll) },
-  { path: 'labor-actuals', loadComponent: () => import('@features/labor/pages/labor-actuals-page').then(m => m.LaborActualsPage) },
-  { path: 'foreman-bonuses', loadComponent: () => import('@features/labor/pages/foreman-bonuses-page').then(m => m.ForemanBonusesPage) },
-  { path: 'labor', loadComponent: () => import('@features/labor/pages/labor').then(m => m.Labor) },
-  { path: 'reports', loadComponent: () => import('@features/financials/pages/reports').then(m => m.Reports) },
-  { path: 'settings', loadComponent: () => import('@features/settings/pages/settings').then(m => m.Settings) },
-  { path: '**', redirectTo: '' }
+  ...DASHBOARD_ROUTES,
+  ...PROJECTS_ROUTES,
+  ...FINANCIALS_ROUTES,
+  ...SUBCONTRACTORS_ROUTES,
+  ...WORKFLOWS_ROUTES,
+  ...DOCUMENTS_ROUTES,
+  ...LABOR_ROUTES,
+  ...SETTINGS_ROUTES,
+  { path: '**', redirectTo: '' },
 ];
