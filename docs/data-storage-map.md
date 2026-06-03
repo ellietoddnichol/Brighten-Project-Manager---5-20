@@ -14,7 +14,22 @@ Registry: `src/app/config/firestore-collections.config.ts`
 | **Firestore** | Normalized app records + file metadata (`driveFileId`, `driveFolderId`, category, linked IDs) |
 | **Google Sheets** | Master Time Data, Master Data Sheet, PO sheet, budget workbooks, seed tables |
 | **QuickBooks Sync Workbook** | Live accounting: invoices, AR aging, income, vendor balances, project cost detail |
-| **localStorage** | UI preferences and Phase Zero import markers only — **never sole business truth** |
+| **localStorage** | UI preferences only; import/sync history dual-writes to Firestore with local fallback during migration |
+
+---
+
+## Document and file model (canonical)
+
+| Collection | Role |
+|------------|------|
+| **`project-files`** | **Primary** file/document metadata (name, category, Drive link, workflow IDs). Archive in place — do not hard-delete from normal UI. |
+| **Google Drive** | **Primary** storage for actual file bytes. |
+| **`required-documents`** | Checklist of required document types per project (not the file itself). |
+| **`documents`** | **Legacy** type + status rows only. Do not add new file uploads here. |
+| **`subcontractor-documents`** | Sub compliance metadata; link to `project-files` when a real file exists. |
+| **`activity-events`** | Append-only audit log (`project_file.created`, `archived`, etc.). |
+
+Services: `ProjectFilesRepository` (preferred for file CRUD), `ActivityEventsService` (audit), `DataService` (listeners + migration path).
 
 ---
 
@@ -304,13 +319,21 @@ Collections marked **derived** or **localCache** are not yet migrated to Firesto
 
 | | |
 |---|---|
-| **Physical storage** | `localStorage` `brighten.importExceptions` (Phase Zero) |
-| **Source of truth** | User resolution in Import Review UI |
-| **Writers** | All import services via ImportReviewService |
-| **Readers** | Settings → Import Review, Sync Health |
+| **Physical collection** | `import-exceptions` (+ `localStorage` `brighten.importExceptions` fallback) |
+| **Source of truth** | Firestore target; dual-write during migration |
+| **Writers** | `SourceReviewRepository` via ImportReviewService |
+| **Readers** | Settings → Review Center, Sync Health |
 | **Manual edits** | Resolve / ignore in UI |
-| **Import overwrite** | N/A |
 | **Re-import key** | `type|jobNumber|message` dedupe key |
+
+### syncHealthRuns
+
+| | |
+|---|---|
+| **Physical collection** | `sync-runs` (+ `localStorage` `brighten.importRuns` fallback) |
+| **Source of truth** | Firestore target; dual-write during migration |
+| **Writers** | `SyncRunsRepository` via ImportReviewService.logRun |
+| **Readers** | Settings source health |
 
 ### seedCompletenessRecords
 

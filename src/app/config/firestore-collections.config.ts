@@ -60,7 +60,24 @@ export const FIRESTORE_COLLECTIONS: FirestoreCollectionEntry[] = [
   { logicalName: 'subcontractors', collection: 'subcontractors', storage: 'firestore' },
   { logicalName: 'projectSubcontractors', collection: 'project-subcontractors', storage: 'firestore' },
   { logicalName: 'subcontractorDocuments', collection: 'subcontractor-documents', storage: 'firestore' },
-  { logicalName: 'projectFiles', collection: 'project-files', storage: 'firestore' },
+  {
+    logicalName: 'projectFiles',
+    collection: 'project-files',
+    storage: 'firestore',
+    notes: 'Primary file metadata; Drive stores bytes. Use archive, not hard delete, in UI.',
+  },
+  {
+    logicalName: 'documents',
+    collection: 'documents',
+    storage: 'firestore',
+    notes: 'Legacy status-only rows — do not use for new file uploads.',
+  },
+  {
+    logicalName: 'activityEvents',
+    collection: 'activity-events',
+    storage: 'firestore',
+    notes: 'Append-only audit log for file/project actions',
+  },
   { logicalName: 'projectFolderMappings', collection: 'project-folders', storage: 'firestore' },
   { logicalName: 'tasks', collection: 'project-tasks', storage: 'firestore', notes: 'Also legacy tasks collection' },
   { logicalName: 'changeRequests', collection: 'change-requests', storage: 'firestore' },
@@ -79,9 +96,9 @@ export const FIRESTORE_COLLECTIONS: FirestoreCollectionEntry[] = [
   },
   {
     logicalName: 'syncHealthRuns',
-    collection: 'import-runs',
-    storage: 'localCache',
-    notes: 'ImportReviewService logRun + per-sync lastRunStats on services',
+    collection: 'sync-runs',
+    storage: 'firestore',
+    notes: 'Sync/import run history; localStorage brighten.importRuns fallback during migration',
   },
   {
     logicalName: 'featureSetupStatuses',

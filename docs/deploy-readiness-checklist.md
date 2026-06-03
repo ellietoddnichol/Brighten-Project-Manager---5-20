@@ -49,13 +49,19 @@ firebase deploy --only firestore:rules
 ```
 
 ### Core collections covered by rules
-projects · pos · change-orders · change-requests · rfis · submittals · daily-logs · field-issues · pay-app-lines · ar-records · budget-lines · tasks · documents · project-folders · project-files · required-documents · project-issues · project-tasks · milestones · billings · employees · time-entries · project-labor-actuals · subcontractors · project-subcontractors · subcontractor-documents · subcontractor-invoices · labor-code-mappings · foreman-bonus-* · certified-payroll-* (read-only feeds for labor-exceptions / labor-rates).
+projects · pos · change-orders · change-requests · rfis · submittals · daily-logs · field-issues · pay-app-lines · ar-records · budget-lines · tasks · documents (legacy) · project-folders · **project-files** (primary file metadata) · required-documents · project-issues · project-tasks · milestones · billings · employees · time-entries · project-labor-actuals · subcontractors · project-subcontractors · subcontractor-documents · subcontractor-invoices · labor-code-mappings · foreman-bonus-* · certified-payroll-* · **activity-events** · **import-exceptions** · **sync-runs**.
 
-### Not yet in Firestore (Phase Zero — localStorage, no rules needed)
-- `source-review-exceptions` (Import Review) → `localStorage brighten.importExceptions`
-- `sync-health-runs` / QB sync run → `localStorage brighten.importRuns`, `brighten.qbProjectMgmtSync`
+### Document handling (2026 reliability pass)
+- **Drive** = actual file bytes.
+- **`project-files`** = metadata, links, workflow IDs. Archive in UI — no normal hard delete.
+- **`documents`** = legacy status only; do not add new uploads there.
+- **`activity-events`** = append-only audit (create/update/archive file).
 
-These are intentionally local for first deploy. Migrating them to Firestore is post-deploy work, not a blocker.
+### Import/sync storage (migrating)
+- `import-exceptions` and `sync-runs` in Firestore with **localStorage fallback** (`brighten.importExceptions`, `brighten.importRuns`).
+- `brighten.qbProjectMgmtSync` remains local cache for QB workbook payload until migrated.
+
+**Deploy rules after changes:** `firebase deploy --only firestore:rules`
 
 ### Indexes
 No composite-index file is required for current single-field `ownerId` queries. If the Firestore console prompts for an index after deploy (a `where ownerId == uid` + `orderBy` combination), create it from the console link. Not expected for the core flow.

@@ -107,12 +107,37 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isValidId(taskId) && existing().ownerId == request.auth.uid;
     }
     
+    // Legacy document status rows — prefer project-files for new file metadata.
     match /documents/{docId} {
       allow get: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid;
       allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
       allow create: if isSignedIn() && isValidId(docId) && incoming().ownerId == request.auth.uid;
       allow update: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
       allow delete: if isSignedIn() && isValidId(docId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /activity-events/{eventId} {
+      allow get: if isSignedIn() && isValidId(eventId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(eventId) && incoming().ownerId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /import-exceptions/{exceptionId} {
+      allow get: if isSignedIn() && isValidId(exceptionId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(exceptionId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(exceptionId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(exceptionId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /sync-runs/{runId} {
+      allow get: if isSignedIn() && isValidId(runId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(runId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(runId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(runId) && existing().ownerId == request.auth.uid;
     }
 
     match /project-folders/{fid} {

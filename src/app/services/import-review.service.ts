@@ -1,11 +1,11 @@
-import { Injectable, inject, signal, computed } from '@angular/core';
+import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { v4 as uuidv4 } from 'uuid';
 import { ImportException, ImportRunSummary } from '../models/import.types';
 import { downloadCsv } from '../utils/csv-export';
 import importReviewSeed from '../data/seeds/import-review-seed.json';
-
-const STORAGE_KEY = 'brighten.importExceptions';
-const RUNS_KEY = 'brighten.importRuns';
+import { SourceReviewRepository } from './source-review.repository';
+import { SyncRunsRepository } from './sync-runs.repository';
+import { AuthService } from './auth.service';
 
 interface ImportReviewSeed {
   meta: { generatedAt: string };
@@ -14,14 +14,36 @@ interface ImportReviewSeed {
 
 @Injectable({ providedIn: 'root' })
 export class ImportReviewService {
-  private exceptionsSignal = signal<ImportException[]>(this.loadExceptions());
-  private runsSignal = signal<ImportRunSummary[]>(this.loadRuns());
+  private readonly sourceReview = inject(SourceReviewRepository);
+  private readonly syncRuns = inject(SyncRunsRepository);
+  private readonly auth = inject(AuthService);
+
+  private exceptionsSignal = signal<ImportException[]>(this.sourceReview.load());
+  private runsSignal = signal<ImportRunSummary[]>(this.syncRuns.load());
+  private hydrated = false;
 
   exceptions = this.exceptionsSignal.asReadonly();
   runs = this.runsSignal.asReadonly();
 
   unresolved = computed(() => this.exceptions().filter(e => e.status === 'NeedsReview' || e.status === 'Imported'));
   unresolvedCount = computed(() => this.unresolved().length);
+
+  constructor() {
+    effect(() => {
+      if (this.auth.user()) void this.tryHydrateFromFirestore();
+    });
+  }
+
+  private async tryHydrateFromFirestore(): Promise<void> {
+    if (this.hydrated || !this.auth.user()) return;
+    this.hydrated = true;
+    const [exceptions, runs] = await Promise.all([
+      this.sourceReview.hydrateFromFirestore(),
+      this.syncRuns.hydrateFromFirestore(),
+    ]);
+    this.exceptionsSignal.set(exceptions);
+    this.runsSignal.set(runs);
+  }
 
   seedInitialExceptions(): void {
     const seed = importReviewSeed as ImportReviewSeed;
@@ -74,7 +96,7 @@ export class ImportReviewService {
       importedAt: new Date().toISOString(),
       ...run,
     }, ...this.runsSignal()].slice(0, 50);
-    localStorage.setItem(RUNS_KEY, JSON.stringify(next));
+    this.syncRuns.persist(next);
     this.runsSignal.set(next);
   }
 
@@ -92,26 +114,8 @@ export class ImportReviewService {
     downloadCsv(`import-exceptions-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
   }
 
-  private loadExceptions(): ImportException[] {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) as ImportException[] : [];
-    } catch {
-      return [];
-    }
-  }
-
-  private loadRuns(): ImportRunSummary[] {
-    try {
-      const raw = localStorage.getItem(RUNS_KEY);
-      return raw ? JSON.parse(raw) as ImportRunSummary[] : [];
-    } catch {
-      return [];
-    }
-  }
-
   private persistExceptions(list: ImportException[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    this.sourceReview.persist(list);
     this.exceptionsSignal.set(list);
   }
 }

@@ -6,6 +6,7 @@ import type {
 import type { ChangeOrderStatus } from './project-controls.types';
 import type { ProjectProfile } from './project-requirements.types';
 import type { NormalizedProjectStatus, ProjectLifecycleGroup, SeedCompletenessStatus } from './project-lifecycle.types';
+import type { FirestoreArchiveFields, FirestoreAuditFields } from './firestore-lifecycle.types';
 
 export type ProjectStatus = 'Lead / Precon' | 'Awarded' | 'Setup Needed' | 'Active' | 'Closeout' | 'Closed';
 export type BillingType = 'Lump Sum' | 'T&M' | 'Progress Billing';
@@ -462,6 +463,10 @@ export interface ScheduleMilestone {
   ownerId?: string;
 }
 
+/**
+ * Legacy document status rows (type + status per project).
+ * Do not use for new file uploads — use `project-files` for file metadata; Drive holds bytes.
+ */
 export interface Document {
   id: string;
   projectId: string;
@@ -501,7 +506,8 @@ export interface ProjectFolder {
   ownerId?: string;
 }
 
-export interface ProjectFile {
+/** Primary file/document metadata — actual bytes live in Google Drive. */
+export interface ProjectFile extends FirestoreAuditFields, FirestoreArchiveFields {
   id: string;
   projectId: string;
   folderKey?: string;
@@ -547,6 +553,11 @@ export interface ProjectFile {
   savedToLabel?: string;
   /** Link to a generated document record when applicable */
   generatedDocumentId?: string;
+  /** Version chain when a file is superseded */
+  replacedByFileId?: string;
+  replacesFileId?: string;
+  versionLabel?: string;
+  isCurrentVersion?: boolean;
 }
 
 export interface RequiredDocument {

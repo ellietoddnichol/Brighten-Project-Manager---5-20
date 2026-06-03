@@ -634,6 +634,7 @@ export class DataService {
     })());
   }
 
+  /** Legacy document status collection — prefer project-files for new file metadata. */
   getDocuments(): Observable<Document[]> { return this.documentsSubject.asObservable(); }
   createDocument(d: Partial<Document>): Observable<Document> {
     return from((async () => {
@@ -689,21 +690,50 @@ export class DataService {
     })());
   }
 
+  // TODO: project-file CRUD is migrating to ProjectFilesRepository — prefer that service for new code.
+
   getProjectFiles(): Observable<ProjectFile[]> { return this.projectFilesSubject.asObservable(); }
   projectFilesSnapshot(): ProjectFile[] { return this.projectFilesSubject.value; }
   billingsSnapshot(): Billing[] { return this.billingsSubject.value; }
   createProjectFile(f: Partial<ProjectFile>): Observable<ProjectFile> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...f, id, ownerId: auth.currentUser?.uid, uploadedAt: serverTimestamp(), lastModifiedAt: serverTimestamp() };
+      const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
+      const newDoc = {
+        ...f,
+        id,
+        ownerId: auth.currentUser?.uid,
+        uploadedAt: serverTimestamp(),
+        lastModifiedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        createdBy: f.createdBy ?? actor,
+        updatedBy: f.updatedBy ?? actor,
+      };
       await setDoc(doc(db, 'project-files', id), forFirestore(newDoc));
       return newDoc as unknown as ProjectFile;
     })());
   }
   updateProjectFile(id: string, updates: Partial<ProjectFile>): Observable<ProjectFile> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-files', id), forFirestore({ ...updates, lastModifiedAt: serverTimestamp() }));
+      const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
+      const patch = {
+        ...updates,
+        lastModifiedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        updatedBy: updates.updatedBy ?? actor,
+        ...(updates.archived === true && updates.archivedAt == null
+          ? { archivedAt: serverTimestamp() }
+          : {}),
+      };
+      await updateDoc(doc(db, 'project-files', id), forFirestore(patch));
       return { ...this.projectFilesSubject.value.find(x => x.id === id), ...updates } as ProjectFile;
+    })());
+  }
+
+  /** Admin-only hard delete — normal UI should use ProjectFilesRepository.archive(). */
+  hardDeleteProjectFile(id: string): Observable<void> {
+    return from((async () => {
+      await deleteDoc(doc(db, 'project-files', id));
     })());
   }
 

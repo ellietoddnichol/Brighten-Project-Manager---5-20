@@ -176,7 +176,7 @@ export function missingRequiredDocuments(
 ): MissingRequiredDoc[] {
   const missing: MissingRequiredDoc[] = [];
   const pid = ctx.project.id;
-  const projectFiles = files.filter(f => f.projectId === pid);
+  const projectFiles = activeProjectFiles(files, pid);
   const categoriesPresent = new Set(projectFiles.map(f => normalizeFileCategory(f)));
 
   for (const row of buildFolderRequirementRows(ctx)) {
@@ -304,6 +304,11 @@ export function matchesFileView(
   return item.kind === 'file' && cats.includes(item.fileCategory);
 }
 
+/** Active (non-archived) project files for a project. */
+export function activeProjectFiles(files: ProjectFile[], projectId: string): ProjectFile[] {
+  return files.filter(f => f.projectId === projectId && !f.archived);
+}
+
 export function filterDocumentList(
   files: ProjectFile[],
   view: FileView,
@@ -311,10 +316,12 @@ export function filterDocumentList(
   requiredDocs: RequiredDocument[],
   search = '',
   setupGaps: SeedCompletenessGap[] = [],
+  opts?: { includeArchived?: boolean },
 ): DocumentListItem[] {
   const requiredCategories = requiredFileCategories(ctx);
   const pid = ctx.project.id;
-  const scoped = files.filter(f => f.projectId === pid);
+  const scoped = (opts?.includeArchived ? files : activeProjectFiles(files, pid))
+    .filter(f => f.projectId === pid);
 
   let items: DocumentListItem[] = scoped.map(projectFileToListItem);
 

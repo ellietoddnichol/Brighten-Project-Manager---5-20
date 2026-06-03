@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Project, ProjectFile, RequiredDocument } from '../models/types';
 import { DataService } from '../services/data.service';
+import { ProjectFilesRepository } from '../services/project-files.repository';
 import { ProjectRequirementsService } from '../services/project-requirements.service';
 import { ProjectLifecycleService } from '../services/project-lifecycle.service';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -18,7 +19,6 @@ import {
 import {
   countFilesForView,
   defaultsForNewUpload,
-  enrichProjectFileOnSave,
   filterDocumentList,
   folderKeyForCategory,
   categoryForFileView,
@@ -56,10 +56,15 @@ import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
           }
           <button type="button" (click)="openNewFile()"
                   class="bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 flex items-center gap-1">
-            <mat-icon class="!text-[16px]">add</mat-icon> Add file
+            <mat-icon class="!text-[16px]">add</mat-icon> Add file / Drive link
           </button>
         </div>
       </div>
+
+      <label class="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+        <input type="checkbox" [(ngModel)]="showArchived" class="rounded border-slate-300" />
+        Show archived files
+      </label>
 
       @if (showNewReq) {
         <div class="bg-white rounded-xl border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -85,7 +90,7 @@ import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
 
       @if (showNewFile) {
         <div class="bg-white rounded-xl border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <div class="col-span-full text-sm font-bold text-slate-900">Add file link</div>
+          <div class="col-span-full text-sm font-bold text-slate-900">Add file / Drive link</div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">File name</label>
             <input [(ngModel)]="newFile.fileName" class="w-full px-3 py-2 border rounded-lg text-sm" />
@@ -130,7 +135,8 @@ import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
               </button>
             </div>
           } @else {
-            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50">
+            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
+                 [class.opacity-60]="item.file?.archived">
               <div class="flex items-start gap-3 min-w-0 flex-1">
                 <mat-icon class="!text-[20px] text-slate-400 shrink-0 mt-0.5">description</mat-icon>
                 <div class="min-w-0">
@@ -166,6 +172,14 @@ import { ProjectLifecycleSnapshot } from '../models/project-lifecycle.types';
                 }
                 <button type="button" (click)="editFile(item.file!)"
                         class="text-xs font-semibold text-slate-500 hover:text-slate-800">Edit</button>
+                @if (item.file && !item.file.archived) {
+                  <button type="button" (click)="archiveFile(item.file!)"
+                          class="text-xs font-semibold text-amber-700 hover:text-amber-900">Archive</button>
+                }
+                @if (item.file?.archived) {
+                  <button type="button" (click)="restoreFile(item.file!)"
+                          class="text-xs font-semibold text-emerald-700 hover:text-emerald-900">Restore</button>
+                }
                 @if (item.file && isPhoto(item.file)) {
                   <button type="button" (click)="createAction(item.file!)"
                           class="text-xs font-semibold text-rose-600">Create issue</button>
@@ -208,12 +222,14 @@ export class DocumentsTabComponent {
   @Input() showAllTools = false;
 
   private dataService = inject(DataService);
+  private projectFiles = inject(ProjectFilesRepository);
   private requirements = inject(ProjectRequirementsService);
   private lifecycle = inject(ProjectLifecycleService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
   searchQuery = '';
+  showArchived = false;
   showNewReq = false;
   showNewFile = false;
   editingReqId: string | null = null;
@@ -238,6 +254,7 @@ export class DocumentsTabComponent {
       this.requiredDocs(),
       this.searchQuery,
       this.setupGaps(),
+      { includeArchived: this.showArchived },
     ),
   );
 
@@ -398,16 +415,42 @@ export class DocumentsTabComponent {
     }).subscribe(() => alert('Issue created. View in Work → Field Issues.'));
   }
 
+  archiveFile(file: ProjectFile): void {
+    if (!confirm(`Archive "${file.fileName}"? It stays in Firestore but is hidden from the default list.`)) return;
+    const reason = prompt('Optional reason (leave blank to skip):');
+    if (reason === null) return;
+    this.projectFiles.archive(file.id, reason.trim() || undefined).subscribe();
+  }
+
+  restoreFile(file: ProjectFile): void {
+    if (!confirm('Restore this file to the active list?')) return;
+    this.projectFiles.restore(file.id).subscribe();
+  }
+
   saveFile(): void {
     if (!this.newFile.fileName) return;
-    const payload = enrichProjectFileOnSave(
-      { ...this.newFile, projectId: this.project.id },
-      this.project,
-    );
+    const existing = this.editingFileId
+      ? (this.allFiles() ?? []).find(f => f.id === this.editingFileId)
+      : undefined;
+    const base = existing
+      ? {
+          ...existing,
+          fileName: this.newFile.fileName,
+          folderKey: this.newFile.folderKey ?? existing.folderKey,
+          documentType: this.newFile.documentType ?? existing.documentType,
+          fileUrl: this.newFile.fileUrl !== undefined && this.newFile.fileUrl !== ''
+            ? this.newFile.fileUrl
+            : existing.fileUrl,
+          fileId: this.newFile.fileId ?? existing.fileId,
+          driveFolderId: this.newFile.driveFolderId ?? existing.driveFolderId,
+          notes: this.newFile.notes ?? existing.notes,
+        }
+      : { ...this.newFile, projectId: this.project.id };
+
     if (this.editingFileId) {
-      this.dataService.updateProjectFile(this.editingFileId, payload).subscribe(() => this.cancelFile());
+      this.projectFiles.update(this.editingFileId, base, this.project).subscribe(() => this.cancelFile());
     } else {
-      this.dataService.createProjectFile(payload).subscribe(() => this.cancelFile());
+      this.projectFiles.create(base, this.project).subscribe(() => this.cancelFile());
     }
   }
 }
