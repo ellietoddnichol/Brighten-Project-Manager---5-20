@@ -1,23 +1,23 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
-import { Project } from '../../models/types';
-import { ProjectFinancialSummary } from '../../utils/financial';
+import { Project } from '@app/models/types';
+import { ProjectFinancialSummary } from '@shared/utils/financial';
 import { FINANCIAL_VIEW_LABELS, FinancialView } from './project-detail.types';
-import { ProjectEnabledModules } from '../../models/project-needs.types';
-import { BudgetTabComponent } from '../../pages/budget-tab';
-import { PosTabComponent } from '../../pages/pos-tab';
-import { BillingTabComponent } from '../../pages/billing-tab';
-import { WipTabComponent } from '../../pages/wip-tab';
-import { ArTabComponent } from '../../pages/ar-tab';
-import { ProjectForemanBonusTabComponent } from '../../pages/project-foreman-bonus-tab';
-import { ProjectFinancialService } from '../../services/project-financial.service';
-import { DataService } from '../../services/data.service';
-import { QuickBooksSyncDataService } from '../../services/quickbooks-sync-data.service';
-import { ProjectLifecycleService } from '../../services/project-lifecycle.service';
+import { ProjectEnabledModules } from '@app/models/project-needs.types';
+import { BudgetTabComponent } from '@features/projects/pages/budget-tab';
+import { PosTabComponent } from '@features/projects/pages/pos-tab';
+import { BillingTabComponent } from '@features/projects/pages/billing-tab';
+import { WipTabComponent } from '@features/projects/pages/wip-tab';
+import { ArTabComponent } from '@features/projects/pages/ar-tab';
+import { ProjectForemanBonusTabComponent } from '@features/projects/pages/project-foreman-bonus-tab';
+import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
+import { DataService } from '@core/services/data.service';
+import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
+import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { isApprovedUnbilledCo } from '../../utils/change-management';
-import { arPastDueForProject } from '../../utils/ar.compute';
+import { isApprovedUnbilledCo } from '@features/projects/utils/change-management';
+import { arPastDueForProject } from '@features/financials/utils/ar.compute';
 import { StatCardComponent } from '../ui/stat-card';
 import { CompactStatStripComponent } from '../ui/compact-stat-strip';
 import { SegmentedControlComponent, SegmentOption } from '../ui/segmented-control';
@@ -34,7 +34,7 @@ import {
   moneyCompactStats,
   moneyOverviewCards,
   moneyMoreVisible,
-} from '../../utils/project-money.compute';
+} from '@features/projects/utils/project-money.compute';
 
 @Component({
   selector: 'app-project-financials-panel',

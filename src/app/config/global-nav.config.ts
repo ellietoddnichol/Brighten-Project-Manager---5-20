@@ -1,4 +1,4 @@
-import { GlobalModuleBadge, GlobalModuleId } from '../models/global-enabled-modules.types';
+import { GlobalModuleBadge, GlobalModuleId } from '@app/models/global-enabled-modules.types';
 
 export type GlobalNavSectionId =
   | 'home'

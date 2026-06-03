@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   GLOBAL_MAIN_NAV,
   sidebarBadgeForNavItem,
-} from '../config/global-nav.config';
-import { GlobalModuleBadge } from '../models/global-enabled-modules.types';
+} from '@app/config/global-nav.config';
+import { GlobalModuleBadge } from '@app/models/global-enabled-modules.types';
 
 describe('global-nav.config', () => {
   it('defines construction-style sidebar sections', () => {

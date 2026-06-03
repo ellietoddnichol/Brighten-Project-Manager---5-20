@@ -3,18 +3,18 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Project } from '../models/types';
-import { WorkflowType } from '../models/workflow-document.types';
-import { DataService } from '../services/data.service';
-import { ProjectWorkflowSaveService } from '../services/project-workflow-save.service';
+import { Project } from '@app/models/types';
+import { WorkflowType } from '@app/models/workflow-document.types';
+import { DataService } from '@core/services/data.service';
+import { ProjectWorkflowSaveService } from '@features/projects/services/project-workflow-save.service';
 import {
   buildChangeRequestHtml,
   buildDailyLogHtml,
   buildPayAppHtml,
   buildRfiHtml,
   buildSubmittalCoverHtml,
-} from '../utils/workflow-document-templates';
-import { ChangeOrderDocumentService } from '../services/change-order-document.service';
+} from '@shared/utils/workflow-document-templates';
+import { ChangeOrderDocumentService } from '@features/projects/services/change-order-document.service';
 
 @Component({
   selector: 'app-workflow-documents-section',

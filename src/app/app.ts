@@ -1,16 +1,16 @@
 import { Component, inject, effect } from '@angular/core';
-import { AuthService } from './services/auth.service';
-import { AppShellComponent } from './components/layout/app-shell';
-import { MasterSheetSyncService } from './services/master-sheet-sync.service';
-import { PoSheetSyncService } from './services/po-sheet-sync.service';
-import { TimeDataSheetSyncService } from './services/time-data-sheet-sync.service';
-import { ProjectDedupeService } from './services/project-dedupe.service';
-import { ProjectDataService } from './services/project-data.service';
-import { DataService } from './services/data.service';
-import { SubcontractorSeedService } from './services/subcontractor-seed.service';
-import { QuickBooksSyncSheetsService } from './services/quickbooks-sync-sheets.service';
-import { LaborDataService } from './services/labor-data.service';
-import { CertifiedPayrollService } from './services/certified-payroll.service';
+import { AuthService } from '@core/services/auth.service';
+import { AppShellComponent } from '@app/components/layout/app-shell';
+import { MasterSheetSyncService } from '@core/services/master-sheet-sync.service';
+import { PoSheetSyncService } from '@core/services/po-sheet-sync.service';
+import { TimeDataSheetSyncService } from '@core/services/time-data-sheet-sync.service';
+import { ProjectDedupeService } from '@core/services/project-dedupe.service';
+import { ProjectDataService } from '@features/projects/services/project-data.service';
+import { DataService } from '@core/services/data.service';
+import { SubcontractorSeedService } from '@features/subcontractors/services/subcontractor-seed.service';
+import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
+import { LaborDataService } from '@features/labor/services/labor-data.service';
+import { CertifiedPayrollService } from '@features/labor/services/certified-payroll.service';
 
 @Component({
   selector: 'app-root',

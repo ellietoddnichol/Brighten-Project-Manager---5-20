@@ -1,4 +1,4 @@
-import { FileView } from '../components/project/project-detail.types';
+import { FileView } from '@app/components/project/project-detail.types';
 
 export type DocumentFileCategory =
   | 'Contract'

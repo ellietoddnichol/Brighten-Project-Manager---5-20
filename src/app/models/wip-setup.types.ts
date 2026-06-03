@@ -1,4 +1,4 @@
-import { ProjectProfile } from '../models/project-requirements.types';
+import { ProjectProfile } from '@app/models/project-requirements.types';
 
 export interface WipSetupProjectRow {
   jobNumber: string;

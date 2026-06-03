@@ -2,8 +2,8 @@ import { Component, Input, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { DataService } from '../services/data.service';
-import { crNumber, coNumber } from '../utils/change-management';
+import { DataService } from '@core/services/data.service';
+import { crNumber, coNumber } from '@features/projects/utils/change-management';
 
 @Component({
   selector: 'app-related-records-section',

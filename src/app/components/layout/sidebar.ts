@@ -5,7 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map, startWith } from 'rxjs/operators';
-import { GlobalNeedsService } from '../../services/global-needs.service';
+import { GlobalNeedsService } from '@core/services/global-needs.service';
 import {
   GLOBAL_MAIN_NAV,
   GLOBAL_NAV_GROUPS,
@@ -13,8 +13,8 @@ import {
   GlobalNavGroupConfig,
   GlobalNavItemConfig,
   sidebarBadgeForNavItem,
-} from '../../config/global-nav.config';
-import { GlobalModuleBadge } from '../../models/global-enabled-modules.types';
+} from '@app/config/global-nav.config';
+import { GlobalModuleBadge } from '@app/models/global-enabled-modules.types';
 
 type NavRow = GlobalNavItemConfig & { badge?: GlobalModuleBadge };
 type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };

@@ -6,25 +6,25 @@ import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
-import { Project, ChangeOrder } from '../../models/types';
+import { Project, ChangeOrder } from '@app/models/types';
 
-import { ProjectFinancialSummary } from '../../utils/financial';
+import { ProjectFinancialSummary } from '@shared/utils/financial';
 
-import { isOverheadJob } from '../../utils/project';
+import { isOverheadJob } from '@shared/utils/project';
 
 import { WorkflowSummaryStripComponent } from './workflow-summary-strip';
 
 import { HealthStatus, WorkflowChip, WorkflowView, FinancialView, ProjectNavState } from './project-detail.types';
 
-import { ProjectFinancialService } from '../../services/project-financial.service';
+import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
 
-import { BRIGHTEN_PROFIT_TARGET } from '../../config/active-2026-jobs.config';
+import { BRIGHTEN_PROFIT_TARGET } from '@app/config/active-2026-jobs.config';
 
-import { ControlNextAction } from '../../models/active-2026-control.types';
+import { ControlNextAction } from '@app/models/active-2026-control.types';
 
-import { ActionItem } from '../../utils/action-items';
+import { ActionItem } from '@shared/utils/action-items';
 
-import { resolveActionItemNav } from '../../utils/action-item-navigation';
+import { resolveActionItemNav } from '@shared/utils/action-item-navigation';
 
 
 

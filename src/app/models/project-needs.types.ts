@@ -1,6 +1,6 @@
 import { ControlNextAction } from './active-2026-control.types';
 import { ProjectProfile } from './project-requirements.types';
-import { FinancialView, WorkflowView, FileView } from '../components/project/project-detail.types';
+import { FinancialView, WorkflowView, FileView } from '@app/components/project/project-detail.types';
 
 export type ProjectModuleId =
   | WorkflowView

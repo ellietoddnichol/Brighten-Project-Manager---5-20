@@ -1,15 +1,15 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { Project } from '../../models/types';
-import { DocumentsTabComponent, fileCountForView } from '../../pages/documents-tab';
+import { Project } from '@app/models/types';
+import { DocumentsTabComponent, fileCountForView } from '@features/documents/pages/documents-tab';
 import { FILE_VIEW_LABELS, FileView, UtilityView } from './project-detail.types';
-import { ProjectEnabledModules } from '../../models/project-needs.types';
-import { DataService } from '../../services/data.service';
-import { ProjectRequirementsService } from '../../services/project-requirements.service';
+import { ProjectEnabledModules } from '@app/models/project-needs.types';
+import { DataService } from '@core/services/data.service';
+import { ProjectRequirementsService } from '@features/projects/services/project-requirements.service';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { ProjectLifecycleService } from '../../services/project-lifecycle.service';
-import { fileViewVisibleInNav } from '../../utils/project-documents.compute';
+import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
+import { fileViewVisibleInNav } from '@features/projects/utils/project-documents.compute';
 
 @Component({
   selector: 'app-project-documents-panel',

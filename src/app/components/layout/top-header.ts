@@ -14,8 +14,8 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { User } from 'firebase/auth';
-import { DataService } from '../../services/data.service';
-import type { GlobalSearchResult, GlobalSearchResultType } from '../../utils/global-search.util';
+import { DataService } from '@core/services/data.service';
+import type { GlobalSearchResult, GlobalSearchResultType } from '@shared/utils/global-search.util';
 
 @Component({
   selector: 'app-top-header',
@@ -138,7 +138,7 @@ export class TopHeaderComponent {
   private loadSearchApi(): Promise<void> {
     if (this.searchApi()) return Promise.resolve();
     if (!this.searchLoadPromise) {
-      this.searchLoadPromise = import('../../utils/global-search.util').then(mod => {
+      this.searchLoadPromise = import('@shared/utils/global-search.util').then(mod => {
         this.searchApi.set({
           search: q => mod.runGlobalSearch(this.data, q),
           typeLabel: t => mod.searchTypeLabel(t),

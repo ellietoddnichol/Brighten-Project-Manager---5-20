@@ -1,25 +1,25 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { Project } from '../../models/types';
-import { ProjectEnabledModules } from '../../models/project-needs.types';
+import { Project } from '@app/models/types';
+import { ProjectEnabledModules } from '@app/models/project-needs.types';
 import { WORKFLOW_VIEW_LABELS, WorkflowView } from './project-detail.types';
-import { TasksTabComponent } from '../../pages/tasks-tab';
-import { ChangesTabComponent } from '../../pages/changes-tab';
-import { RfisTabComponent } from '../../pages/rfis-tab';
-import { SubmittalsTabComponent } from '../../pages/submittals-tab';
-import { DailyLogsTabComponent } from '../../pages/daily-logs-tab';
-import { FieldIssuesTabComponent } from '../../pages/field-issues-tab';
-import { CertifiedPayrollTabComponent } from '../../pages/certified-payroll-tab';
-import { DataService } from '../../services/data.service';
-import { CertifiedPayrollDataService } from '../../services/certified-payroll-data.service';
+import { TasksTabComponent } from '@features/projects/pages/tasks-tab';
+import { ChangesTabComponent } from '@features/projects/pages/changes-tab';
+import { RfisTabComponent } from '@features/projects/pages/rfis-tab';
+import { SubmittalsTabComponent } from '@features/projects/pages/submittals-tab';
+import { DailyLogsTabComponent } from '@features/projects/pages/daily-logs-tab';
+import { FieldIssuesTabComponent } from '@features/projects/pages/field-issues-tab';
+import { CertifiedPayrollTabComponent } from '@features/projects/pages/certified-payroll-tab';
+import { DataService } from '@core/services/data.service';
+import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { normalizeWorkflowView } from './project-navigation';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { ListRowComponent } from '../ui/list-row';
 import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '../ui/detail-drawer';
 import { SegmentedControlComponent, SegmentOption } from '../ui/segmented-control';
-import { emptyModuleMessage } from '../../utils/project-needs.compute';
+import { emptyModuleMessage } from '@features/projects/utils/project-needs.compute';
 import {
   buildAllWorkList,
   ChangeListSegment,
@@ -27,7 +27,7 @@ import {
   TaskFilterSegment,
   workItemToListRow,
   WorkListItem,
-} from '../../utils/project-work.compute';
+} from '@features/projects/utils/project-work.compute';
 
 @Component({
   selector: 'app-project-workflows-panel',

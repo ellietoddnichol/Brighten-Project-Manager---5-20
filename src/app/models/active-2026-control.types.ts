@@ -1,4 +1,4 @@
-import { JobBudgetType } from '../config/active-2026-jobs.config';
+import { JobBudgetType } from '@app/config/active-2026-jobs.config';
 import { ProjectLifecycleGroup } from './project-lifecycle.types';
 
 export type JobHealthStatus = 'Green' | 'Yellow' | 'Red';

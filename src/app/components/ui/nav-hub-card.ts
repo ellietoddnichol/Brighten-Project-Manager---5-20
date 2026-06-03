@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { HubLink } from '../../config/global-nav.config';
+import { HubLink } from '@app/config/global-nav.config';
 
 @Component({
   selector: 'app-nav-hub-card',

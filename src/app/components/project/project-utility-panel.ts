@@ -2,15 +2,15 @@ import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, comput
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
-import { Project } from '../../models/types';
+import { Project } from '@app/models/types';
 import { UtilityView } from './project-detail.types';
-import { DriveMappingTabComponent } from '../../pages/drive-mapping-tab';
-import { ScheduleTabComponent } from '../../pages/schedule-tab';
-import { IssuesTasksTabComponent } from '../../pages/issues-tasks-tab';
-import { CertifiedPayrollTabComponent } from '../../pages/certified-payroll-tab';
+import { DriveMappingTabComponent } from '@features/documents/pages/drive-mapping-tab';
+import { ScheduleTabComponent } from '@features/projects/pages/schedule-tab';
+import { IssuesTasksTabComponent } from '@features/projects/pages/issues-tasks-tab';
+import { CertifiedPayrollTabComponent } from '@features/projects/pages/certified-payroll-tab';
 import { ProjectRecordPanelComponent } from './project-record-panel';
-import { DriveFile } from '../../services/drive.service';
-import { formatProjectDate } from '../../utils/project';
+import { DriveFile } from '@core/services/drive.service';
+import { formatProjectDate } from '@shared/utils/project';
 
 @Component({
   selector: 'app-project-utility-panel',

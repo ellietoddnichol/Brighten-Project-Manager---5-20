@@ -3,7 +3,7 @@ import {
   ACTIVE_2026_JOB_NUMBERS,
   BRIGHTEN_PROFIT_TARGET,
   isActive2026ControlJob,
-} from '../config/active-2026-jobs.config';
+} from '@app/config/active-2026-jobs.config';
 
 describe('active-2026-jobs.config', () => {
   it('defines exactly 28 control-list jobs', () => {

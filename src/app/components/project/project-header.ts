@@ -2,7 +2,7 @@ import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, signal
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
-import { Project } from '../../models/types';
+import { Project } from '@app/models/types';
 import { NewItemAction, UtilityView } from './project-detail.types';
 import { ProjectMoreMenuComponent } from './project-more-menu';
 

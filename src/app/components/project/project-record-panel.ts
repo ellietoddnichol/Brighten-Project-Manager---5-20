@@ -14,21 +14,21 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Project, ChangeOrder, PROJECT_STATUSES } from '../../models/types';
-import { PROJECT_PROFILE_OPTIONS, PROJECT_PROFILE_LABELS, ProjectProfile } from '../../models/project-requirements.types';
+import { Project, ChangeOrder, PROJECT_STATUSES } from '@app/models/types';
+import { PROJECT_PROFILE_OPTIONS, PROJECT_PROFILE_LABELS, ProjectProfile } from '@app/models/project-requirements.types';
 import { FinancialView, UtilityView } from './project-detail.types';
-import { ProjectRecordService } from '../../services/project-record.service';
-import { DataService } from '../../services/data.service';
-import { ProjectFinancialService } from '../../services/project-financial.service';
-import { effectiveForeman, deriveCertifiedPayrollRequired } from '../../utils/project-setup.util';
+import { ProjectRecordService } from '@features/projects/services/project-record.service';
+import { DataService } from '@core/services/data.service';
+import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
+import { effectiveForeman, deriveCertifiedPayrollRequired } from '@features/projects/utils/project-setup.util';
 import {
   isMasterSheetLinkedProject,
   isMasterSheetReadOnlyField,
   stripMasterSheetFieldsFromUserPatch,
-} from '../../utils/master-sheet-fields';
-import { CoTabComponent } from '../../pages/co-tab';
-import { BudgetTabComponent } from '../../pages/budget-tab';
-import { getProjectFinancialSummary } from '../../utils/financial';
+} from '@shared/utils/master-sheet-fields';
+import { CoTabComponent } from '@features/projects/pages/co-tab';
+import { BudgetTabComponent } from '@features/projects/pages/budget-tab';
+import { getProjectFinancialSummary } from '@shared/utils/financial';
 
 type RecordTab = 'details' | 'financial' | 'change-orders' | 'budget-lines';
 
