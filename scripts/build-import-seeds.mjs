@@ -332,17 +332,6 @@ async function main() {
   };
   fs.writeFileSync(path.join(seedsDir, 'import-review-seed.json'), JSON.stringify(importReviewSeed, null, 2));
 
-  const publicSeedsDir = path.join(root, 'public/data/seeds');
-  fs.mkdirSync(publicSeedsDir, { recursive: true });
-  const txnSeed = path.join(seedsDir, 'project-cost-transactions-seed.json');
-  if (fs.existsSync(txnSeed)) {
-    fs.copyFileSync(txnSeed, path.join(publicSeedsDir, 'project-cost-transactions-seed.json'));
-  }
-  const budgetImportSeed = path.join(seedsDir, 'budget-import-seed.json');
-  if (fs.existsSync(budgetImportSeed)) {
-    fs.copyFileSync(budgetImportSeed, path.join(publicSeedsDir, 'budget-import-seed.json'));
-  }
-
   console.log(`\nWrote seeds to ${seedsDir}`);
 }
 
