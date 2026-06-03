@@ -10,7 +10,7 @@ import {
   QbInvoicePacketRow,
   QbInvoicePacketSeed,
 } from '@app/models/qb-invoice-packet.types';
-import packetSeed from '@app/data/seeds/qb-invoice-packet-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { findProjectMatches } from '@features/projects/utils/project-dedupe';
 import { mergeImportProjectPatch, shouldApplyImportFinancialPatch } from '@shared/utils/lifecycle-import.guard';
 import {
@@ -23,6 +23,8 @@ import {
 } from '@features/financials/utils/qb-invoice-packet.parse';
 import { payAppBillableAmount } from '@features/projects/utils/project-financial.compute';
 
+const packetSeedLoader = createLazyJsonLoader<QbInvoicePacketSeed>('seeds/qb-invoice-packet-seed.json');
+
 @Injectable({ providedIn: 'root' })
 export class QbInvoicePacketImportService {
   private data = inject(DataService);
@@ -33,8 +35,8 @@ export class QbInvoicePacketImportService {
   running = signal(false);
   lastMessage = signal<string | null>(null);
 
-  seed(): QbInvoicePacketSeed {
-    return packetSeed as QbInvoicePacketSeed;
+  async seed(): Promise<QbInvoicePacketSeed> {
+    return packetSeedLoader.get();
   }
 
   async importFromSeed(force = false): Promise<QbInvoicePacketImportResult> {
@@ -60,7 +62,7 @@ export class QbInvoicePacketImportService {
 
     try {
       await this.data.waitForProjectsLoaded();
-      const seed = this.seed();
+      const seed = await this.seed();
       const projects = this.data.projectsSnapshot();
       const billedByProject = new Map<string, number>();
 

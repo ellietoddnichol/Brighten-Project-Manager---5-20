@@ -14,11 +14,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 const defaultInput = path.join(
   root,
-  'src/app/data/imports/wip-forecast/Brighten_2026_WIP_Forecast_Updated_With_AR_Status_May_29_2026.xlsx',
+  'mock-data/imports/wip-forecast/Brighten_2026_WIP_Forecast_Updated_With_AR_Status_May_29_2026.xlsx',
 );
 const fallbackInput =
   'c:/Users/ellie/Downloads/Brighten_2026_WIP_Forecast_Updated_With_AR_Status_May_29_2026 (1).xlsx';
-const outputPath = path.join(root, 'src/app/data/seeds/wip-forecast-may-2026-seed.json');
+const outputPath = path.join(root, 'mock-data/seeds/wip-forecast-may-2026-seed.json');
 
 const inputPath = process.argv[2] ?? (fs.existsSync(defaultInput) ? defaultInput : fallbackInput);
 

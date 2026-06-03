@@ -16,10 +16,7 @@ import {
 } from '@shared/utils/vendor-normalizers';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { auth } from '@app/firebase';
-import masterSeed from '@app/data/seeds/subcontractor-master-seed.json';
-import detailSeed from '@app/data/seeds/subcontractor-detail-seed.json';
-import confirmedLinksSeed from '@app/data/seeds/subcontractor-confirmed-links-seed.json';
-import driveSubFoldersSeed from '@app/data/seeds/drive-sub-folders-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 
 interface MasterSeedVendor {
   companyName: string;
@@ -66,18 +63,28 @@ interface DriveProjectSubFolders {
   subFolderNames: string[];
 }
 
-const MASTER = masterSeed as { meta: Record<string, unknown>; vendors: MasterSeedVendor[] };
-const DETAIL = detailSeed as {
+const masterLoader = createLazyJsonLoader<{ meta: Record<string, unknown>; vendors: MasterSeedVendor[] }>('seeds/subcontractor-master-seed.json');
+const detailLoader = createLazyJsonLoader<{
   meta: Record<string, unknown>;
   transactions: DetailSeedTxn[];
   projectSubcontractors: DetailProjectSub[];
-};
-const CONFIRMED = confirmedLinksSeed as { meta: Record<string, unknown>; links: ProjectSubLink[] };
-const DRIVE_SUBS = driveSubFoldersSeed as {
+}>('seeds/subcontractor-detail-seed.json');
+const confirmedLoader = createLazyJsonLoader<{ meta: Record<string, unknown>; links: ProjectSubLink[] }>('seeds/subcontractor-confirmed-links-seed.json');
+const driveSubsLoader = createLazyJsonLoader<{
   meta: Record<string, unknown>;
   activeProjectSubFolders: DriveProjectSubFolders[];
   closedJobsWithSubFolders: { jobNumber: string; projectName?: string }[];
-};
+}>('seeds/drive-sub-folders-seed.json');
+
+async function loadSubcontractorSeedBundles() {
+  const [MASTER, DETAIL, CONFIRMED, DRIVE_SUBS] = await Promise.all([
+    masterLoader.get(),
+    detailLoader.get(),
+    confirmedLoader.get(),
+    driveSubsLoader.get(),
+  ]);
+  return { MASTER, DETAIL, CONFIRMED, DRIVE_SUBS };
+}
 
 const IMPORTED_KEY = 'brighten.subcontractorSeedImportedAt';
 const SEED_VERSION = '2026-03-08-qb-drive-v2';
@@ -94,9 +101,17 @@ export class SubcontractorSeedService {
   lastMessage = signal<string | null>(null);
   costTransactions = signal<SubcontractorCostTransaction[]>([]);
 
-  readonly masterMeta = MASTER.meta;
-  readonly detailMeta = DETAIL.meta;
-  readonly driveSubMeta = DRIVE_SUBS.meta;
+  masterMeta: Record<string, unknown> | null = null;
+  detailMeta: Record<string, unknown> | null = null;
+  driveSubMeta: Record<string, unknown> | null = null;
+
+  constructor() {
+    void loadSubcontractorSeedBundles().then(({ MASTER, DETAIL, DRIVE_SUBS }) => {
+      this.masterMeta = MASTER.meta;
+      this.detailMeta = DETAIL.meta;
+      this.driveSubMeta = DRIVE_SUBS.meta;
+    });
+  }
 
   /** Production workflow — no auto-import from bundled seed files. */
   async importIfNeeded(_force = false): Promise<void> {
@@ -138,7 +153,8 @@ export class SubcontractorSeedService {
     }
   }
 
-  loadCostTransactionsFromSeed(): void {
+  async loadCostTransactionsFromSeed(): Promise<void> {
+    const { DETAIL } = await loadSubcontractorSeedBundles();
     const txns = DETAIL.transactions.map(t => ({
       id: t.importKey,
       source: 'QuickBooksSeed' as const,
@@ -502,7 +518,8 @@ export class SubcontractorSeedService {
     let driveOnly = 0;
 
     try {
-      this.loadCostTransactionsFromSeed();
+      await this.loadCostTransactionsFromSeed();
+      const { MASTER, DETAIL, CONFIRMED, DRIVE_SUBS } = await loadSubcontractorSeedBundles();
       const projects = await this.data.waitForProjectsLoaded();
       const existingSubs = await firstValueFrom(this.data.getSubcontractors());
       const existingProjectSubs = await firstValueFrom(this.data.getProjectSubcontractors());

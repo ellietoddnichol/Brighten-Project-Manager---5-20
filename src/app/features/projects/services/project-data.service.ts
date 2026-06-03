@@ -30,6 +30,7 @@ import { workbookToLegacyCollections } from '@shared/utils/sheet-normalizers';
 import { computePortfolioMetrics, PortfolioMetrics } from '@shared/utils/financial';
 import { collectAllActionItems, ActionItem } from '@shared/utils/action-items';
 import { dedupeProjectsForDisplay } from '@features/projects/utils/project-dedupe';
+import { loadMockDataJson } from '@core/utils/mock-data-loader';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 
@@ -417,8 +418,7 @@ export class ProjectDataService {
 
   private async loadBundledSeed(): Promise<void> {
     try {
-      const mod = await import('@app/data/pay-app-billing-seed.json');
-      const seed = mod.default as PayAppBillingSeed;
+      const seed = await loadMockDataJson<PayAppBillingSeed>('pay-app-billing-seed.json');
       this.seedData.set(normalizePayAppBillingFromSeed(seed));
       this.seedKpis.set(seed.dashboardKpis);
       this.seedLoaded.set(true);

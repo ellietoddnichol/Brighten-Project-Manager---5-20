@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Import QBO Project costs detail Excel into src/app/data/project-costs-seed.json
+ * Import QBO Project costs detail Excel into mock-data/project-costs-seed.json
  *
  * Usage:
  *   node scripts/import-project-costs.mjs [path-to-xlsx]
@@ -18,7 +18,7 @@ const defaultInput = path.join(
   'Brighten Builders LLC_Project costs detail (3).xlsx',
 );
 const inputPath = path.resolve(process.argv[2] ?? defaultInput);
-const outPath = path.join(root, 'src/app/data/project-costs-seed.json');
+const outPath = path.join(root, 'mock-data/project-costs-seed.json');
 
 function cellStr(value) {
   if (value == null) return '';

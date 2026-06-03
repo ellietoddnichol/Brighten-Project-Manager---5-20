@@ -11,7 +11,7 @@ import {
   WipForecastProjectRow,
   WipForecastSeed,
 } from '@app/models/wip-forecast.types';
-import forecastSeed from '@app/data/seeds/wip-forecast-may-2026-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { findProjectMatches } from '@features/projects/utils/project-dedupe';
 import {
   inferImportedProjectCreateFields,
@@ -31,6 +31,8 @@ import {
 } from '@features/financials/utils/wip-forecast.parse';
 import { isOpenArRecord } from '@features/financials/utils/wip.compute';
 
+const forecastSeedLoader = createLazyJsonLoader<WipForecastSeed>('seeds/wip-forecast-may-2026-seed.json');
+
 @Injectable({ providedIn: 'root' })
 export class WipForecastImportService {
   private data = inject(DataService);
@@ -39,9 +41,10 @@ export class WipForecastImportService {
 
   running = signal(false);
   lastMessage = signal<string | null>(null);
+  private seedContext: WipForecastSeed | null = null;
 
-  seed(): WipForecastSeed {
-    return forecastSeed as WipForecastSeed;
+  async seed(): Promise<WipForecastSeed> {
+    return forecastSeedLoader.get();
   }
 
   async importFromSeed(): Promise<WipForecastImportResult> {
@@ -63,7 +66,8 @@ export class WipForecastImportService {
 
     try {
       await this.data.waitForProjectsLoaded();
-      const seed = this.seed();
+      const seed = await this.seed();
+      this.seedContext = seed;
       let projects = this.data.projectsSnapshot();
       const projectByJob = new Map<string, Project>();
 
@@ -157,7 +161,7 @@ export class WipForecastImportService {
         type: 'importFieldConflict',
         source: 'WipForecast',
         jobNumber: row.jobNumber,
-        sourceFileName: this.seed().meta.sourceFile,
+        sourceFileName: this.seedContext?.meta.sourceFile ?? 'wip-forecast-seed',
         message: `WIP forecast skipped manual ${String(c.field)} on J${row.jobNumber}`,
       });
       result.exceptions++;

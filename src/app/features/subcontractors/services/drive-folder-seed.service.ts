@@ -4,7 +4,9 @@ import { DataService } from '@core/services/data.service';
 import { findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 import { driveFolderUrl } from '@features/documents/utils/drive-folder-matcher';
 import { auth } from '@app/firebase';
-import seedBundle from '@app/data/seeds/drive-folder-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
+
+const driveFolderSeedLoader = createLazyJsonLoader<DriveFolderSeedBundle>('seeds/drive-folder-seed.json');
 
 export interface DriveFolderSeedEntry {
   jobNumber: string;
@@ -38,7 +40,6 @@ export interface DriveFolderSeedResult {
 
 export type DriveLinkScope = 'active' | 'closed' | 'all';
 
-const SEED = seedBundle as DriveFolderSeedBundle;
 const IMPORTED_KEY = 'brighten.driveFolderSeedImportedAt';
 
 export interface DriveFolderLinkStats {
@@ -57,12 +58,42 @@ export class DriveFolderSeedService {
   lastMessage = signal<string | null>(null);
   projectLinkStats = signal<DriveFolderLinkStats | null>(null);
 
-  readonly seedMeta = SEED.meta;
-  readonly duplicateReviews = SEED.duplicateReviews;
-  readonly topLevelFolders = SEED.topLevelFolders;
-  readonly projectRoots = SEED.projectRoots;
+  private seedBundle: DriveFolderSeedBundle | null = null;
+
+  seedMeta: DriveFolderSeedBundle['meta'] | null = null;
+  duplicateReviews: DriveFolderSeedBundle['duplicateReviews'] = [];
+  topLevelFolders: DriveFolderSeedBundle['topLevelFolders'] = [];
+  projectRoots: DriveFolderSeedBundle['projectRoots'] = [];
+
+  constructor() {
+    void this.loadSeedBundle();
+  }
+
+  private async loadSeedBundle(): Promise<DriveFolderSeedBundle> {
+    if (!this.seedBundle) {
+      this.seedBundle = await driveFolderSeedLoader.get();
+      this.seedMeta = this.seedBundle.meta;
+      this.duplicateReviews = this.seedBundle.duplicateReviews;
+      this.topLevelFolders = this.seedBundle.topLevelFolders;
+      this.projectRoots = this.seedBundle.projectRoots;
+    }
+    return this.seedBundle;
+  }
 
   stats = computed(() => {
+    const SEED = this.seedBundle;
+    if (!SEED) {
+      return {
+        activeSeeded: 0,
+        closedSeeded: 0,
+        duplicateReview: 0,
+        total: 0,
+        linkedActive: null,
+        linkedClosed: null,
+        missingActive: null,
+        missingClosed: null,
+      };
+    }
     const duplicateJobs = new Set(SEED.duplicateReviews.map(d => d.jobNumber.trim()));
     const active = SEED.projectRoots.filter(r => r.lifecycleStatus !== 'closed' && !duplicateJobs.has(r.jobNumber));
     const closed = SEED.projectRoots.filter(r => r.lifecycleStatus === 'closed' && !duplicateJobs.has(r.jobNumber));
@@ -80,6 +111,7 @@ export class DriveFolderSeedService {
   });
 
   async refreshProjectLinkStats(): Promise<void> {
+    const SEED = await this.loadSeedBundle();
     const duplicateJobs = new Set(SEED.duplicateReviews.map(d => d.jobNumber.trim()));
     const projects = await this.data.waitForProjectsLoaded();
     let linkedActive = 0;
@@ -112,6 +144,7 @@ export class DriveFolderSeedService {
   }
 
   async importIfNeeded(force = false): Promise<void> {
+    const SEED = await this.loadSeedBundle();
     const marker = localStorage.getItem(IMPORTED_KEY);
     if (!force && marker === SEED.meta.generatedAt) return;
     await this.syncDriveFolderIds(false, 'active');
@@ -122,6 +155,7 @@ export class DriveFolderSeedService {
     overwriteExisting = false,
     scope: DriveLinkScope = 'all',
   ): Promise<DriveFolderSeedResult> {
+    const SEED = await this.loadSeedBundle();
     const user = auth.currentUser;
     if (!user) throw new Error('Sign in to import Drive folder links.');
 

@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import laborRatesSeed from '@app/data/labor-rates-seed.json';
+import { loadMockDataJson } from '@core/utils/mock-data-loader';
 import { environment } from '@app/config/environment';
 import { CERTIFIED_PAYROLL_EXPORT_MESSAGE } from '@app/config/certified-payroll-sheet.config';
 import {
@@ -170,7 +170,7 @@ export class CertifiedPayrollService {
     }));
 
     if (!classificationRates.length) {
-      const seed = laborRatesSeed as { classificationRates: ClassificationRateRecord[] };
+      const seed = await loadMockDataJson<{ classificationRates: ClassificationRateRecord[] }>('labor-rates-seed.json');
       for (const rate of seed.classificationRates) {
         classificationRates.push({
           id: `seed-${rate.classification}`.toLowerCase().replace(/\s+/g, '-'),

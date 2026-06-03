@@ -11,7 +11,7 @@ import {
 } from '@app/models/labor.types';
 import { Project } from '@app/models/types';
 import { LABOR_SHEET } from '@app/config/labor-sheet.config';
-import laborRatesSeed from '@app/data/labor-rates-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { SheetsService } from '@core/services/sheets.service';
 import { DataService } from '@core/services/data.service';
 import { LaborRateService } from '@features/labor/services/labor-rate.service';
@@ -27,6 +27,8 @@ import {
 import { normalizeJobKey, parseJobLabel } from '@shared/utils/master-sheet-parser';
 import { auth } from '@app/firebase';
 import { effectiveClassification, resolveLaborCodeMapping } from '@features/labor/utils/labor-code-mapping.compute';
+
+const laborRatesSeedLoader = createLazyJsonLoader<{ classificationRates: ClassificationRateRecord[] }>('labor-rates-seed.json');
 
 interface LaborCachePayload {
   generatedAt: string;
@@ -57,9 +59,7 @@ export class LaborDataService {
   });
 
   employees = signal<EmployeeRecord[]>([]);
-  classificationRates = signal<ClassificationRateRecord[]>(
-    classificationRatesFromSeed(laborRatesSeed as { classificationRates: ClassificationRateRecord[] }),
-  );
+  classificationRates = signal<ClassificationRateRecord[]>([]);
   normalizedEntries = signal<NormalizedLaborEntry[]>([]);
   monthlyAccruals = signal<MonthlyLaborAccrual[]>([]);
   qbActuals = signal<QbLaborActual[]>([]);
@@ -67,6 +67,16 @@ export class LaborDataService {
   private firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] as Project[] });
   private laborCodeMappings = toSignal(this.dataService.getLaborCodeMappings(), { initialValue: [] });
   private autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor() {
+    void laborRatesSeedLoader.get().then(seed =>
+      this.classificationRates.set(classificationRatesFromSeed(seed)),
+    );
+  }
+
+  private async laborRatesSeed() {
+    return laborRatesSeedLoader.get();
+  }
 
   overviewKpis = computed(() =>
     this.calculations.buildOverviewKpis(
@@ -174,7 +184,7 @@ export class LaborDataService {
       const parsedEmployees = employeeTab ? parseEmployeeSummaryRows(employeeRows) : [];
       let parsedRates = classificationTab
         ? parseClassificationRateRows(classificationRows)
-        : classificationRatesFromSeed(laborRatesSeed as { classificationRates: ClassificationRateRecord[] });
+        : classificationRatesFromSeed(await this.laborRatesSeed());
 
       if (fringeTab && fringeRows.length) {
         const fringeParsed = parseFringeRateRows(fringeRows);
@@ -182,7 +192,7 @@ export class LaborDataService {
       }
 
       if (!parsedRates.length) {
-        parsedRates = classificationRatesFromSeed(laborRatesSeed as { classificationRates: ClassificationRateRecord[] });
+        parsedRates = classificationRatesFromSeed(await this.laborRatesSeed());
       }
 
       const projects = await firstValueFrom(this.dataService.getProjects());

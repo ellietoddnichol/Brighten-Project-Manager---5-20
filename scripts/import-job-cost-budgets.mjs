@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Reads Brighten job cost budget Excel files from the repo root and writes
- * src/app/data/job-cost-budget-seed.json for the app to import.
+ * mock-data/job-cost-budget-seed.json for the app to import.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -10,7 +10,7 @@ import XLSX from 'xlsx';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const outPath = path.join(root, 'src/app/data/job-cost-budget-seed.json');
+const outPath = path.join(root, 'mock-data/job-cost-budget-seed.json');
 
 function cellStr(value) {
   if (value == null) return '';

@@ -2,7 +2,7 @@ import { Injectable, inject, signal, computed, effect } from '@angular/core';
 import { v4 as uuidv4 } from 'uuid';
 import { ImportException, ImportRunSummary } from '@app/models/import.types';
 import { downloadCsv } from '@shared/utils/csv-export';
-import importReviewSeed from '@app/data/seeds/import-review-seed.json';
+import { createLazyJsonLoader, loadMockDataJson } from '@core/utils/mock-data-loader';
 import { SourceReviewRepository } from '@core/services/source-review.repository';
 import { SyncRunsRepository } from '@core/services/sync-runs.repository';
 import { AuthService } from '@core/services/auth.service';
@@ -45,8 +45,8 @@ export class ImportReviewService {
     this.runsSignal.set(runs);
   }
 
-  seedInitialExceptions(): void {
-    const seed = importReviewSeed as ImportReviewSeed;
+  async seedInitialExceptions(): Promise<void> {
+    const seed = await loadMockDataJson<ImportReviewSeed>('seeds/import-review-seed.json');
     const existing = this.exceptionsSignal();
     const keys = new Set(existing.map(e => `${e.type}|${e.jobNumber}|${e.message}`));
     const merged = [...existing];

@@ -1,13 +1,13 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import qboBundle from '@app/data/qbo-reports-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { QboReportsBundle } from '@app/data/qbo-reports.types';
 import { auth } from '@app/firebase';
 import { DataService } from '@core/services/data.service';
 import { findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 import { qboRecordToProjectUpdate } from '@shared/utils/qbo-reports-mapper';
 
-const QBO_DATA = qboBundle as QboReportsBundle;
+const qboDataLoader = createLazyJsonLoader<QboReportsBundle>('qbo-reports-seed.json');
 
 export interface QboSyncResult {
   updated: number;
@@ -25,8 +25,8 @@ export class QboSyncService {
   lastSyncMessage = signal<string | null>(null);
   lastSyncError = signal<string | null>(null);
 
-  qboMeta = QBO_DATA.meta;
-  recordCount = QBO_DATA.records.length;
+  qboMeta: QboReportsBundle['meta'] | null = null;
+  recordCount = 0;
 
   async syncFromQboReports(): Promise<QboSyncResult> {
     if (!auth.currentUser) {
@@ -36,6 +36,9 @@ export class QboSyncService {
       throw new Error('QBO sync already in progress.');
     }
 
+    const QBO_DATA = await qboDataLoader.get();
+    this.qboMeta = QBO_DATA.meta;
+    this.recordCount = QBO_DATA.records.length;
     this.syncing.set(true);
     this.lastSyncError.set(null);
 

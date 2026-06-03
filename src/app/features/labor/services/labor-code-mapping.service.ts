@@ -15,7 +15,7 @@ import { ProjectLaborActual } from '@app/models/labor-actual.types';
 import { NormalizedLaborEntry } from '@app/models/labor.types';
 import { Project } from '@app/models/types';
 import { auth } from '@app/firebase';
-import seedBundle from '@app/data/labor-code-mappings-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { downloadCsv } from '@shared/utils/csv-export';
 import {
   collectLaborCodeDiscoveryStats,
@@ -24,7 +24,7 @@ import {
 } from '@features/labor/utils/labor-code-discovery.compute';
 import { ImportReviewService } from '@core/services/import-review.service';
 
-const SEED = seedBundle as { meta: { generatedAt: string }; mappings: Partial<LaborCodeMapping>[] };
+const laborMappingsLoader = createLazyJsonLoader<{ meta: { generatedAt: string }; mappings: Partial<LaborCodeMapping>[] }>('labor-code-mappings-seed.json');
 const IMPORTED_KEY = 'brighten.laborCodeMappingsImportedAt';
 
 @Injectable({ providedIn: 'root' })
@@ -46,9 +46,9 @@ export class LaborCodeMappingService {
   /** Dev/demo only — not part of production workflow. */
   async importDevSeedIfNeeded(force = false): Promise<void> {
     const marker = localStorage.getItem(IMPORTED_KEY);
-    if (!force && marker === SEED.meta.generatedAt) return;
+    if (!force && marker === (await laborMappingsLoader.get()).meta.generatedAt) return;
     await this.importDevSeedMappings();
-    localStorage.setItem(IMPORTED_KEY, SEED.meta.generatedAt);
+    localStorage.setItem(IMPORTED_KEY, (await laborMappingsLoader.get()).meta.generatedAt);
   }
 
   /** @deprecated Use discoverFromMasterTimeSheet. Dev/demo seed import only. */
@@ -64,7 +64,7 @@ export class LaborCodeMappingService {
     try {
       const existing = this.snapshot();
       let written = 0;
-      for (const mapping of SEED.mappings) {
+      for (const mapping of (await laborMappingsLoader.get()).mappings) {
         const exists = existing.some(m => normalizeLaborCodeKey(m.laborCode) === normalizeLaborCodeKey(mapping.laborCode));
         if (exists) continue;
         await firstValueFrom(this.data.createLaborCodeMapping({

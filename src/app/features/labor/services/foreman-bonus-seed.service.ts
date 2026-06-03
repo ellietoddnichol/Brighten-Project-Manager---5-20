@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { DataService } from '@core/services/data.service';
 import { auth } from '@app/firebase';
-import seedBundle from '@app/data/foreman-bonus-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { Project } from '@app/models/types';
 import {
   ForemanBonusPolicy,
@@ -11,13 +11,12 @@ import {
   ProjectForemanAssignment,
 } from '@app/models/foreman-bonus.types';
 import {
-  computeForemanBonusAmounts,
   preserveHistoricalRecord,
   roundCurrency,
 } from '@features/labor/utils/foreman-bonus.compute';
 import { findProjectMatches, normalizeProjectNumber, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 
-const SEED = seedBundle as ForemanBonusSeedBundle;
+const foremanBonusSeedLoader = createLazyJsonLoader<ForemanBonusSeedBundle>('foreman-bonus-seed.json');
 const IMPORTED_KEY = 'brighten.foremanBonusImportedAt';
 
 interface ForemanBonusSeedBundle {
@@ -73,18 +72,20 @@ export class ForemanBonusSeedService {
 
   syncing = signal(false);
   lastMessage = signal<string | null>(null);
-  seedMeta = SEED.meta;
 
   async importIfNeeded(force = false): Promise<void> {
+    const seed = await foremanBonusSeedLoader.get();
     const marker = localStorage.getItem(IMPORTED_KEY);
-    if (!force && marker === SEED.meta.generatedAt) return;
+    if (!force && marker === seed.meta.generatedAt) return;
     await this.syncForemanBonusSeed();
-    localStorage.setItem(IMPORTED_KEY, SEED.meta.generatedAt);
+    localStorage.setItem(IMPORTED_KEY, seed.meta.generatedAt);
   }
 
   async syncForemanBonusSeed(): Promise<void> {
     const user = auth.currentUser;
     if (!user) throw new Error('Sign in before importing foreman bonus seed.');
+
+    const seed = await foremanBonusSeedLoader.get();
 
     this.syncing.set(true);
     this.lastMessage.set(null);
@@ -96,16 +97,16 @@ export class ForemanBonusSeedService {
       const existingAssignments = this.data.projectForemanAssignmentsSnapshot();
       const existingRecords = this.data.foremanBonusRecordsSnapshot();
 
-      let policy = existingPolicies.find(p => p.name === SEED.policy.name);
+      let policy = existingPolicies.find(p => p.name === seed.policy.name);
       if (!policy) {
         policy = await firstValueFrom(this.data.createForemanBonusPolicy({
-          ...SEED.policy,
+          ...seed.policy,
           id: uuidv4(),
         }));
       }
 
       const projectByJob = new Map<string, Project>();
-      for (const record of SEED.records) {
+      for (const record of seed.records) {
         const key = normalizeProjectNumber(record.jobNumber);
         if (projectByJob.has(key)) continue;
         const matches = findProjectMatches(projects, { projectNumber: record.jobNumber });
@@ -117,7 +118,7 @@ export class ForemanBonusSeedService {
       let assignmentsWritten = 0;
       let recordsWritten = 0;
 
-      for (const assignment of SEED.assignments) {
+      for (const assignment of seed.assignments) {
         const project = projectByJob.get(normalizeProjectNumber(assignment.jobNumber));
         const employee = employees.find(e => e.name === assignment.foremanName);
         const exists = existingAssignments.some(a =>
@@ -142,14 +143,14 @@ export class ForemanBonusSeedService {
         assignmentsWritten++;
       }
 
-      for (const seedRecord of SEED.records) {
+      for (const seedRecord of seed.records) {
         const project = projectByJob.get(normalizeProjectNumber(seedRecord.jobNumber));
         const employee = employees.find(e => e.name === seedRecord.foremanName);
         const exists = existingRecords.some(r =>
           r.source === 'ImportedHistorical'
           && r.jobNumber === seedRecord.jobNumber
           && r.foremanName === seedRecord.foremanName
-          && r.reportPeriodEnd === SEED.meta.reportPeriodEnd,
+          && r.reportPeriodEnd === seed.meta.reportPeriodEnd,
         );
         if (exists) continue;
 
@@ -157,7 +158,7 @@ export class ForemanBonusSeedService {
           Math.max(seedRecord.laborSavings, 0) * seedRecord.bonusRate * seedRecord.foremanSharePercent,
         );
 
-        const summary = SEED.summaries.find(s => s.foremanName === seedRecord.foremanName);
+        const summary = seed.summaries.find(s => s.foremanName === seedRecord.foremanName);
 
         const draft: ForemanBonusRecord = {
           id: uuidv4(),
@@ -166,8 +167,8 @@ export class ForemanBonusSeedService {
           projectName: seedRecord.projectName,
           foremanEmployeeId: employee?.id,
           foremanName: seedRecord.foremanName,
-          reportPeriodStart: SEED.meta.reportPeriodStart,
-          reportPeriodEnd: SEED.meta.reportPeriodEnd,
+          reportPeriodStart: seed.meta.reportPeriodStart,
+          reportPeriodEnd: seed.meta.reportPeriodEnd,
           laborCostBasis: 'WagesPlusFringe',
           actualLaborCost: seedRecord.actualLaborCost,
           laborBudget: seedRecord.laborBudget,

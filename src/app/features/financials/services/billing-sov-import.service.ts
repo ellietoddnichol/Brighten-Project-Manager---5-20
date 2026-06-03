@@ -11,7 +11,7 @@ import {
   BillingSovSeed,
   BillingSovSummaryRow,
 } from '@app/models/billing-sov-import.types';
-import billingSovSeed from '@app/data/seeds/billing-sov-may-2026-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { findProjectMatches } from '@features/projects/utils/project-dedupe';
 import { normalizeJobNumber } from '@app/config/active-2026-jobs.config';
 import {
@@ -35,6 +35,8 @@ function mapBillingStatus(raw?: string, recordType?: string): Billing['status'] 
   return 'Submitted';
 }
 
+const billingSovSeedLoader = createLazyJsonLoader<BillingSovSeed>('seeds/billing-sov-may-2026-seed.json');
+
 @Injectable({ providedIn: 'root' })
 export class BillingSovImportService {
   private data = inject(DataService);
@@ -44,9 +46,10 @@ export class BillingSovImportService {
 
   running = signal(false);
   lastMessage = signal<string | null>(null);
+  private seedContext: BillingSovSeed | null = null;
 
-  seed(): BillingSovSeed {
-    return billingSovSeed as BillingSovSeed;
+  async seed(): Promise<BillingSovSeed> {
+    return billingSovSeedLoader.get();
   }
 
   async importFromSeed(): Promise<BillingSovImportResult> {
@@ -67,7 +70,8 @@ export class BillingSovImportService {
 
     try {
       await this.data.waitForProjectsLoaded();
-      const seed = this.seed();
+      const seed = await this.seed();
+      this.seedContext = seed;
       const projects = this.data.projectsSnapshot();
       const sourceFile = seed.meta.sourceFile;
 
@@ -261,7 +265,7 @@ export class BillingSovImportService {
         type: 'importFieldConflict',
         source: 'BillingSovWorkbook',
         jobNumber: row.jobNumber,
-        sourceFileName: row.sourceFileName ?? this.seed().meta.sourceFile,
+        sourceFileName: row.sourceFileName ?? this.seedContext?.meta.sourceFile ?? 'billing-sov-seed',
         message: `Billing/SOV import skipped manual ${String(c.field)} on J${row.jobNumber}`,
       });
       result.exceptions++;

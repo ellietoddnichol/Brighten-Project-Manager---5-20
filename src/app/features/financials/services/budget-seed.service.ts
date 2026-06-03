@@ -6,7 +6,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { Project, ProjectBudgetLine } from '@app/models/types';
 import { auth } from '@app/firebase';
-import seedBundle from '@app/data/job-cost-budget-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import {
   JobCostBudgetProjectSeed,
   JobCostBudgetSeedBundle,
@@ -22,7 +22,7 @@ import {
 } from '@shared/utils/lifecycle-import.guard';
 import { rollupJobCostBudgetLines } from '@features/financials/utils/job-cost-budget-parser';
 
-const SEED = seedBundle as JobCostBudgetSeedBundle;
+const jobCostBudgetSeedLoader = createLazyJsonLoader<JobCostBudgetSeedBundle>('job-cost-budget-seed.json');
 
 type BudgetImportBundle = {
   meta: { generatedAt: string; projectCount: number };
@@ -56,12 +56,12 @@ export class BudgetSeedService {
   syncing = signal(false);
   lastMessage = signal<string | null>(null);
 
-  seedMeta = SEED.meta;
+  seedMeta: JobCostBudgetSeedBundle['meta'] | null = null;
   budgetImportMeta = signal<{ generatedAt: string; projectCount: number }>({ generatedAt: '', projectCount: 0 });
 
   private async loadBudgetImportBundle(): Promise<BudgetImportBundle | null> {
     try {
-      const resp = await fetch('/data/seeds/budget-import-seed.json');
+      const resp = await fetch('/mock-data/seeds/budget-import-seed.json');
       if (!resp.ok) return null;
       const bundle = await resp.json() as BudgetImportBundle;
       this.budgetImportMeta.set(bundle.meta);
@@ -74,13 +74,17 @@ export class BudgetSeedService {
   /** Import bundled budgets once per seed generation (or when forced). */
   async importIfNeeded(force = false): Promise<void> {
     const marker = localStorage.getItem(BUDGETS_IMPORTED_KEY);
+    const SEED = await jobCostBudgetSeedLoader.get();
+    if (!this.seedMeta) this.seedMeta = SEED.meta;
     if (!force && marker === SEED.meta.generatedAt) return;
-    await this.syncJobCostBudgets();
+    await this.syncJobCostBudgets(SEED);
     localStorage.setItem(BUDGETS_IMPORTED_KEY, SEED.meta.generatedAt);
   }
 
   /** Upsert job cost budgets from bundled seed (detailed workbooks + portfolio summary). */
-  async syncJobCostBudgets(): Promise<void> {
+  async syncJobCostBudgets(seedBundle?: JobCostBudgetSeedBundle): Promise<void> {
+    const SEED = seedBundle ?? await jobCostBudgetSeedLoader.get();
+    if (!this.seedMeta) this.seedMeta = SEED.meta;
     const user = auth.currentUser;
     if (!user) throw new Error('Sign in before importing job cost budgets.');
 

@@ -31,7 +31,7 @@ export class ImportSeedService {
 
   checkSourceAvailability(): void {
     const warnings: string[] = [];
-    if (this.driveSeed.seedMeta.source.includes('partial')) {
+    if (this.driveSeed.seedMeta?.source.includes('partial')) {
       warnings.push('Drive folder CSV not linked — add clean_project_root_folder_ids.csv and link folders in Settings → Drive Folders.');
     }
     if (!this.budgetSeed.budgetImportMeta().projectCount) {

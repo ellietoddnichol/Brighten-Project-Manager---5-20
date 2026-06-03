@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const wipOut = path.join(root, 'src/app/data/seeds/wip-setup-june-2026-seed.json');
-const billingOut = path.join(root, 'src/app/data/seeds/billing-sov-may-2026-seed.json');
+const wipOut = path.join(root, 'mock-data/seeds/wip-setup-june-2026-seed.json');
+const billingOut = path.join(root, 'mock-data/seeds/billing-sov-may-2026-seed.json');
 
 function driveUrl(id) {
   return `https://drive.google.com/drive/folders/${id}`;

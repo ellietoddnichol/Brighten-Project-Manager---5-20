@@ -15,7 +15,7 @@ import path from 'path';
 const ownerId = process.argv[2];
 const credentialsPath = process.argv[3] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const seedPath = path.resolve(__dirname, '../src/app/data/job-cost-budget-seed.json');
+const seedPath = path.resolve(__dirname, '../mock-data/job-cost-budget-seed.json');
 
 if (!ownerId) {
   console.error('Usage: node scripts/load-job-cost-budgets-firestore.mjs <firebase-user-id> [service-account.json]');

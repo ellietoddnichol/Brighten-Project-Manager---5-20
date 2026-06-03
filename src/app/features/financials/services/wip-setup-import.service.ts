@@ -7,7 +7,7 @@ import {
   WipSetupProjectRow,
   WipSetupSeed,
 } from '@app/models/wip-setup.types';
-import setupSeed from '@app/data/seeds/wip-setup-june-2026-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { findProjectMatches } from '@features/projects/utils/project-dedupe';
 import {
   billingTypeFromProfileLabel,
@@ -29,6 +29,8 @@ function driveFolderIdFromUrl(url?: string): string | undefined {
   return match?.[1];
 }
 
+const setupSeedLoader = createLazyJsonLoader<WipSetupSeed>('seeds/wip-setup-june-2026-seed.json');
+
 @Injectable({ providedIn: 'root' })
 export class WipSetupImportService {
   private data = inject(DataService);
@@ -36,8 +38,8 @@ export class WipSetupImportService {
   running = signal(false);
   lastMessage = signal<string | null>(null);
 
-  seed(): WipSetupSeed {
-    return setupSeed as WipSetupSeed;
+  async seed(): Promise<WipSetupSeed> {
+    return setupSeedLoader.get();
   }
 
   async importFromSeed(): Promise<WipSetupImportResult> {
@@ -58,7 +60,9 @@ export class WipSetupImportService {
       await this.data.waitForProjectsLoaded();
       let projects = this.data.projectsSnapshot();
 
-      for (const row of this.seed().projects) {
+      const setupSeed = await this.seed();
+
+      for (const row of setupSeed.projects) {
         const project = await this.ensureProject(row, projects, result);
         if (!project) {
           result.unmatched++;

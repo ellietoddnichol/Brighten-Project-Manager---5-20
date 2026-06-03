@@ -8,7 +8,7 @@ import {
   ArAgingSeed,
   ArAgingSeedRow,
 } from '@app/models/ar-aging.types';
-import arSeed from '@app/data/seeds/ar-aging-jun-2026-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { findProjectMatches } from '@features/projects/utils/project-dedupe';
 import { normalizeJobNumber } from '@app/config/active-2026-jobs.config';
 import {
@@ -18,6 +18,8 @@ import {
 } from '@features/financials/utils/wip-forecast.parse';
 import { isOpenArRecord } from '@features/financials/utils/wip.compute';
 
+const arSeedLoader = createLazyJsonLoader<ArAgingSeed>('seeds/ar-aging-jun-2026-seed.json');
+
 @Injectable({ providedIn: 'root' })
 export class ArAgingImportService {
   private data = inject(DataService);
@@ -25,8 +27,8 @@ export class ArAgingImportService {
   running = signal(false);
   lastMessage = signal<string | null>(null);
 
-  seed(): ArAgingSeed {
-    return arSeed as ArAgingSeed;
+  async seed(): Promise<ArAgingSeed> {
+    return arSeedLoader.get();
   }
 
   async importFromSeed(): Promise<ArAgingImportResult> {
@@ -47,16 +49,17 @@ export class ArAgingImportService {
     try {
       await this.data.waitForProjectsLoaded();
       const projects = this.data.projectsSnapshot();
-      const asOfDate = this.seed().meta.asOfDate;
+      const seed = await this.seed();
+      const asOfDate = seed.meta.asOfDate;
 
-      for (const row of this.seed().rows) {
+      for (const row of seed.rows) {
         const project = this.findProject(projects, row.jobNumber);
         if (!project) {
           result.unmatched++;
           continue;
         }
 
-        await this.upsertArRow(row, project, asOfDate, result);
+        await this.upsertArRow(row, project, asOfDate, seed.meta.sourceFile, result);
       }
 
       this.lastMessage.set(
@@ -75,6 +78,7 @@ export class ArAgingImportService {
     row: ArAgingSeedRow,
     project: Project,
     asOfDate: string,
+    sourceFile: string,
     result: ArAgingImportResult,
   ): Promise<void> {
     const total = row.total ?? 0;
@@ -128,7 +132,7 @@ export class ArAgingImportService {
       days90Plus: row.days90Plus ?? 0,
       totalOpen: total,
       lastSyncedAt: new Date().toISOString(),
-      notes: `Imported from ${this.seed().meta.sourceFile}`,
+      notes: `Imported from ${sourceFile}`,
     };
 
     if (existing) {

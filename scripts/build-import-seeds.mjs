@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build all import seed JSON files from src/app/data/imports/
+ * Build all import seed JSON files from mock-data/imports/
  *
  * Usage: node scripts/build-import-seeds.mjs
  */
@@ -15,10 +15,10 @@ import { jobNumberFromFilename, parseMoney, cellStr } from './lib/import-utils.m
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
-const importsDir = path.join(root, 'src/app/data/imports');
+const importsDir = path.join(root, 'mock-data/imports');
 const budgetsDir = path.join(importsDir, 'budgets');
-const seedsDir = path.join(root, 'src/app/data/seeds');
-const legacyDataDir = path.join(root, 'src/app/data');
+const seedsDir = path.join(root, 'mock-data/seeds');
+const legacyDataDir = path.join(root, 'mock-data');
 
 fs.mkdirSync(seedsDir, { recursive: true });
 fs.mkdirSync(budgetsDir, { recursive: true });
@@ -288,7 +288,7 @@ async function main() {
   const budgetBundle = {
     meta: {
       generatedAt: new Date().toISOString(),
-      sourceDir: 'src/app/data/imports/budgets',
+      sourceDir: 'mock-data/imports/budgets',
       projectCount: budgetImports.length,
     },
     imports: budgetImports,

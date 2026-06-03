@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import projectCostsSeed from '@app/data/project-costs-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { ProjectCostsSeedBundle, ProjectCostMonthlyLabor, ProjectCostSummary } from '@app/data/project-costs.types';
 import { ProjectCostTransactionRecord } from '@app/models/import.types';
 import { auth } from '@app/firebase';
@@ -12,7 +12,7 @@ import { projectCostSummaryToProjectUpdate } from '@features/projects/utils/proj
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { sanitizeImportProjectPatch, shouldApplyImportFinancialPatch } from '@shared/utils/lifecycle-import.guard';
 
-const SEED = projectCostsSeed as ProjectCostsSeedBundle;
+const projectCostsSeedLoader = createLazyJsonLoader<ProjectCostsSeedBundle>('project-costs-seed.json');
 
 export interface ProjectCostsSyncResult {
   updated: number;
@@ -33,18 +33,31 @@ export class ProjectCostsService {
   lastSyncMessage = signal<string | null>(null);
   lastSyncError = signal<string | null>(null);
 
-  seedMeta = SEED.meta;
-  projectCount = SEED.projects.length;
-  transactionCount = SEED.meta.transactionCount ?? 0;
-  monthlyLabor = signal<ProjectCostMonthlyLabor[]>(SEED.monthlyLabor);
-  projectSummaries = signal<ProjectCostSummary[]>(SEED.projects);
+  seedMeta = signal<ProjectCostsSeedBundle['meta'] | null>(null);
+  projectCount = signal(0);
+  transactionCount = signal(0);
+  monthlyLabor = signal<ProjectCostMonthlyLabor[]>([]);
+  projectSummaries = signal<ProjectCostSummary[]>([]);
   transactions = signal<ProjectCostTransactionRecord[]>([]);
   transactionsLoaded = signal(false);
+
+  constructor() {
+    void this.bootstrapSeed();
+  }
+
+  private async bootstrapSeed(): Promise<void> {
+    const SEED = await projectCostsSeedLoader.get();
+    this.seedMeta.set(SEED.meta);
+    this.projectCount.set(SEED.projects.length);
+    this.transactionCount.set(SEED.meta.transactionCount ?? 0);
+    this.monthlyLabor.set(SEED.monthlyLabor);
+    this.projectSummaries.set(SEED.projects);
+  }
 
   async loadTransactionsIfNeeded(): Promise<void> {
     if (this.transactionsLoaded()) return;
     try {
-      const resp = await fetch('/data/seeds/project-cost-transactions-seed.json');
+      const resp = await fetch('/mock-data/seeds/project-cost-transactions-seed.json');
       if (!resp.ok) return;
       const data = await resp.json() as { transactions: Array<Record<string, unknown>> };
       this.transactions.set((data.transactions ?? []).map(t => ({
@@ -98,6 +111,7 @@ export class ProjectCostsService {
 
     try {
       await this.loadTransactionsIfNeeded();
+      const SEED = await projectCostsSeedLoader.get();
       const projects = await this.dataService.waitForProjectsLoaded();
       const lifecycleMap = this.lifecycle.snapshotMap();
       const syncedAt = new Date().toISOString();

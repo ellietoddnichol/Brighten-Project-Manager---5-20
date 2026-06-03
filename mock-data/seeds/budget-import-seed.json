@@ -1,7 +1,7 @@
 {
   "meta": {
     "generatedAt": "2026-05-27T17:22:19.184Z",
-    "sourceDir": "src/app/data/imports/budgets",
+    "sourceDir": "mock-data/imports/budgets",
     "projectCount": 10
   },
   "imports": [

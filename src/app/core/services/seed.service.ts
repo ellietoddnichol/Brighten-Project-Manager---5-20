@@ -3,7 +3,7 @@ import { firstValueFrom } from 'rxjs';
 import { DataService } from '@core/services/data.service';
 import { Project } from '@app/models/types';
 import { auth } from '@app/firebase';
-import seedBundle from '@app/data/brighten-project-seed.json';
+import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 import { BrightenSeedBundle } from '@app/data/brighten-seed.types';
 import {
   resolveSeedProjectNumber,
@@ -14,7 +14,7 @@ import {
 import { findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 import { ProjectDedupeService } from '@core/services/project-dedupe.service';
 
-const SEED_DATA = seedBundle as BrightenSeedBundle;
+const seedDataLoader = createLazyJsonLoader<BrightenSeedBundle>('brighten-project-seed.json');
 
 @Injectable({ providedIn: 'root' })
 export class SeedService {
@@ -23,7 +23,7 @@ export class SeedService {
   seeding = signal(false);
   seedMessage = signal<string | null>(null);
 
-  seedMeta = SEED_DATA.meta;
+  seedMeta: BrightenSeedBundle['meta'] | null = null;
 
   /** @deprecated Use syncActiveWip — load all creates duplicates. */
   async seedDemoData(): Promise<void> {
@@ -48,6 +48,8 @@ export class SeedService {
   }
 
   private async applySeedBundle(upsert: boolean): Promise<void> {
+    const SEED_DATA = await seedDataLoader.get();
+    this.seedMeta = SEED_DATA.meta;
     const user = auth.currentUser;
     if (!user) {
       throw new Error('Sign in before loading seed data.');

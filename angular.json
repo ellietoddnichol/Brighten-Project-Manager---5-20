@@ -26,6 +26,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "**/*",
+                "input": "mock-data",
+                "output": "/mock-data"
               }
             ],
             "styles": [
