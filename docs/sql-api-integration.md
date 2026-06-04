@@ -189,6 +189,8 @@ Migration record: `db/manual/2026-06-04_phase_1b_overview_completion.sql` (addit
 
 **Billing Phase 3B scope:** read-only Pay Apps/Billing API routes expose imported `pay_apps` and `sov_lines` rows for J158, J186, J209, J215, J218, J219, J221, J222, and J223. No UI is wired yet. No write routes, staging-table reads, schema changes, or additional imports are included.
 
+**Billing Phase 3C scope:** project Financials → Billing shows a read-only SQL Pay Apps/Billing section using `GET /api/projects/:id/pay-apps` and `GET /api/projects/:id/pay-apps/:payAppId`. Existing billing write flows remain disabled in this project detail billing view; no create/edit/delete UI, write routes, schema changes, staging-table reads, or imports are included.
+
 **Still deferred:** project manager assignment (`project_users`), client/billing contacts (no schema), wage orders, certified payroll workflow, Financials child tab migration, financial writes.
 
 **Not wired yet:** Home, project detail child tab SQL migrations (tasks, documents, workflows, financial detail tabs), other entity write routes, Firebase removal.

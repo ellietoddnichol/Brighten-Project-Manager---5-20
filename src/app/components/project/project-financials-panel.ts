@@ -17,6 +17,7 @@ import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.s
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { ProjectApiService } from '@core/services/api/project-api.service';
 import { ProjectSqlFinancialSummary } from '@core/services/api/project-financial-api.mapper';
+import { ProjectSqlPayApp, ProjectSqlPayAppDetail } from '@core/services/api/project-pay-app-api.mapper';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { isApprovedUnbilledCo } from '@features/projects/utils/change-management';
 import { arPastDueForProject } from '@features/financials/utils/ar.compute';
@@ -213,7 +214,160 @@ import {
           [options]="billingSegmentOptions"
           [value]="billingSegment()"
           (select)="billingSegment.set($event)" />
-        <app-billing-tab [project]="project" [segment]="billingSegment()" [simplified]="true" />
+        <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Pay Apps / Billing</p>
+              <p class="text-sm text-slate-600">Read-only billing records from Cloud SQL</p>
+            </div>
+            @if (projectApi.payAppsLoading()) {
+              <span class="text-xs font-semibold text-slate-500">Loading...</span>
+            }
+          </div>
+
+          @if (projectApi.payAppsError()) {
+            <div class="border-b border-amber-100 bg-amber-50 px-5 py-3 text-sm text-amber-900">
+              Pay apps could not load from SQL. Existing billing tools are still available below.
+            </div>
+          }
+
+          @if (sqlPayApps().length) {
+            <div class="overflow-x-auto">
+              <table class="min-w-[1100px] w-full divide-y divide-slate-100 text-sm">
+                <thead class="bg-white">
+                  <tr class="text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                    <th class="px-4 py-3">Pay App #</th>
+                    <th class="px-4 py-3">Billing Period</th>
+                    <th class="px-4 py-3">Application Date</th>
+                    <th class="px-4 py-3 text-right">Contract Sum To Date</th>
+                    <th class="px-4 py-3 text-right">Completed / Stored</th>
+                    <th class="px-4 py-3 text-right">Retainage</th>
+                    <th class="px-4 py-3 text-right">Previous Certificates</th>
+                    <th class="px-4 py-3 text-right">Current Due</th>
+                    <th class="px-4 py-3 text-right">Balance To Finish</th>
+                    <th class="px-4 py-3">Status</th>
+                    <th class="px-4 py-3 text-right">SOV</th>
+                    <th class="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (payApp of sqlPayApps(); track payApp.id) {
+                    <tr [class.bg-indigo-50]="selectedSqlPayAppId() === payApp.id">
+                      <td class="px-4 py-3 font-semibold text-slate-900">{{ payApp.payAppNumber || 'Pending' }}</td>
+                      <td class="px-4 py-3 text-slate-700">{{ periodLabel(payApp) }}</td>
+                      <td class="px-4 py-3 text-slate-700">{{ dateLabel(payApp.applicationDate) }}</td>
+                      <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(payApp.contractSumToDate) }}</td>
+                      <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(payApp.totalCompletedStoredToDate) }}</td>
+                      <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(payApp.retainageAmount) }}</td>
+                      <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(payApp.previousCertificates) }}</td>
+                      <td class="px-4 py-3 text-right font-mono font-semibold text-slate-900">{{ moneyNullable(payApp.currentPaymentDue) }}</td>
+                      <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(payApp.balanceToFinish) }}</td>
+                      <td class="px-4 py-3">
+                        <span class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">{{ payApp.status || 'Pending' }}</span>
+                      </td>
+                      <td class="px-4 py-3 text-right">{{ payApp.sovLineCount }}</td>
+                      <td class="px-4 py-3 text-right">
+                        <button type="button" (click)="selectSqlPayApp(payApp)"
+                                class="text-xs font-bold text-indigo-700 hover:underline">View details</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (!projectApi.payAppsLoading() && !projectApi.payAppsError()) {
+            <div class="px-5 py-8">
+              <app-empty-state
+                title="No pay applications or invoices have been added for this project."
+                message="Billing records will appear here after they are loaded into SQL." />
+            </div>
+          }
+
+          @if (projectApi.payAppDetailError()) {
+            <div class="border-t border-amber-100 bg-amber-50 px-5 py-3 text-sm text-amber-900">
+              Selected pay app detail could not load from SQL.
+            </div>
+          }
+
+          @if (selectedSqlPayAppDetail(); as detail) {
+            <div class="border-t border-slate-100 p-4 space-y-4">
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Selected Billing Record</p>
+                  <h3 class="text-lg font-bold text-slate-900">{{ detail.payAppNumber || 'Pending pay app number' }}</h3>
+                  <p class="text-sm text-slate-500">{{ periodLabel(detail) }}</p>
+                </div>
+                @if (projectApi.payAppDetailLoading()) {
+                  <span class="text-xs font-semibold text-slate-500">Loading detail...</span>
+                }
+              </div>
+
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                @for (field of payAppHeaderFields(detail); track field.label) {
+                  <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">{{ field.label }}</p>
+                    <p class="text-sm font-semibold text-slate-900">{{ field.value }}</p>
+                  </div>
+                }
+              </div>
+
+              @if (detail.notes) {
+                <div class="rounded-lg border border-slate-200 bg-white px-4 py-3">
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Import / Review Notes</p>
+                  <p class="text-sm text-slate-700">{{ detail.notes }}</p>
+                </div>
+              }
+
+              <div class="rounded-xl border border-slate-200 overflow-hidden">
+                <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+                  <p class="text-sm font-bold text-slate-900">SOV / Detail Lines</p>
+                  <span class="text-xs font-bold text-slate-500">{{ detail.lines.length }} line(s)</span>
+                </div>
+                @if (detail.lines.length) {
+                  <div class="overflow-x-auto">
+                    <table class="min-w-[1100px] w-full divide-y divide-slate-100 text-sm">
+                      <thead class="bg-white">
+                        <tr class="text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                          <th class="px-4 py-3">Line #</th>
+                          <th class="px-4 py-3">Cost Code</th>
+                          <th class="px-4 py-3">Description</th>
+                          <th class="px-4 py-3 text-right">Scheduled Value</th>
+                          <th class="px-4 py-3 text-right">Previous Completed</th>
+                          <th class="px-4 py-3 text-right">This Period</th>
+                          <th class="px-4 py-3 text-right">Stored Materials</th>
+                          <th class="px-4 py-3 text-right">Total Completed / Stored</th>
+                          <th class="px-4 py-3 text-right">% Complete</th>
+                          <th class="px-4 py-3 text-right">Balance To Finish</th>
+                          <th class="px-4 py-3 text-right">Retainage</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        @for (line of detail.lines; track line.id) {
+                          <tr>
+                            <td class="px-4 py-3">{{ line.lineNumber || '' }}</td>
+                            <td class="px-4 py-3">{{ line.costCode || '' }}</td>
+                            <td class="px-4 py-3 font-medium text-slate-900">{{ line.description || '' }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.scheduledValue) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.workCompletedPrevious) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.workCompletedThisPeriod) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.materialsPresentlyStored) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.totalCompletedAndStored) }}</td>
+                            <td class="px-4 py-3 text-right">{{ percentCompleteLabel(line.percentComplete) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.balanceToFinish) }}</td>
+                            <td class="px-4 py-3 text-right font-mono">{{ moneyNullable(line.retainage) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="px-4 py-6 text-sm text-slate-400 italic">No SOV/detail lines are available for this billing record.</p>
+                }
+              </div>
+            </div>
+          }
+        </section>
+        <app-billing-tab [project]="project" [segment]="billingSegment()" [simplified]="true" [readOnly]="true" />
       }
 
       @if (activeView === 'pos' || activeView === 'sub-invoices') {
@@ -230,7 +384,7 @@ import {
         <app-project-foreman-bonus-tab [project]="project" />
       }
       @if (activeView === 'import-source') {
-        <div class="bg-white rounded-xl border p-5 space-y-3 text-sm">
+          <div class="bg-white rounded-xl border p-5 space-y-3 text-sm">
           <p class="font-semibold text-slate-900">Import &amp; source detail</p>
           <p class="text-slate-600">Review QuickBooks sync, budget imports, and setup fields for this job.</p>
           <div class="flex flex-wrap gap-3">
@@ -336,6 +490,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   drawerType = signal<MoneyDrawerType | null>(null);
   budgetSegment = signal<BudgetSegment>('budget');
   billingSegment = signal<BillingSegment>('summary');
+  selectedSqlPayAppId = signal<string | null>(null);
 
   changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] });
   projectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] });
@@ -345,6 +500,19 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     const summary = this.projectApi.financialSummary();
     if (!summary || this.projectApi.financialActiveSource() !== 'api') return null;
     if (summary.projectId === this.project.id || summary.jobNumber === this.project.projectNumber) return summary;
+    return null;
+  });
+
+  sqlPayApps = computed(() => {
+    const payApps = this.projectApi.payApps();
+    if (this.projectApi.payAppsActiveSource() !== 'api') return [];
+    return payApps.filter(payApp => this.matchesProjectKey(payApp.projectId, payApp.jobNumber));
+  });
+
+  selectedSqlPayAppDetail = computed(() => {
+    const detail = this.projectApi.payAppDetail();
+    if (!detail || detail.id !== this.selectedSqlPayAppId()) return null;
+    if (this.matchesProjectKey(detail.projectId, detail.jobNumber)) return detail;
     return null;
   });
 
@@ -430,6 +598,12 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'summary') {
       void this.projectApi.loadProjectFinancials(this.project.id);
     }
+    if (changes['project']) {
+      this.selectedSqlPayAppId.set(null);
+    }
+    if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'billing') {
+      void this.projectApi.loadProjectPayApps(this.payAppProjectKey());
+    }
   }
 
   fmt(n: number): string {
@@ -459,6 +633,65 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   fmtNullable(n: number | null): string {
     if (n === null || n === undefined) return 'Pending';
     return this.fmt(n);
+  }
+
+  moneyNullable(n: number | null): string {
+    if (n === null || n === undefined) return 'Pending';
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(n);
+  }
+
+  periodLabel(payApp: Pick<ProjectSqlPayApp, 'billingPeriodStart' | 'billingPeriodEnd'>): string {
+    const start = payApp.billingPeriodStart ? this.dateLabel(payApp.billingPeriodStart) : null;
+    const end = payApp.billingPeriodEnd ? this.dateLabel(payApp.billingPeriodEnd) : null;
+    if (start && end) return `${start} - ${end}`;
+    return start || end || 'Pending';
+  }
+
+  percentCompleteLabel(value: number | null): string {
+    if (value === null || value === undefined) return 'Pending';
+    const pct = Math.abs(value) <= 1 ? value * 100 : value;
+    return `${pct.toFixed(1)}%`;
+  }
+
+  payAppHeaderFields(payApp: ProjectSqlPayAppDetail): Array<{ label: string; value: string }> {
+    return [
+      { label: 'Contract Sum', value: this.moneyNullable(payApp.contractSum) },
+      { label: 'Net Change by COs', value: this.moneyNullable(payApp.netChangeByChangeOrders) },
+      { label: 'Contract Sum To Date', value: this.moneyNullable(payApp.contractSumToDate) },
+      { label: 'Total Completed / Stored', value: this.moneyNullable(payApp.totalCompletedStoredToDate) },
+      { label: 'Retainage', value: this.moneyNullable(payApp.retainageAmount) },
+      { label: 'Earned Less Retainage', value: this.moneyNullable(payApp.totalEarnedLessRetainage) },
+      { label: 'Previous Certificates', value: this.moneyNullable(payApp.previousCertificates) },
+      { label: 'Current Payment Due', value: this.moneyNullable(payApp.currentPaymentDue) },
+      { label: 'Balance To Finish', value: this.moneyNullable(payApp.balanceToFinish) },
+      { label: 'Status', value: payApp.status || 'Pending' },
+    ];
+  }
+
+  selectSqlPayApp(payApp: ProjectSqlPayApp): void {
+    this.selectedSqlPayAppId.set(payApp.id);
+    void this.projectApi.loadProjectPayAppDetail(this.payAppProjectKey(), payApp.id);
+  }
+
+  private payAppProjectKey(): string {
+    return this.project.projectNumber || this.project.id;
+  }
+
+  private matchesProjectKey(projectId: string | null, jobNumber: string | null): boolean {
+    const keys = [this.project.id, this.project.projectNumber].filter((value): value is string => !!value);
+    const apiKeys = [projectId, jobNumber].filter((value): value is string => !!value);
+    return apiKeys.some(apiKey => keys.some(key =>
+      apiKey === key || this.normalizeJobKey(apiKey) === this.normalizeJobKey(key),
+    ));
+  }
+
+  private normalizeJobKey(value: string): string {
+    return value.trim().toUpperCase().replace(/^J/, '');
   }
 
   private percentNullable(n: number | null): string {

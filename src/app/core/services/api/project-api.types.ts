@@ -113,6 +113,64 @@ export interface ProjectFinancialCostBreakdownCategoryApiItem {
   remaining: number | string | null;
 }
 
+export interface ProjectPayAppsApiResponse {
+  ok: boolean;
+  source: 'sql';
+  projectId: string;
+  jobNumber: string;
+  items: ProjectPayAppApiItem[];
+}
+
+export interface ProjectPayAppDetailApiResponse {
+  ok: boolean;
+  source: 'sql';
+  projectId: string;
+  jobNumber: string;
+  item: ProjectPayAppApiItem & { lines: ProjectSovLineApiItem[] };
+}
+
+export interface ProjectPayAppApiItem {
+  id: string;
+  projectId: string;
+  jobNumber: string;
+  payAppNumber: string | null;
+  billingPeriodStart: string | null;
+  billingPeriodEnd: string | null;
+  applicationDate: string | null;
+  contractSum: number | string | null;
+  netChangeByChangeOrders: number | string | null;
+  contractSumToDate: number | string | null;
+  totalCompletedStoredToDate: number | string | null;
+  retainageAmount: number | string | null;
+  totalEarnedLessRetainage: number | string | null;
+  previousCertificates: number | string | null;
+  currentPaymentDue: number | string | null;
+  balanceToFinish: number | string | null;
+  status: string | null;
+  notes: string | null;
+  sovLineCount: number | string | null;
+  sourceDocumentId: string | null;
+  createdAt: string | null;
+}
+
+export interface ProjectSovLineApiItem {
+  id: string;
+  payAppId: string;
+  projectId: string;
+  lineNumber: string | null;
+  description: string | null;
+  scheduledValue: number | string | null;
+  workCompletedPrevious: number | string | null;
+  workCompletedThisPeriod: number | string | null;
+  materialsPresentlyStored: number | string | null;
+  totalCompletedAndStored: number | string | null;
+  percentComplete: number | string | null;
+  balanceToFinish: number | string | null;
+  retainage: number | string | null;
+  costCode: string | null;
+  createdAt: string | null;
+}
+
 export interface ApiHealthResponse {
   ok: boolean;
   database: string;

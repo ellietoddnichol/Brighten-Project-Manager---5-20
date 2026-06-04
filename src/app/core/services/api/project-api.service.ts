@@ -3,12 +3,20 @@ import { ApiClientService } from './api-client.service';
 import { mapDashboardRowsToProjects, mapDashboardRowToProject } from './project-api.mapper';
 import { mapFinancialSummaryResponse, ProjectSqlFinancialSummary } from './project-financial-api.mapper';
 import {
+  mapPayAppDetailResponse,
+  mapPayAppsResponse,
+  ProjectSqlPayApp,
+  ProjectSqlPayAppDetail,
+} from './project-pay-app-api.mapper';
+import {
   ApiHealthResponse,
   ApiItemResponse,
   ApiListResponse,
   ProjectApiUpdateBody,
   ProjectDashboardApiRow,
   ProjectFinancialSummaryApiResponse,
+  ProjectPayAppDetailApiResponse,
+  ProjectPayAppsApiResponse,
 } from './project-api.types';
 import type { ProjectApiUpdatePayload } from './project-api-update';
 import { Project } from '@app/models/types';
@@ -35,6 +43,15 @@ export class ProjectApiService {
   financialActiveSource = signal<ApiDataSource>('firestore');
   financialSummary = signal<ProjectSqlFinancialSummary | null>(null);
   financialProjectId = signal<string | null>(null);
+
+  payAppsLoading = signal(false);
+  payAppsError = signal<string | null>(null);
+  payAppsActiveSource = signal<ApiDataSource>('firestore');
+  payApps = signal<ProjectSqlPayApp[]>([]);
+  payAppsProjectId = signal<string | null>(null);
+  payAppDetailLoading = signal(false);
+  payAppDetailError = signal<string | null>(null);
+  payAppDetail = signal<ProjectSqlPayAppDetail | null>(null);
 
   isEnabled(): boolean {
     return apiConfig.useApiBackend;
@@ -178,6 +195,75 @@ export class ProjectApiService {
       return null;
     } finally {
       this.financialLoading.set(false);
+    }
+  }
+
+  /** Load SQL-backed pay app headers. Read-only; no Firestore write fallback. */
+  async loadProjectPayApps(idOrJob: string): Promise<ProjectSqlPayApp[]> {
+    this.payAppsProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.payAppsActiveSource.set('firestore');
+      this.payAppsError.set(null);
+      this.payApps.set([]);
+      this.payAppDetail.set(null);
+      return [];
+    }
+
+    this.payAppsLoading.set(true);
+    this.payAppsError.set(null);
+    this.payAppsActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ProjectPayAppsApiResponse>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/pay-apps`,
+      );
+      const mapped = mapPayAppsResponse(resp);
+      this.payApps.set(mapped);
+      this.payAppsActiveSource.set('api');
+      if (!mapped.some(item => item.id === this.payAppDetail()?.id)) {
+        this.payAppDetail.set(null);
+      }
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project pay apps from API';
+      this.payAppsError.set(message);
+      this.payApps.set([]);
+      this.payAppDetail.set(null);
+      this.payAppsActiveSource.set('firestore');
+      console.warn('[ProjectApiService] pay apps', message);
+      return [];
+    } finally {
+      this.payAppsLoading.set(false);
+    }
+  }
+
+  /** Load one SQL-backed pay app with SOV lines. Read-only. */
+  async loadProjectPayAppDetail(idOrJob: string, payAppId: string): Promise<ProjectSqlPayAppDetail | null> {
+    if (!this.isEnabled()) {
+      this.payAppDetailError.set(null);
+      this.payAppDetail.set(null);
+      return null;
+    }
+
+    this.payAppDetailLoading.set(true);
+    this.payAppDetailError.set(null);
+
+    try {
+      const resp = await this.api.get<ProjectPayAppDetailApiResponse>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/pay-apps/${encodeURIComponent(payAppId)}`,
+      );
+      const mapped = mapPayAppDetailResponse(resp);
+      this.payAppDetail.set(mapped);
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load pay app detail from API';
+      this.payAppDetailError.set(message);
+      this.payAppDetail.set(null);
+      console.warn('[ProjectApiService] pay app detail', message);
+      return null;
+    } finally {
+      this.payAppDetailLoading.set(false);
     }
   }
 }

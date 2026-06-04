@@ -117,7 +117,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
         </section>
       }
 
-      @if (segment === 'pay-apps' || segment === 'summary' || !simplified) {
+      @if (!readOnly && (segment === 'pay-apps' || segment === 'summary' || !simplified)) {
       <div class="flex flex-wrap gap-2">
         <button type="button" (click)="createDraft()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm">Create draft pay app</button>
       </div>
@@ -126,7 +126,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       @if (segment === 'summary' || !simplified) {
       <!-- Approved Unbilled COs -->
       <section class="bg-white rounded-xl border border-emerald-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50 flex justify-between items-center">
+          <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50 flex justify-between items-center">
           <h3 class="text-sm font-bold text-emerald-900">Approved Unbilled COs</h3>
           <span class="text-xs font-bold text-emerald-700">{{ approvedUnbilledCos().length }}</span>
         </div>
@@ -136,7 +136,9 @@ import { ImportReviewService } from '@core/services/import-review.service';
               <li class="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span class="font-medium">{{ coNumber(co) }} — {{ co.title }}</span>
                 <span class="font-mono text-emerald-800">{{ coApprovedAmount(co) | currency }}</span>
-                <button type="button" (click)="addCoToPayApp(co)" class="text-xs font-bold text-emerald-700 hover:underline">Add to draft pay app</button>
+                @if (!readOnly) {
+                  <button type="button" (click)="addCoToPayApp(co)" class="text-xs font-bold text-emerald-700 hover:underline">Add to draft pay app</button>
+                }
               </li>
             }
           </ul>
@@ -149,7 +151,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       @if (segment === 'pay-apps' || !simplified) {
       <!-- COs Included in Draft Pay Apps -->
       <section class="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
-        <div class="px-5 py-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
+          <div class="px-5 py-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
           <h3 class="text-sm font-bold text-blue-900">COs Included in Draft Pay Apps</h3>
           <span class="text-xs font-bold text-blue-700">{{ includedInDraftCos().length }}</span>
         </div>
@@ -160,7 +162,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
                 <span>{{ coNumber(co) }} — {{ co.title }}</span>
                 <span class="font-mono">{{ coApprovedAmount(co) | currency }}</span>
                 <span class="text-xs text-blue-700 font-semibold">IncludedInDraftPayApp</span>
-                @if (draftPayApp(); as draft) {
+                @if (!readOnly && draftPayApp(); as draft) {
                   <button type="button" (click)="removeCoFromDraft(co, draft)" class="text-xs font-bold text-red-600 hover:underline">Remove</button>
                 }
               </li>
@@ -196,19 +198,21 @@ import { ImportReviewService } from '@core/services/import-review.service';
                       <p class="font-mono font-bold">{{ (b.netDue ?? b.currentApplication ?? b.workCompletedThisPeriod) | currency }}</p>
                       <div class="flex flex-wrap justify-end gap-2 mt-2">
                         <button type="button" (click)="toggleDocs(b.id)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
-                        @if (b.status === 'Draft') {
-                          <button type="button" (click)="submitPayApp(b)" class="text-xs font-bold text-amber-700 hover:underline">Submit</button>
-                        }
-                        @if (b.status === 'Submitted') {
-                          <button type="button" (click)="approvePayApp(b)" class="text-xs font-bold text-emerald-700 hover:underline">Approve</button>
-                          <button type="button" (click)="markInvoiced(b)" class="text-xs font-bold text-indigo-700 hover:underline">Mark invoiced</button>
-                        }
-                        @if (b.status === 'Approved') {
-                          <button type="button" (click)="markInvoiced(b)" class="text-xs font-bold text-indigo-700 hover:underline">Mark invoiced</button>
-                          <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
-                        }
-                        @if (b.status === 'Invoiced' || b.status === 'Past Due') {
-                          <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
+                        @if (!readOnly) {
+                          @if (b.status === 'Draft') {
+                            <button type="button" (click)="submitPayApp(b)" class="text-xs font-bold text-amber-700 hover:underline">Submit</button>
+                          }
+                          @if (b.status === 'Submitted') {
+                            <button type="button" (click)="approvePayApp(b)" class="text-xs font-bold text-emerald-700 hover:underline">Approve</button>
+                            <button type="button" (click)="markInvoiced(b)" class="text-xs font-bold text-indigo-700 hover:underline">Mark invoiced</button>
+                          }
+                          @if (b.status === 'Approved') {
+                            <button type="button" (click)="markInvoiced(b)" class="text-xs font-bold text-indigo-700 hover:underline">Mark invoiced</button>
+                            <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
+                          }
+                          @if (b.status === 'Invoiced' || b.status === 'Past Due') {
+                            <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
+                          }
                         }
                       </div>
                     </div>
@@ -219,8 +223,8 @@ import { ImportReviewService } from '@core/services/import-review.service';
                         [project]="project"
                         workflowType="billing"
                         [sourceRecordId]="b.id"
-                        [canGenerateDoc]="true"
-                        [signedUpload]="true" />
+                        [canGenerateDoc]="!readOnly"
+                        [signedUpload]="!readOnly" />
                     </div>
                   }
                 </div>
@@ -327,9 +331,11 @@ import { ImportReviewService } from '@core/services/import-review.service';
                     <p class="font-medium">{{ b.payAppNumber }}</p>
                     <p class="text-xs text-slate-500">{{ b.reviewFlag }} — review before locking</p>
                   </div>
-                  <button type="button" (click)="toggleReviewLock(b)" class="text-xs font-bold text-indigo-700 hover:underline">
-                    {{ b.reviewLocked ? 'Unlock' : 'Mark reviewed' }}
-                  </button>
+                  @if (!readOnly) {
+                    <button type="button" (click)="toggleReviewLock(b)" class="text-xs font-bold text-indigo-700 hover:underline">
+                      {{ b.reviewLocked ? 'Unlock' : 'Mark reviewed' }}
+                    </button>
+                  }
                 </li>
               }
             </ul>
@@ -360,6 +366,7 @@ export class BillingTabComponent implements OnInit {
   @Input({ required: true }) project!: Project;
   @Input() segment: BillingSegment = 'summary';
   @Input() simplified = false;
+  @Input() readOnly = false;
 
   private data = inject(DataService);
   private payApps = inject(PayAppService);
@@ -444,6 +451,7 @@ export class BillingTabComponent implements OnInit {
   }
 
   async createDraft(): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.createDraftPayApp(this.project);
   }
 
@@ -452,31 +460,37 @@ export class BillingTabComponent implements OnInit {
   }
 
   async addCoToPayApp(co: ChangeOrder): Promise<void> {
+    if (this.readOnly) return;
     let pay = this.draftPayApp();
     if (!pay) pay = await this.payApps.createDraftPayApp(this.project);
     await this.payApps.includeCoInDraftPayApp(co, pay);
   }
 
   async removeCoFromDraft(co: ChangeOrder, pay: Billing): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.removeCoFromDraftPayApp(co, pay);
   }
 
   async submitPayApp(b: Billing): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.submitPayApp(b);
     void this.payApps.refreshPayAppAutomation(this.project.id);
   }
 
   async approvePayApp(b: Billing): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.approvePayApp(b);
     void this.payApps.refreshPayAppAutomation(this.project.id);
   }
 
   async markInvoiced(b: Billing): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.markPayAppInvoiced(b);
     void this.payApps.refreshPayAppAutomation(this.project.id);
   }
 
   async markPaid(b: Billing): Promise<void> {
+    if (this.readOnly) return;
     await this.payApps.markPayAppPaid(b);
     void this.payApps.refreshPayAppAutomation(this.project.id);
   }
@@ -488,6 +502,7 @@ export class BillingTabComponent implements OnInit {
   }
 
   async toggleReviewLock(b: Billing): Promise<void> {
+    if (this.readOnly) return;
     await firstValueFrom(this.data.updateBilling(b.id, {
       reviewLocked: !b.reviewLocked,
     }));
