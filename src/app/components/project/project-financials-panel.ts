@@ -106,12 +106,42 @@ import {
                 }
               </div>
 
-              @if (sqlCostBreakdown(sql).length) {
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                  @for (row of sqlCostBreakdown(sql); track row.label) {
-                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-2">
-                      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ row.label }}</p>
-                      <p class="text-sm font-bold text-slate-900">{{ row.value }}</p>
+              @if (sql.costBreakdown.categories.length) {
+                <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
+                  <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Actual Cost Snapshot</p>
+                      <p class="text-xs text-slate-600">Budget Pending · Source: latest SQL financial snapshot</p>
+                    </div>
+                    <span class="text-xs font-semibold text-slate-600">As of {{ dateLabel(sql.costBreakdown.asOfDate || sql.asOfDate) }}</span>
+                  </div>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100 text-sm">
+                      <thead class="bg-white">
+                        <tr class="text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                          <th class="px-4 py-3">Category</th>
+                          <th class="px-4 py-3">Budget</th>
+                          <th class="px-4 py-3">Actual</th>
+                          <th class="px-4 py-3">Remaining</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        @for (row of sql.costBreakdown.categories; track row.category) {
+                          <tr>
+                            <td class="px-4 py-3 font-semibold text-slate-900">{{ row.category }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ fmtNullable(row.budget) }}</td>
+                            <td class="px-4 py-3 text-slate-900 font-semibold">{{ fmtNullable(row.actual) }}</td>
+                            <td class="px-4 py-3 text-slate-700">{{ fmtNullable(row.remaining) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                  @if (sql.costBreakdown.dataWarnings.length) {
+                    <div class="border-t border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                      @for (warning of sql.costBreakdown.dataWarnings; track warning) {
+                        <p>{{ warning }}</p>
+                      }
                     </div>
                   }
                 </div>
@@ -419,19 +449,6 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     ];
   }
 
-  sqlCostBreakdown(summary: ProjectSqlFinancialSummary): Array<{ label: string; value: string }> {
-    const rows = [
-      { label: 'Labor Actual', value: summary.cost.laborActual },
-      { label: 'Materials Actual', value: summary.cost.materialsActual },
-      { label: 'Subcontractors Actual', value: summary.cost.subcontractorsActual },
-      { label: 'Other / Precon Actual', value: summary.cost.otherPreconActual },
-      { label: 'AR Balance', value: summary.billing.arBalance },
-    ];
-    return rows
-      .filter(row => row.value !== null && row.value !== undefined)
-      .map(row => ({ label: row.label, value: this.fmtNullable(row.value) }));
-  }
-
   dateLabel(value: string | null): string {
     if (!value) return 'Not available';
     const d = new Date(`${value.slice(0, 10)}T00:00:00`);
@@ -439,7 +456,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
   }
 
-  private fmtNullable(n: number | null): string {
+  fmtNullable(n: number | null): string {
     if (n === null || n === undefined) return 'Pending';
     return this.fmt(n);
   }

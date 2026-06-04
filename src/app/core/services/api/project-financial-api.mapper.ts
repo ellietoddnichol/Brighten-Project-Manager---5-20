@@ -27,6 +27,21 @@ export interface ProjectSqlFinancialSummary {
     marginPercent: number | null;
   };
   dataWarnings: string[];
+  costBreakdown: ProjectSqlCostBreakdown;
+}
+
+export interface ProjectSqlCostBreakdown {
+  asOfDate: string | null;
+  confidence: string | null;
+  categories: ProjectSqlCostBreakdownCategory[];
+  dataWarnings: string[];
+}
+
+export interface ProjectSqlCostBreakdownCategory {
+  category: string;
+  budget: number | null;
+  actual: number | null;
+  remaining: number | null;
 }
 
 function num(value: number | string | null | undefined): number | null {
@@ -71,5 +86,16 @@ export function mapFinancialSummaryResponse(
       marginPercent: num(item.profit.marginPercent),
     },
     dataWarnings: item.dataWarnings ?? [],
+    costBreakdown: {
+      asOfDate: datePart(item.costBreakdown?.asOfDate),
+      confidence: item.costBreakdown?.confidence ?? null,
+      categories: (item.costBreakdown?.categories ?? []).map((category) => ({
+        category: category.category,
+        budget: num(category.budget),
+        actual: num(category.actual),
+        remaining: num(category.remaining),
+      })),
+      dataWarnings: item.costBreakdown?.dataWarnings ?? [],
+    },
   };
 }

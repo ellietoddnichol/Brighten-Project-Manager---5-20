@@ -149,7 +149,7 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 | GET | `/api/projects/:id/readiness` | `v_project_readiness` |
 | GET | `/api/projects/:id/tasks` | `v_project_tasks` |
 | GET | `/api/projects/:id/documents` | `v_project_documents` |
-| GET | `/api/projects/:id/financials` | `v_project_financial_detail` (Phase 2B read-only financial summary; no writes/detail migration) |
+| GET | `/api/projects/:id/financials` | `v_project_financial_detail` (Phase 2B read-only financial summary + Phase 2C read-only cost breakdown actuals; no writes/detail migration) |
 | GET | `/api/projects/:id/budget` | `v_project_budget_summary` + `budget_lines` |
 | GET | `/api/action-center` | `v_action_center` |
 | GET | `/api/backend-readiness` | `v_backend_readiness_summary` |
@@ -170,7 +170,7 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 - Projects list (`/projects`) — `GET /api/projects`
 - Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id`
 - Project edit modal — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false. Failed SQL writes show an error and never fall back to Firestore.
-- Financials summary cards (Phase 2B) — `GET /api/projects/:id/financials` when API is enabled; child tabs (Budget/Billing/WIP/AR/PO/import/source) remain on existing Firestore/import paths.
+- Financials summary cards (Phase 2B/2C) — `GET /api/projects/:id/financials` when API is enabled; child tabs (Budget/Billing/WIP/AR/PO/import/source) remain on existing Firestore/import paths.
 
 **PATCH whitelist (Phase 1A):** `projectName`, `status`, `address`, `city`, `state`, `zip`, `county`, `customer` (exact company match), `superintendent` (exact user match), `originalContractAmount`, `billingStatus`, `startDate`, `targetEndDate`, `prevailingWage`/`certifiedPayrollRequired` (both columns set together), `taxExempt`, `bondRequired`, `driveFolderId`, optional `projectNumber`.
 
@@ -180,6 +180,8 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 Migration record: `db/manual/2026-06-04_phase_1b_overview_completion.sql` (additive nullable columns + `project_scope` table, FK to `projects.id ON DELETE CASCADE`, rollback in comments).
 
 **Financials Phase 2B scope:** read-only summary fields only: contract, revised contract, billed/remaining, AR if available from dashboard, actual/estimated cost, cost buckets, profit/margin, snapshot date, and warnings from SQL confidence/missing-step/null estimated cost. Missing values stay null/Pending; no fake financial values.
+
+**Financials Phase 2C scope:** read-only Cost Breakdown Summary on the existing financial summary response. Uses SQL actual cost buckets from `v_project_financial_detail` (`labor_actual`, `materials_actual`, `subcontractors_actual`, `other_precon_actual`) and keeps `budget`/`remaining` as `null` until reliable SQL budgets are available. The Budget tab, budget line editing, `/api/projects/:id/budget`, pay apps, POs, WIP, AR detail, forecasting, and financial writes remain unchanged/deferred.
 
 **Still deferred:** project manager assignment (`project_users`), client/billing contacts (no schema), wage orders, certified payroll workflow, Financials child tab migration, financial writes.
 

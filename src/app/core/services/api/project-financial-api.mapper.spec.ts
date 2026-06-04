@@ -32,6 +32,17 @@ describe('mapFinancialSummaryResponse', () => {
           marginPercent: '89.9329',
         },
         dataWarnings: ['Estimated cost is not available from SQL.'],
+        costBreakdown: {
+          asOfDate: '2026-06-03T05:00:00.000Z',
+          confidence: 'Medium',
+          categories: [
+            { category: 'Labor', budget: null, actual: '212.41', remaining: null },
+            { category: 'Materials', budget: null, actual: '87.42', remaining: null },
+            { category: 'Subcontractors', budget: null, actual: '0.00', remaining: null },
+            { category: 'Other / Precon', budget: null, actual: '222.50', remaining: null },
+          ],
+          dataWarnings: ['Budget amounts are not available from SQL yet. Showing actual cost snapshot only.'],
+        },
       },
     });
 
@@ -43,6 +54,18 @@ describe('mapFinancialSummaryResponse', () => {
     expect(summary.cost.subcontractorsActual).toBe(0);
     expect(summary.profit.marginPercent).toBe(89.9329);
     expect(summary.dataWarnings).toContain('Estimated cost is not available from SQL.');
+    expect(summary.costBreakdown.asOfDate).toBe('2026-06-03');
+    expect(summary.costBreakdown.categories).toHaveLength(4);
+    expect(summary.costBreakdown.categories[0]).toEqual({
+      category: 'Labor',
+      budget: null,
+      actual: 212.41,
+      remaining: null,
+    });
+    expect(summary.costBreakdown.categories[2].actual).toBe(0);
+    expect(summary.costBreakdown.dataWarnings).toContain(
+      'Budget amounts are not available from SQL yet. Showing actual cost snapshot only.',
+    );
   });
 
   it('keeps missing numeric fields as null', () => {
@@ -65,6 +88,14 @@ describe('mapFinancialSummaryResponse', () => {
         },
         profit: { profit: null, marginPercent: null },
         dataWarnings: [],
+        costBreakdown: {
+          asOfDate: null,
+          confidence: null,
+          categories: [
+            { category: 'Labor', budget: null, actual: null, remaining: null },
+          ],
+          dataWarnings: [],
+        },
       },
     });
 
@@ -72,5 +103,8 @@ describe('mapFinancialSummaryResponse', () => {
     expect(summary.contract.revisedContractAmount).toBeNull();
     expect(summary.billing.remainingToBill).toBeNull();
     expect(summary.profit.profit).toBeNull();
+    expect(summary.costBreakdown.categories[0].budget).toBeNull();
+    expect(summary.costBreakdown.categories[0].actual).toBeNull();
+    expect(summary.costBreakdown.categories[0].remaining).toBeNull();
   });
 });

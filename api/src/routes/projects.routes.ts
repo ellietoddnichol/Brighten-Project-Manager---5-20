@@ -54,6 +54,52 @@ function buildFinancialWarnings(row: GenericViewRow): string[] {
   return warnings;
 }
 
+function costCategory(
+  category: 'Labor' | 'Materials' | 'Subcontractors' | 'Other / Precon',
+  actual: unknown,
+): { category: string; budget: null; actual: number | null; remaining: null } {
+  return {
+    category,
+    budget: null,
+    actual: numericOrNull(actual),
+    remaining: null,
+  };
+}
+
+function buildCostBreakdown(row: GenericViewRow): {
+  asOfDate: string | null;
+  confidence: string | null;
+  categories: Array<{ category: string; budget: null; actual: number | null; remaining: null }>;
+  dataWarnings: string[];
+} {
+  const confidence = typeof row.confidence === 'string' && row.confidence.trim()
+    ? row.confidence.trim()
+    : null;
+  const missingNextStep = typeof row.missing_next_step === 'string' ? row.missing_next_step.trim() : '';
+  const warnings = [
+    'Budget amounts are not available from SQL yet. Showing actual cost snapshot only.',
+  ];
+
+  if (confidence && confidence.toLowerCase() !== 'high') {
+    warnings.push(`Cost breakdown confidence is ${confidence}.`);
+  }
+  if (missingNextStep) {
+    warnings.push(missingNextStep);
+  }
+
+  return {
+    asOfDate: dateOrNull(row.snapshot_date),
+    confidence,
+    categories: [
+      costCategory('Labor', row.labor_actual),
+      costCategory('Materials', row.materials_actual),
+      costCategory('Subcontractors', row.subcontractors_actual),
+      costCategory('Other / Precon', row.other_precon_actual),
+    ],
+    dataWarnings: warnings,
+  };
+}
+
 projectsRouter.get('/projects', async (_req, res, next) => {
   try {
     const items = await queryRows<ProjectDashboardRow>(LIST_SQL);
@@ -190,7 +236,7 @@ projectsRouter.get('/projects/:id/financials', async (req, res, next) => {
         },
         cost: {
           estimatedCost: numericOrNull(row.total_estimated_cost),
-          actualCost: numericOrNull(row.total_actual_cost),
+          actualCost: numericOrNull(row.total_actual_cost) ?? numericOrNull(row.bucket_total),
           laborActual: numericOrNull(row.labor_actual),
           materialsActual: numericOrNull(row.materials_actual),
           subcontractorsActual: numericOrNull(row.subcontractors_actual),
@@ -201,6 +247,7 @@ projectsRouter.get('/projects/:id/financials', async (req, res, next) => {
           marginPercent: numericOrNull(row.profit_margin_percent),
         },
         dataWarnings: buildFinancialWarnings(row),
+        costBreakdown: buildCostBreakdown(row),
       },
     });
   } catch (err) {

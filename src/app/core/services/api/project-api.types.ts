@@ -96,6 +96,21 @@ export interface ProjectFinancialSummaryApiItem {
     marginPercent: number | string | null;
   };
   dataWarnings: string[];
+  costBreakdown: ProjectFinancialCostBreakdownApiItem;
+}
+
+export interface ProjectFinancialCostBreakdownApiItem {
+  asOfDate: string | null;
+  confidence: string | null;
+  categories: ProjectFinancialCostBreakdownCategoryApiItem[];
+  dataWarnings: string[];
+}
+
+export interface ProjectFinancialCostBreakdownCategoryApiItem {
+  category: 'Labor' | 'Materials' | 'Subcontractors' | 'Other / Precon' | string;
+  budget: number | string | null;
+  actual: number | string | null;
+  remaining: number | string | null;
 }
 
 export interface ApiHealthResponse {
