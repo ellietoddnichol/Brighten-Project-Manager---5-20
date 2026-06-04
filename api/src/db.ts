@@ -26,6 +26,8 @@ export function getPool(): mysql.Pool {
       connectionLimit: 10,
       queueLimit: 0,
       namedPlaceholders: false,
+      // Cloud SQL Auth Proxy local dev often uses mysql_clear_password.
+      enableCleartextPlugin: true,
     });
   }
   return pool;
