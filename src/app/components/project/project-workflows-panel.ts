@@ -41,20 +41,20 @@ import {
     SegmentedControlComponent,
   ],
   template: `
-    <div class="space-y-5">
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-1.5">
         @for (seg of primarySegments(); track seg.id) {
           <button type="button" (click)="selectView(seg.id)"
                   [class.bg-slate-900]="normalizedView() === seg.id"
                   [class.text-white]="normalizedView() === seg.id"
-                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold transition-colors hover:bg-slate-50">
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors hover:bg-slate-50">
             {{ seg.label }}
           </button>
         }
         @if (moreSegments().length) {
           <div class="relative">
             <button type="button" (click)="moreOpen.set(!moreOpen())"
-                    class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold bg-white hover:bg-slate-50 flex items-center gap-1">
+                    class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white hover:bg-slate-50 flex items-center gap-1">
               More
               @if (moreBadgeCount() > 0) {
                 <span class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ moreBadgeCount() }}</span>
@@ -79,7 +79,7 @@ import {
 
       @if (normalizedView() === 'all-work') {
         @for (prompt of workPrompts(); track prompt.id) {
-          <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
             <p class="text-sm font-semibold text-amber-900">{{ prompt.label }}</p>
             <button type="button" (click)="selectView(prompt.view)"
                     class="text-xs font-bold text-indigo-700 underline">{{ prompt.actionLabel }}</button>
@@ -88,7 +88,7 @@ import {
 
         @if (allWorkRows().length) {
           <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-            <div class="px-5 py-3 border-b bg-slate-50 text-sm font-bold text-slate-900">Active work</div>
+            <div class="px-3 py-2 border-b bg-slate-50 text-sm font-bold text-slate-900">Active work</div>
             @for (row of allWorkRows(); track row.id) {
               @let display = workRowDisplay(row);
               <app-list-row
@@ -133,7 +133,7 @@ import {
 
       @if (normalizedView() === 'field') {
         @if (fieldHasRecords()) {
-          <div class="space-y-6">
+          <div class="space-y-4">
             @if (projectLogs().length) {
               <app-daily-logs-tab [project]="project" />
             }
@@ -141,7 +141,7 @@ import {
               <app-field-issues-tab [project]="project" />
             }
             @if (fieldPhotosCount() > 0) {
-              <div class="bg-white rounded-xl border border-slate-200 px-5 py-4 text-sm text-slate-600">
+              <div class="bg-white rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600">
                 {{ fieldPhotosCount() }} field photo(s) attached to daily logs.
               </div>
             }

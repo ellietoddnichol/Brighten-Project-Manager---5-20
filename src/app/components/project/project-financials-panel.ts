@@ -50,13 +50,13 @@ import {
     DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent, EmptyStateComponent,
   ],
   template: `
-    <div class="space-y-5">
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-1.5">
         @for (seg of primarySegments(); track seg.id) {
           <button type="button" (click)="viewChange.emit(seg.id)"
                   [class.bg-slate-900]="activeView === seg.id"
                   [class.text-white]="activeView === seg.id"
-                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold transition-colors hover:bg-slate-50 flex items-center gap-1.5">
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors hover:bg-slate-50 flex items-center gap-1.5">
             {{ seg.label }}
             @if (seg.badge) {
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">{{ seg.badge }}</span>
@@ -66,7 +66,7 @@ import {
         @if (moreSegments().length) {
           <div class="relative">
             <button type="button" (click)="moreOpen.set(!moreOpen())"
-                    class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold bg-white hover:bg-slate-50">
+                    class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white hover:bg-slate-50">
               More
             </button>
             @if (moreOpen()) {
@@ -90,15 +90,15 @@ import {
 
         @if (sqlFinancial(); as sql) {
           <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">SQL Financial Summary</p>
                 <p class="text-sm text-slate-600">Read-only snapshot from Cloud SQL</p>
               </div>
               <span class="text-xs font-semibold text-slate-600">As of {{ dateLabel(sql.asOfDate) }}</span>
             </div>
-            <div class="p-5 space-y-4">
-              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="p-4 space-y-3">
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 @for (card of sqlSummaryCards(sql); track card.label) {
                   <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{{ card.label }}</p>
@@ -109,7 +109,7 @@ import {
 
               @if (sql.costBreakdown.categories.length) {
                 <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-                  <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+                  <div class="px-3 py-2 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Actual Cost Snapshot</p>
                       <p class="text-xs text-slate-600">Budget Pending · Source: latest SQL financial snapshot</p>
@@ -162,14 +162,14 @@ import {
           </div>
         } @else {
           @for (prompt of moneyPrompts(); track prompt.id) {
-            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl">
               <p class="text-sm font-semibold text-amber-900">{{ prompt.label }}</p>
               <button type="button" (click)="viewChange.emit(prompt.view)"
                       class="text-xs font-bold text-indigo-700 underline">{{ prompt.actionLabel }}</button>
             </div>
           }
 
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
             @for (card of overviewCards(); track card.id) {
               <button type="button" (click)="openDrawer(cardDrawerType(card.id))"
                       class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
@@ -186,7 +186,7 @@ import {
           <app-compact-stat-strip [stats]="compactStrip()" />
 
           @if (nextAction(); as action) {
-            <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p class="text-[10px] font-bold uppercase text-indigo-600">Next money action</p>
                 <p class="text-sm font-semibold text-indigo-900">{{ action.label }}</p>
@@ -384,7 +384,7 @@ import {
         <app-project-foreman-bonus-tab [project]="project" />
       }
       @if (activeView === 'import-source') {
-          <div class="bg-white rounded-xl border p-5 space-y-3 text-sm">
+          <div class="bg-white rounded-xl border p-4 space-y-2 text-sm">
           <p class="font-semibold text-slate-900">Import &amp; source detail</p>
           <p class="text-slate-600">Review QuickBooks sync, budget imports, and setup fields for this job.</p>
           <div class="flex flex-wrap gap-3">

@@ -46,13 +46,13 @@ export interface ActivityRow {
 
   template: `
     @if (project && !isOverheadJob(project)) {
-      <div class="space-y-6">
+      <div class="space-y-4">
         <section class="rounded-2xl bg-slate-900 text-white shadow-sm overflow-hidden">
-          <div class="p-6 lg:p-7 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+          <div class="p-4 lg:p-5 flex flex-col lg:flex-row lg:items-end justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-xs uppercase tracking-[0.2em] text-slate-300 font-bold mb-2">Project Overview</p>
-              <h2 class="text-2xl lg:text-3xl font-bold tracking-tight truncate">{{ project.projectName }}</h2>
-              <p class="text-sm text-slate-300 mt-2">{{ project.customer || 'Client not available' }}</p>
+              <p class="text-[10px] uppercase tracking-[0.18em] text-slate-300 font-bold mb-1">Project Overview</p>
+              <h2 class="text-xl lg:text-2xl font-bold tracking-tight truncate">{{ project.projectName }}</h2>
+              <p class="text-xs text-slate-300 mt-1">{{ project.customer || 'Client not available' }}</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <span class="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs font-bold">{{ project.status }}</span>
@@ -62,15 +62,15 @@ export interface ActivityRow {
                 </span>
               }
               <button type="button" (click)="editProject.emit()"
-                      class="rounded-lg bg-white text-slate-900 px-4 py-2 text-sm font-bold shadow-sm hover:bg-slate-100 transition-colors flex items-center gap-2">
-                <mat-icon class="!text-[18px]">edit</mat-icon>
+                      class="rounded-lg bg-white text-slate-900 px-3 py-1.5 text-xs font-bold shadow-sm hover:bg-slate-100 transition-colors flex items-center gap-1.5">
+                <mat-icon class="!text-[16px]">edit</mat-icon>
                 Edit Overview
               </button>
             </div>
           </div>
         </section>
 
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <section class="overview-card">
             <div class="card-title">
               <div>
@@ -79,7 +79,7 @@ export interface ActivityRow {
               </div>
               <mat-icon>assignment</mat-icon>
             </div>
-            <div class="grid sm:grid-cols-2 gap-3">
+            <div class="grid sm:grid-cols-2 gap-2.5">
               <div class="info-box">
                 <span>Project Number</span>
                 <strong>#{{ project.projectNumber }}</strong>
@@ -115,7 +115,7 @@ export interface ActivityRow {
               </div>
               <mat-icon>groups</mat-icon>
             </div>
-            <div class="grid sm:grid-cols-2 gap-3">
+            <div class="grid sm:grid-cols-2 gap-2.5">
               <div class="info-box">
                 <span>Superintendent / Foreman</span>
                 <strong>{{ project.superintendent || 'Not assigned' }}</strong>
@@ -133,7 +133,7 @@ export interface ActivityRow {
                 <strong>Not available</strong>
               </div>
             </div>
-            <p class="mt-3 text-xs text-slate-500">Contacts and PM assignment are read-only placeholders until SQL support is added.</p>
+            <p class="mt-2 text-xs text-slate-500">Contacts and PM assignment are read-only placeholders until SQL support is added.</p>
           </section>
         </div>
 
@@ -145,7 +145,7 @@ export interface ActivityRow {
             </div>
             <mat-icon>request_quote</mat-icon>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-2.5">
             <div class="metric-box">
               <span>Contract Amount</span>
               <strong>{{ money(project.originalContractAmount) }}</strong>
@@ -177,12 +177,12 @@ export interface ActivityRow {
             </div>
             <mat-icon>format_list_bulleted</mat-icon>
           </div>
-          <div class="space-y-3">
+          <div class="space-y-2.5">
             <div class="scope-box">
               <span>Scope Summary</span>
               <p>{{ text(project.scopeSummary, 'No scope summary provided.') }}</p>
             </div>
-            <div class="grid lg:grid-cols-2 gap-3">
+            <div class="grid lg:grid-cols-2 gap-2.5">
               <div class="scope-box">
                 <span>Included Work</span>
                 <p>{{ text(project.includedWork, 'No included work listed.') }}</p>
@@ -203,7 +203,7 @@ export interface ActivityRow {
           </div>
         </section>
 
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <section class="overview-card">
             <div class="card-title">
               <div>
@@ -212,7 +212,7 @@ export interface ActivityRow {
               </div>
               <mat-icon>event</mat-icon>
             </div>
-            <div class="grid sm:grid-cols-2 gap-3">
+            <div class="grid sm:grid-cols-2 gap-2.5">
               <div class="info-box">
                 <span>Award Date</span>
                 <strong>{{ date(project.awardDate) }}</strong>
@@ -240,7 +240,7 @@ export interface ActivityRow {
               </div>
               <mat-icon>verified_user</mat-icon>
             </div>
-            <div class="grid sm:grid-cols-2 gap-3">
+            <div class="grid sm:grid-cols-2 gap-2.5">
               <div class="info-box">
                 <span>Prevailing Wage / Certified Payroll Required</span>
                 <strong>{{ yesNo(requiresCertifiedPayroll()) }}</strong>
@@ -259,7 +259,7 @@ export interface ActivityRow {
               </div>
             </div>
             @if (requiresCertifiedPayroll()) {
-              <p class="mt-3 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              <p class="mt-2 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-1.5">
                 Prevailing wage / certified payroll setup is required for this project.
               </p>
             }
@@ -278,7 +278,7 @@ export interface ActivityRow {
       border: 1px solid rgb(226 232 240);
       border-radius: 1rem;
       background: white;
-      padding: 1.25rem;
+      padding: 0.875rem;
       box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
     }
 
@@ -286,14 +286,14 @@ export interface ActivityRow {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1rem;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
     }
 
     .card-title h3 {
       margin: 0;
       color: rgb(15 23 42);
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 800;
       letter-spacing: -0.01em;
     }
@@ -302,10 +302,10 @@ export interface ActivityRow {
       color: rgb(100 116 139);
       background: rgb(248 250 252);
       border: 1px solid rgb(226 232 240);
-      border-radius: 0.75rem;
-      padding: 0.5rem;
-      height: 2.25rem;
-      width: 2.25rem;
+      border-radius: 0.625rem;
+      padding: 0.375rem;
+      height: 1.9rem;
+      width: 1.9rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -327,7 +327,7 @@ export interface ActivityRow {
       background: rgb(248 250 252);
       border: 1px solid rgb(226 232 240);
       border-radius: 0.875rem;
-      padding: 0.875rem;
+      padding: 0.625rem;
     }
 
     .info-box span,
@@ -346,19 +346,19 @@ export interface ActivityRow {
     .info-box strong,
     .metric-box strong {
       color: rgb(15 23 42);
-      font-size: 0.95rem;
-      line-height: 1.35rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
       font-weight: 800;
     }
 
     .metric-box strong {
-      font-size: 1.15rem;
+      font-size: 1rem;
     }
 
     .scope-box p {
       color: rgb(30 41 59);
       font-size: 0.875rem;
-      line-height: 1.5rem;
+      line-height: 1.35rem;
       margin: 0;
       white-space: pre-line;
     }

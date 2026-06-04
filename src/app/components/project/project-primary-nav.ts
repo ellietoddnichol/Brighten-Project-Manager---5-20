@@ -15,7 +15,7 @@ interface PrimaryNavItem {
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <nav class="px-6 bg-white border-b border-slate-200 shadow-sm">
+    <nav class="px-5 bg-white border-b border-slate-200 shadow-sm">
       <div class="flex flex-wrap gap-1">
         @for (item of items; track item.id) {
           <button type="button"
@@ -24,10 +24,10 @@ interface PrimaryNavItem {
                   [class.border-slate-950]="active === item.id"
                   [class.text-slate-500]="active !== item.id"
                   [class.border-transparent]="active !== item.id"
-                  class="text-left border-b-2 px-4 py-3 transition-colors hover:text-slate-950">
-            <div class="flex items-center gap-2">
-              <mat-icon class="!text-[18px]">{{ item.icon }}</mat-icon>
-              <span class="font-bold text-sm">{{ item.label }}</span>
+                  class="text-left border-b-2 px-3 py-2 transition-colors hover:text-slate-950">
+            <div class="flex items-center gap-1.5">
+              <mat-icon class="!text-[16px]">{{ item.icon }}</mat-icon>
+              <span class="font-bold text-xs">{{ item.label }}</span>
             </div>
           </button>
         }

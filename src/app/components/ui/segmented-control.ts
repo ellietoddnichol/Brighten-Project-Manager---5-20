@@ -12,11 +12,11 @@ export interface SegmentOption<T extends string = string> {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="inline-flex flex-wrap gap-1 p-1 bg-slate-100 rounded-lg">
+    <div class="inline-flex flex-wrap gap-1 p-0.5 bg-slate-100 rounded-lg">
       @for (opt of options; track opt.id) {
         <button type="button"
                 (click)="select.emit(opt.id)"
-                class="px-3 py-1.5 rounded-md text-sm font-semibold transition-colors flex items-center gap-1.5"
+                class="px-2.5 py-1 rounded-md text-xs font-semibold transition-colors flex items-center gap-1.5"
                 [class.bg-white]="value === opt.id"
                 [class.text-slate-900]="value === opt.id"
                 [class.shadow-sm]="value === opt.id"

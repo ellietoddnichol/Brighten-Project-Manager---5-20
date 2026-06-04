@@ -7,11 +7,11 @@ import { MatIconModule } from '@angular/material/icon';
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 h-full">
-      <div class="flex items-start justify-between gap-3">
+    <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-3 h-full">
+      <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">{{ label }}</div>
-          <div class="text-2xl font-black text-slate-900 truncate">{{ value }}</div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">{{ label }}</div>
+          <div class="text-xl font-black text-slate-900 truncate">{{ value }}</div>
           @if (subtext) {
             <div class="text-xs text-slate-500 mt-1 truncate">{{ subtext }}</div>
           }
@@ -22,8 +22,8 @@ import { MatIconModule } from '@angular/material/icon';
           }
         </div>
         @if (icon) {
-          <div class="w-10 h-10 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-            <mat-icon class="!text-[20px]">{{ icon }}</mat-icon>
+          <div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+            <mat-icon class="!text-[18px]">{{ icon }}</mat-icon>
           </div>
         }
       </div>

@@ -9,3 +9,113 @@
 body {
   @apply antialiased;
 }
+
+.project-detail-density {
+  --pd-card-pad: 0.75rem;
+  --pd-card-pad-lg: 1rem;
+  --pd-row-px: 0.75rem;
+  --pd-row-py: 0.5rem;
+}
+
+.project-detail-density .rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.project-detail-density .rounded-2xl {
+  border-radius: 0.875rem;
+}
+
+.project-detail-density .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 1rem;
+}
+
+.project-detail-density .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.875rem;
+}
+
+.project-detail-density .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 0.75rem;
+}
+
+.project-detail-density .p-8,
+.project-detail-density .p-7,
+.project-detail-density .p-6 {
+  padding: var(--pd-card-pad-lg);
+}
+
+.project-detail-density .p-5,
+.project-detail-density .p-4 {
+  padding: var(--pd-card-pad);
+}
+
+.project-detail-density .px-6,
+.project-detail-density .px-5,
+.project-detail-density .px-4 {
+  padding-left: var(--pd-row-px);
+  padding-right: var(--pd-row-px);
+}
+
+.project-detail-density .py-6,
+.project-detail-density .py-5,
+.project-detail-density .py-4,
+.project-detail-density .py-3 {
+  padding-top: var(--pd-row-py);
+  padding-bottom: var(--pd-row-py);
+}
+
+.project-detail-density th.px-6,
+.project-detail-density th.px-5,
+.project-detail-density th.px-4,
+.project-detail-density td.px-6,
+.project-detail-density td.px-5,
+.project-detail-density td.px-4 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.project-detail-density th.py-4,
+.project-detail-density th.py-3,
+.project-detail-density th.py-2,
+.project-detail-density td.py-4,
+.project-detail-density td.py-3,
+.project-detail-density td.py-2 {
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.project-detail-density table.text-sm,
+.project-detail-density tbody.text-sm {
+  font-size: 0.8125rem;
+  line-height: 1.2rem;
+}
+
+.project-detail-density button.px-4,
+.project-detail-density a.px-4,
+.project-detail-density button.px-3,
+.project-detail-density a.px-3 {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.project-detail-density button.py-2,
+.project-detail-density a.py-2,
+.project-detail-density button.py-1\.5,
+.project-detail-density a.py-1\.5 {
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+}
+
+.project-detail-density .text-2xl {
+  font-size: 1.25rem;
+  line-height: 1.65rem;
+}
+
+.project-detail-density .text-xl {
+  font-size: 1.05rem;
+  line-height: 1.45rem;
+}
+
+.project-detail-density .text-lg {
+  font-size: 1rem;
+  line-height: 1.4rem;
+}

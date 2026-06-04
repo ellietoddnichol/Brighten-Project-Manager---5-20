@@ -6,14 +6,14 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-6 py-10 text-center">
+    <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-6 text-center">
       <p class="text-sm font-medium text-slate-700">{{ title }}</p>
       @if (message) {
-        <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">{{ message }}</p>
+        <p class="text-xs text-slate-500 mt-1.5 max-w-md mx-auto">{{ message }}</p>
       }
       @if (actionLabel) {
         <button type="button" (click)="actionClick.emit()"
-                class="mt-4 text-sm font-bold text-indigo-700 underline">
+                class="mt-3 text-sm font-bold text-indigo-700 underline">
           {{ actionLabel }}
         </button>
       }

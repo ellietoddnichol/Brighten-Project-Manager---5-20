@@ -10,9 +10,9 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
   template: `
     <button type="button"
             (click)="rowClick.emit()"
-            class="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
-      <div class="flex items-start gap-3">
-        <span class="inline-block w-2.5 h-2.5 rounded-full mt-1.5 shrink-0"
+            class="w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-b-0">
+      <div class="flex items-start gap-2.5">
+        <span class="inline-block w-2 h-2 rounded-full mt-1.5 shrink-0"
               [class.bg-emerald-500]="health === 'Green'"
               [class.bg-amber-400]="health === 'Yellow'"
               [class.bg-rose-600]="health === 'Red'"
@@ -20,7 +20,7 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
         <div class="flex-1 min-w-0">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div class="min-w-0">
-              <p class="text-sm font-bold text-slate-900 truncate">{{ title }}</p>
+              <p class="text-sm font-bold text-slate-900 truncate leading-tight">{{ title }}</p>
               @if (subtitle) {
                 <p class="text-xs text-slate-500 truncate">{{ subtitle }}</p>
               }
@@ -30,7 +30,7 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
             }
           </div>
           @if (metrics.length) {
-            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+            <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5 text-xs">
               @for (m of metrics; track m.label) {
                 <span>
                   <span class="text-slate-400">{{ m.label }}</span>
@@ -40,7 +40,7 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
             </div>
           }
           @if (chips.length) {
-            <div class="flex flex-wrap gap-1.5 mt-2">
+            <div class="flex flex-wrap gap-1 mt-1.5">
               @for (chip of chips; track chip) {
                 <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{{ chip }}</span>
               }

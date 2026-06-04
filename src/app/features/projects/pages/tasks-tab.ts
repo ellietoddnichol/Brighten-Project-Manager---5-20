@@ -16,25 +16,25 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, ListRowComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (!simplified) {
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-xl font-bold text-slate-900">{{ openTasks().length }}</p></div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overdue</p><p class="stat-value text-rose-600">{{ overdueCount() }}</p></div>
-        <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Complete</p><p class="stat-value text-emerald-600">{{ completeTasks().length }}</p></div>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-lg font-bold text-slate-900">{{ openTasks().length }}</p></div>
+        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overdue</p><p class="stat-value text-rose-600">{{ overdueCount() }}</p></div>
+        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Complete</p><p class="stat-value text-emerald-600">{{ completeTasks().length }}</p></div>
       </div>
       }
 
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
-          <button (click)="openNew()" class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold text-sm flex items-center gap-2">
-            <mat-icon class="!text-[18px]">add</mat-icon> Add Task
+        <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 class="text-base font-bold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
+          <button (click)="openNew()" class="bg-slate-900 text-white px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5">
+            <mat-icon class="!text-[16px]">add</mat-icon> Add Task
           </button>
         </div>
 
         @if (showForm()) {
-          <div class="p-6 border-b border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 border-b border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Title</label><input [(ngModel)]="draft.title" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></div>
             <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Group</label>
               <select [(ngModel)]="draft.taskGroup" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
@@ -72,14 +72,14 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
               [nextAction]="task.status !== 'Complete' ? 'Close completed task' : undefined"
               [health]="isOverdue(task) ? 'Red' : task.priority === 'High' || task.priority === 'Critical' ? 'Yellow' : 'Neutral'" />
           } @empty {
-            <div class="px-5 py-10 text-center text-slate-400 italic">No tasks match this filter</div>
+            <div class="px-4 py-6 text-center text-slate-400 italic">No tasks match this filter</div>
           }
         } @else {
         @for (group of groupedTasks(); track group.name) {
           <div class="border-b border-slate-100 last:border-0">
-            <div class="px-5 py-3 bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">{{ group.name }} ({{ group.tasks.length }})</div>
+            <div class="px-3 py-2 bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">{{ group.name }} ({{ group.tasks.length }})</div>
             @for (task of group.tasks; track task.id) {
-              <div class="px-5 py-3 flex items-center justify-between hover:bg-slate-50 border-b border-slate-50">
+              <div class="px-3 py-2 flex items-center justify-between hover:bg-slate-50 border-b border-slate-50">
                 <div>
                   <div class="font-medium text-slate-900">{{ task.title }}</div>
                   <div class="text-xs text-slate-500">
@@ -99,7 +99,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
                 </div>
               </div>
             } @empty {
-              <div class="px-5 py-4 text-sm text-slate-400 italic">No tasks in this group</div>
+              <div class="px-3 py-3 text-sm text-slate-400 italic">No tasks in this group</div>
             }
           </div>
         }

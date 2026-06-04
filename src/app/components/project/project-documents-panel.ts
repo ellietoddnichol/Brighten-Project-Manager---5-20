@@ -16,13 +16,13 @@ import { fileViewVisibleInNav } from '@features/projects/utils/project-documents
   standalone: true,
   imports: [CommonModule, MatIconModule, DocumentsTabComponent],
   template: `
-    <div class="space-y-5">
-      <div class="flex flex-wrap items-center gap-2">
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-1.5">
         @for (seg of primarySegments(); track seg.id) {
           <button type="button" (click)="fileViewChange.emit(seg.id)"
                   [class.bg-slate-900]="activeView === seg.id"
                   [class.text-white]="activeView === seg.id"
-                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold transition-colors hover:bg-slate-50 flex items-center gap-1.5">
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors hover:bg-slate-50 flex items-center gap-1.5">
             {{ seg.label }}
             @if (seg.badge) {
               <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
@@ -35,7 +35,7 @@ import { fileViewVisibleInNav } from '@features/projects/utils/project-documents
         @if (moreSegments().length) {
           <div class="relative">
             <button type="button" (click)="moreOpen.set(!moreOpen())"
-                    class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold bg-white hover:bg-slate-50 flex items-center gap-1">
+                    class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white hover:bg-slate-50 flex items-center gap-1">
               More
               @if (moreBadgeTotal() > 0) {
                 <span class="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{{ moreBadgeTotal() }}</span>
@@ -61,11 +61,11 @@ import { fileViewVisibleInNav } from '@features/projects/utils/project-documents
       @if (activeView !== 'drive-mapping') {
         @if (project.driveFolderUrl || project.driveFolderId) {
           <a [href]="project.driveFolderUrl" target="_blank" rel="noopener"
-             class="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900">
-            <mat-icon class="!text-[18px]">folder_shared</mat-icon> Open Drive folder
+             class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900">
+            <mat-icon class="!text-[16px]">folder_shared</mat-icon> Open Drive folder
           </a>
         } @else if (!project.driveFolderId && isActiveJob()) {
-          <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 text-sm text-amber-900">
+          <div class="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-sm text-amber-900">
             Drive folder not linked.
             <button type="button" (click)="utilitySelect.emit('drive-mapping')" class="ml-2 font-bold underline">Link folder</button>
           </div>
@@ -73,7 +73,7 @@ import { fileViewVisibleInNav } from '@features/projects/utils/project-documents
       }
 
       @if (activeView === 'drive-mapping') {
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm text-slate-600">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm text-slate-600">
           Drive mapping opens in the utility panel.
           <button type="button" (click)="utilitySelect.emit('drive-mapping')" class="ml-2 font-bold text-blue-600 underline">Open Drive Mapping</button>
         </div>

@@ -31,15 +31,15 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, EmptyStateComponent],
   template: `
-    <div class="space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex flex-wrap items-center gap-2 flex-1 min-w-[200px]">
           <div class="relative flex-1 max-w-md">
             <mat-icon class="!text-[18px] absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</mat-icon>
             <input type="search"
                    [(ngModel)]="searchQuery"
                    placeholder="Search files…"
-                   class="w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg text-sm" />
+                   class="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-sm" />
           </div>
           @if (fileView !== 'all') {
             <span class="text-xs font-semibold text-slate-500">
@@ -47,15 +47,15 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
             </span>
           }
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-1.5">
           @if (fileView === 'required') {
             <button type="button" (click)="showNewReq = true"
-                    class="bg-white border border-slate-300 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50">
+                    class="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-50">
               Add requirement
             </button>
           }
           <button type="button" (click)="openNewFile()"
-                  class="bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 flex items-center gap-1">
+                  class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 flex items-center gap-1">
             <mat-icon class="!text-[16px]">add</mat-icon> Add file / Drive link
           </button>
         </div>
@@ -67,7 +67,7 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
       </label>
 
       @if (showNewReq) {
-        <div class="bg-white rounded-xl border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="bg-white rounded-xl border border-slate-200 p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
           <div class="col-span-full text-sm font-bold text-slate-900">Document requirement</div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Document type</label>
@@ -89,7 +89,7 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
       }
 
       @if (showNewFile) {
-        <div class="bg-white rounded-xl border border-slate-200 p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="bg-white rounded-xl border border-slate-200 p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
           <div class="col-span-full text-sm font-bold text-slate-900">Add file / Drive link</div>
           <div>
             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">File name</label>
@@ -121,8 +121,8 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         @for (item of filteredItems(); track item.id) {
           @if (item.kind === 'missing') {
-            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-amber-100 bg-amber-50/60">
-              <div class="flex items-start gap-3 min-w-0">
+            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-amber-100 bg-amber-50/60">
+              <div class="flex items-start gap-2.5 min-w-0">
                 <span class="w-2 h-2 rounded-full bg-amber-500 mt-2 shrink-0"></span>
                 <div>
                   <p class="text-sm font-semibold text-amber-900">{{ item.fileName }}</p>
@@ -135,10 +135,10 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
               </button>
             </div>
           } @else {
-            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
+            <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-slate-100 last:border-b-0 hover:bg-slate-50"
                  [class.opacity-60]="item.file?.archived">
-              <div class="flex items-start gap-3 min-w-0 flex-1">
-                <mat-icon class="!text-[20px] text-slate-400 shrink-0 mt-0.5">description</mat-icon>
+              <div class="flex items-start gap-2.5 min-w-0 flex-1">
+                <mat-icon class="!text-[18px] text-slate-400 shrink-0 mt-0.5">description</mat-icon>
                 <div class="min-w-0">
                   @if (item.fileUrl) {
                     <a [href]="item.fileUrl" target="_blank" rel="noopener"
@@ -165,7 +165,7 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-2 shrink-0">
+              <div class="flex items-center gap-1.5 shrink-0">
                 @if (item.fileUrl) {
                   <a [href]="item.fileUrl" target="_blank" rel="noopener"
                      class="text-xs font-semibold text-slate-600 hover:text-slate-900">Open</a>
@@ -196,12 +196,12 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
 
       @if (fileView === 'all' && manageRequirements()) {
         <details class="bg-white rounded-xl border border-slate-200">
-          <summary class="px-4 py-3 text-sm font-semibold text-slate-700 cursor-pointer">
+          <summary class="px-3 py-2 text-sm font-semibold text-slate-700 cursor-pointer">
             Manage all requirements ({{ requiredDocs().length }})
           </summary>
           <div class="border-t divide-y">
             @for (req of requiredDocs(); track req.id) {
-              <div class="px-4 py-3 flex flex-wrap justify-between gap-2 text-sm">
+              <div class="px-3 py-2 flex flex-wrap justify-between gap-2 text-sm">
                 <span class="font-medium">{{ req.documentType }}</span>
                 <span class="text-xs uppercase font-bold text-slate-500">{{ req.status }}</span>
                 <button type="button" (click)="editReq(req)" class="text-xs text-indigo-700 underline">Edit</button>

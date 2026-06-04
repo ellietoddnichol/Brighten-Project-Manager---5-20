@@ -21,11 +21,11 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (!simplified) {
-      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
+      <div class="flex flex-wrap gap-1.5 border-b border-slate-200 pb-1">
         <button type="button" (click)="activeInnerTab.set('lines')"
-                class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2"
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold border-b-2"
                 [class.border-slate-900]="activeInnerTab() === 'lines'"
                 [class.text-slate-900]="activeInnerTab() === 'lines'"
                 [class.border-transparent]="activeInnerTab() !== 'lines'"
@@ -33,7 +33,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
           Budget Lines
         </button>
         <button type="button" (click)="activeInnerTab.set('labor-bonus')"
-                class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2"
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold border-b-2"
                 [class.border-slate-900]="activeInnerTab() === 'labor-bonus'"
                 [class.text-slate-900]="activeInnerTab() === 'labor-bonus'"
                 [class.border-transparent]="activeInnerTab() !== 'labor-bonus'"
@@ -72,36 +72,36 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
       }
 
       @if (segment !== 'sources') {
-      <div class="grid gap-3" [ngClass]="simplified ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="grid gap-2.5" [ngClass]="simplified ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Budget</p>
-          <p class="text-xl font-bold">{{ rollup().budgetAmount | currency }}</p>
+          <p class="text-lg font-bold">{{ rollup().budgetAmount | currency }}</p>
         </div>
         @if (!simplified) {
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Committed</p>
-          <p class="text-xl font-bold text-indigo-800">{{ rollup().committedAmount | currency }}</p>
+          <p class="text-lg font-bold text-indigo-800">{{ rollup().committedAmount | currency }}</p>
         </div>
         }
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Actual Cost</p>
-          <p class="text-xl font-bold text-red-700">{{ rollup().costToDate | currency }}</p>
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Actual Cost</p>
+          <p class="text-lg font-bold text-slate-900">{{ rollup().costToDate | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Projected Final</p>
-          <p class="text-xl font-bold">{{ rollup().estimatedFinalCost | currency }}</p>
+          <p class="text-lg font-bold">{{ rollup().estimatedFinalCost | currency }}</p>
         </div>
         @if (segment === 'variance' || !simplified) {
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm"
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm"
              [class.bg-red-50]="totalVariance() < 0" [class.border-red-200]="totalVariance() < 0">
           <p class="text-[10px] font-bold uppercase tracking-widest mb-1">Variance</p>
-          <p class="text-xl font-bold" [class.text-red-700]="totalVariance() < 0">{{ totalVariance() | currency }}</p>
+          <p class="text-lg font-bold" [class.text-red-700]="totalVariance() < 0">{{ totalVariance() | currency }}</p>
         </div>
         }
         @if (!simplified) {
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Cost to Complete</p>
-          <p class="text-xl font-bold">{{ rollup().costToComplete | currency }}</p>
+          <p class="text-lg font-bold">{{ rollup().costToComplete | currency }}</p>
         </div>
         }
       </div>
@@ -109,10 +109,10 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
 
       @if (segment === 'budget' || segment === 'actuals' || segment === 'variance' || !simplified) {
       <!-- Category split -->
-      <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-2.5">
         @for (cat of categoryCards(); track cat.label) {
-          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">{{ cat.label }}</p>
+          <div class="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{{ cat.label }}</p>
             <p class="text-xs text-slate-500">Budget {{ cat.budget | currency }}</p>
             <p class="text-xs text-slate-500">Actual {{ cat.actual | currency }}</p>
             <p class="text-sm font-bold mt-1" [class.text-red-600]="cat.variance < 0">{{ cat.variance | currency }}</p>
@@ -123,7 +123,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
 
       @if ((segment === 'sources' || !simplified) && qbCostTransactions().length) {
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          <div class="p-4 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+          <div class="p-3 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-bold text-slate-900">QuickBooks Detail Costs</h3>
             <span class="text-[10px] font-bold uppercase text-blue-700 bg-blue-50 px-2 py-1 rounded">QuickBooks Detail</span>
           </div>
@@ -158,10 +158,10 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
 
       @if (segment === 'budget' || segment === 'variance' || segment === 'actuals' || !simplified) {
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-        <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">Budget Lines</h3>
-          <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
-            <mat-icon class="!text-[18px]">add</mat-icon> Add Line
+        <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h3 class="text-base font-bold text-slate-900">Budget Lines</h3>
+          <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
+            <mat-icon class="!text-[16px]">add</mat-icon> Add Line
           </button>
         </div>
 
@@ -169,33 +169,33 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
           <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead>
               <tr class="bg-white border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-400">
-                <th class="px-6 py-4 font-bold">Code / Category</th>
-                <th class="px-4 py-4 font-bold text-right">Budget</th>
-                <th class="px-4 py-4 font-bold text-right">Committed</th>
-                <th class="px-4 py-4 font-bold text-right text-red-600">Actual</th>
-                <th class="px-4 py-4 font-bold text-right">Projected</th>
-                <th class="px-4 py-4 font-bold text-right">CTC</th>
-                <th class="px-4 py-4 font-bold text-right">Variance</th>
-                <th class="px-4 py-4 font-bold">Source</th>
+                <th class="px-4 py-2.5 font-bold">Code / Category</th>
+                <th class="px-3 py-2.5 font-bold text-right">Budget</th>
+                <th class="px-3 py-2.5 font-bold text-right">Committed</th>
+                <th class="px-3 py-2.5 font-bold text-right text-red-600">Actual</th>
+                <th class="px-3 py-2.5 font-bold text-right">Projected</th>
+                <th class="px-3 py-2.5 font-bold text-right">CTC</th>
+                <th class="px-3 py-2.5 font-bold text-right">Variance</th>
+                <th class="px-3 py-2.5 font-bold">Source</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-sm">
               @for (line of computedLines(); track line.id) {
                 <tr class="hover:bg-slate-50 cursor-pointer" (click)="editLine(line)">
-                  <td class="px-6 py-4">
+                  <td class="px-4 py-2.5">
                     <p class="text-slate-900 font-bold">{{ line.costCode || '—' }}</p>
                     <p class="text-[10px] text-slate-500 uppercase">{{ line.category }}</p>
                     @if (line.isEstimated) {
                       <span class="text-[10px] text-amber-700 font-bold">Estimated</span>
                     }
                   </td>
-                  <td class="px-4 py-4 text-right font-mono">{{ line.budgetAmount | currency }}</td>
-                  <td class="px-4 py-4 text-right font-mono text-indigo-800">{{ line.committedAmount | currency }}</td>
-                  <td class="px-4 py-4 text-right text-red-600 font-mono">{{ line.actualCost | currency }}</td>
-                  <td class="px-4 py-4 text-right font-mono">{{ line.projectedCost | currency }}</td>
-                  <td class="px-4 py-4 text-right font-mono">{{ line.costToComplete | currency }}</td>
-                  <td class="px-4 py-4 text-right font-mono font-bold" [class.text-red-600]="line.variance < 0">{{ line.variance | currency }}</td>
-                  <td class="px-4 py-4 text-xs">
+                  <td class="px-3 py-2.5 text-right font-mono">{{ line.budgetAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right font-mono text-indigo-800">{{ line.committedAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-red-600 font-mono">{{ line.actualCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right font-mono">{{ line.projectedCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right font-mono">{{ line.costToComplete | currency }}</td>
+                  <td class="px-3 py-2.5 text-right font-mono font-bold" [class.text-red-600]="line.variance < 0">{{ line.variance | currency }}</td>
+                  <td class="px-3 py-2.5 text-xs">
                     <span class="px-2 py-0.5 rounded-full font-semibold"
                           [class.bg-emerald-100]="sourceBadge(line) === 'Budget Workbook'"
                           [class.text-emerald-800]="sourceBadge(line) === 'Budget Workbook'"
@@ -208,7 +208,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 italic">No budget lines — add lines or import seed/QB data.</td></tr>
+                <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 italic">No budget lines — add lines or import seed/QB data.</td></tr>
               }
             </tbody>
           </table>

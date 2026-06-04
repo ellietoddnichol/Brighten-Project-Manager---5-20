@@ -25,53 +25,53 @@ import { ImportReviewService } from '@core/services/import-review.service';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ArTabComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (segment === 'summary' || !simplified) {
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Revised Contract</p>
-          <p class="text-xl font-bold text-indigo-800">{{ financial().currentContractAmount | currency }}</p>
+          <p class="text-lg font-bold text-indigo-800">{{ financial().currentContractAmount | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Billed to Date</p>
-          <p class="text-xl font-bold">{{ financial().billedToDate | currency }}</p>
+          <p class="text-lg font-bold">{{ financial().billedToDate | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Left to Bill</p>
-          <p class="text-xl font-bold">{{ financial().leftToBill | currency }}</p>
+          <p class="text-lg font-bold">{{ financial().leftToBill | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Open AR</p>
-          <p class="text-xl font-bold text-orange-700">{{ financial().arBalance | currency }}</p>
+          <p class="text-lg font-bold text-orange-700">{{ financial().arBalance | currency }}</p>
         </div>
       </div>
       }
 
       @if (!simplified) {
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Original Contract</p>
-          <p class="text-xl font-bold text-slate-900">{{ financial().originalContractAmount | currency }}</p>
+          <p class="text-lg font-bold text-slate-900">{{ financial().originalContractAmount | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Approved COs</p>
-          <p class="text-xl font-bold text-emerald-700">{{ financial().approvedChangeOrderAmount | currency }}</p>
+          <p class="text-lg font-bold text-emerald-700">{{ financial().approvedChangeOrderAmount | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Revised Contract</p>
-          <p class="text-xl font-bold text-indigo-800">{{ financial().currentContractAmount | currency }}</p>
+          <p class="text-lg font-bold text-indigo-800">{{ financial().currentContractAmount | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Billed to Date</p>
-          <p class="text-xl font-bold">{{ financial().billedToDate | currency }}</p>
+          <p class="text-lg font-bold">{{ financial().billedToDate | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Left to Bill</p>
-          <p class="text-xl font-bold">{{ financial().leftToBill | currency }}</p>
+          <p class="text-lg font-bold">{{ financial().leftToBill | currency }}</p>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest mb-1">Open AR</p>
-          <p class="text-xl font-bold text-orange-700">{{ financial().arBalance | currency }}</p>
+          <p class="text-lg font-bold text-orange-700">{{ financial().arBalance | currency }}</p>
         </div>
       </div>
       }
@@ -84,11 +84,11 @@ import { ImportReviewService } from '@core/services/import-review.service';
 
       @if (segment === 'summary' && latestImportedPayApp(); as latest) {
         <section class="bg-white rounded-xl border border-indigo-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-indigo-100 bg-indigo-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-indigo-100 bg-indigo-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-indigo-900">Latest Pay App Baseline</h3>
             <span class="text-xs font-bold text-indigo-700">{{ latest.payAppNumber }}</span>
           </div>
-          <div class="px-5 py-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div class="px-4 py-3 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
             <div>
               <p class="text-[10px] uppercase text-slate-500 font-bold">Period</p>
               <p>{{ latest.billingPeriod || '—' }}</p>
@@ -126,14 +126,14 @@ import { ImportReviewService } from '@core/services/import-review.service';
       @if (segment === 'summary' || !simplified) {
       <!-- Approved Unbilled COs -->
       <section class="bg-white rounded-xl border border-emerald-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-emerald-100 bg-emerald-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-emerald-100 bg-emerald-50 flex justify-between items-center">
           <h3 class="text-sm font-bold text-emerald-900">Approved Unbilled COs</h3>
           <span class="text-xs font-bold text-emerald-700">{{ approvedUnbilledCos().length }}</span>
         </div>
         @if (approvedUnbilledCos().length) {
           <ul class="divide-y divide-slate-100">
             @for (co of approvedUnbilledCos(); track co.id) {
-              <li class="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <li class="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span class="font-medium">{{ coNumber(co) }} — {{ co.title }}</span>
                 <span class="font-mono text-emerald-800">{{ coApprovedAmount(co) | currency }}</span>
                 @if (!readOnly) {
@@ -151,14 +151,14 @@ import { ImportReviewService } from '@core/services/import-review.service';
       @if (segment === 'pay-apps' || !simplified) {
       <!-- COs Included in Draft Pay Apps -->
       <section class="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
           <h3 class="text-sm font-bold text-blue-900">COs Included in Draft Pay Apps</h3>
           <span class="text-xs font-bold text-blue-700">{{ includedInDraftCos().length }}</span>
         </div>
         @if (includedInDraftCos().length) {
           <ul class="divide-y divide-slate-100">
             @for (co of includedInDraftCos(); track co.id) {
-              <li class="px-5 py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+              <li class="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>{{ coNumber(co) }} — {{ co.title }}</span>
                 <span class="font-mono">{{ coApprovedAmount(co) | currency }}</span>
                 <span class="text-xs text-blue-700 font-semibold">IncludedInDraftPayApp</span>
@@ -175,14 +175,14 @@ import { ImportReviewService } from '@core/services/import-review.service';
 
       @for (group of payAppGroups(); track group.key) {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-900">{{ group.label }}</h3>
             <span class="text-xs font-bold text-slate-500">{{ group.items.length }}</span>
           </div>
           @if (group.items.length) {
             <div class="divide-y divide-slate-100">
               @for (b of group.items; track b.id) {
-                <div class="px-5 py-4">
+                <div class="px-4 py-3">
                   <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p class="font-bold text-slate-900">{{ b.payAppNumber }}</p>
@@ -231,7 +231,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
               }
             </div>
           } @else {
-            <p class="px-5 py-6 text-sm text-slate-400 italic">None</p>
+            <p class="px-4 py-4 text-sm text-slate-400 italic">None</p>
           }
         </section>
       }
@@ -239,7 +239,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
 
       @if (segment === 'sov') {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-900">Schedule of Values (G703)</h3>
             <span class="text-xs font-bold text-slate-500">{{ sovLines().length }} line(s)</span>
           </div>
@@ -289,13 +289,13 @@ import { ImportReviewService } from '@core/services/import-review.service';
 
       @if (segment === 'source') {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
+          <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
             <h3 class="text-sm font-bold text-slate-900">Source Files</h3>
           </div>
           @if (importedPayApps().length) {
             <ul class="divide-y divide-slate-100">
               @for (b of importedPayApps(); track b.id) {
-                <li class="px-5 py-4 text-sm">
+                <li class="px-4 py-3 text-sm">
                   <p class="font-bold text-slate-900">{{ b.payAppNumber }}</p>
                   <p class="text-slate-600">{{ b.sourceFileName || 'Unknown source file' }}</p>
                   @if (b.sourceType) { <p class="text-xs text-slate-400">{{ b.sourceType }}</p> }
@@ -310,14 +310,14 @@ import { ImportReviewService } from '@core/services/import-review.service';
 
       @if (segment === 'review') {
         <section class="bg-white rounded-xl border border-amber-200 shadow-sm overflow-hidden">
-          <div class="px-5 py-4 border-b border-amber-100 bg-amber-50 flex justify-between items-center">
+          <div class="px-4 py-3 border-b border-amber-100 bg-amber-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-amber-900">Review / Lock</h3>
             <span class="text-xs font-bold text-amber-700">{{ billingReviewItems().length }} item(s)</span>
           </div>
           @if (billingReviewItems().length) {
             <ul class="divide-y divide-slate-100">
               @for (item of billingReviewItems(); track item.id) {
-                <li class="px-5 py-4 text-sm">
+                <li class="px-4 py-3 text-sm">
                   <p class="text-slate-800">{{ item.message }}</p>
                   <p class="text-xs text-slate-400 mt-1">{{ item.status }}</p>
                 </li>
@@ -326,7 +326,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
           } @else if (reviewLockedPayApps().length) {
             <ul class="divide-y divide-slate-100">
               @for (b of reviewLockedPayApps(); track b.id) {
-                <li class="px-5 py-4 text-sm flex flex-wrap items-center justify-between gap-2">
+                <li class="px-4 py-3 text-sm flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p class="font-medium">{{ b.payAppNumber }}</p>
                     <p class="text-xs text-slate-500">{{ b.reviewFlag }} — review before locking</p>
@@ -350,7 +350,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       }
 
       @if (segment === 'retainage') {
-        <section class="bg-white rounded-xl border border-slate-200 p-5 space-y-3">
+        <section class="bg-white rounded-xl border border-slate-200 p-4 space-y-2">
           <h3 class="text-sm font-bold text-slate-900">Retainage</h3>
           <p class="text-2xl font-bold text-slate-900">{{ financial().retainageHeld | currency }}</p>
           <p class="text-sm text-slate-500">Retainage held on billed work. Review pay apps for release timing.</p>

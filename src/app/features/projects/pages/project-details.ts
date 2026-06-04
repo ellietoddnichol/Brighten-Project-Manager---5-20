@@ -70,7 +70,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
     ProjectFinancialsPanelComponent, ProjectDocumentsPanelComponent, ProjectUtilityPanelComponent,
   ],
   template: `
-    <div class="h-full flex flex-col bg-slate-50/50">
+    <div class="project-detail-density h-full flex flex-col bg-slate-50/50">
       @if (projectApi.detailError()) {
         <p class="text-sm text-amber-700 px-6 py-2 bg-white border-b border-slate-100">
           Using Firestore fallback — {{ projectApi.detailError() }}
@@ -103,7 +103,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
           }
         }
 
-        <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+        <div class="flex-1 overflow-y-auto p-4 lg:p-5">
           @if (nav().utilityView) {
             <app-project-utility-panel
               [project]="p"
