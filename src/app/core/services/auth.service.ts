@@ -82,12 +82,6 @@ export class AuthService {
     sessionStorage.removeItem(TOKEN_EXP_KEY);
   }
 
-  private shouldUseRedirect(): boolean {
-    if (typeof window === 'undefined') return false;
-    const host = window.location.hostname;
-    return host !== 'localhost' && host !== '127.0.0.1';
-  }
-
   private isPopupBlocked(error: unknown): boolean {
     const code = (error as { code?: string })?.code;
     return code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user';
@@ -140,16 +134,11 @@ export class AuthService {
     const provider = this.signInProvider();
 
     try {
-      if (this.shouldUseRedirect()) {
-        await signInWithRedirect(auth, provider);
-        return;
-      }
-
       const result = await signInWithPopup(auth, provider);
       this.storeCredentialFromResult(result);
     } catch (error) {
       console.error('Sign in error', error);
-      if (this.isPopupBlocked(error) || !this.shouldUseRedirect()) {
+      if (this.isPopupBlocked(error)) {
         try {
           await signInWithRedirect(auth, provider);
           return;
@@ -162,9 +151,7 @@ export class AuthService {
       this.loginError.set(this.formatAuthError(error));
       throw error;
     } finally {
-      if (!this.shouldUseRedirect()) {
-        this.signingIn.set(false);
-      }
+      this.signingIn.set(false);
     }
   }
 
