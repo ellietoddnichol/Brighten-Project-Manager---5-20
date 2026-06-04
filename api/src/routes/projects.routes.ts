@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { queryOne, queryRows } from '../db.js';
 import type { GenericViewRow, ProjectDashboardRow } from '../types.js';
 import { normalizeJobNumber, projectFilterParams } from '../utils/projectFilter.js';
+import { applyProjectPatch, PatchValidationError } from '../utils/projectPatch.js';
+import { fetchMergedProjectDetail } from '../utils/projectDetail.js';
 
 export const projectsRouter = Router();
 
@@ -29,15 +31,31 @@ projectsRouter.get('/projects', async (_req, res, next) => {
 
 projectsRouter.get('/projects/:id', async (req, res, next) => {
   try {
-    const key = req.params.id;
-    const job = normalizeJobNumber(key);
-    const row = await queryOne<ProjectDashboardRow>(ONE_SQL, [key, job, `J${job}`]);
+    const row = await fetchMergedProjectDetail(req.params.id);
     if (!row) {
       res.status(404).json({ ok: false, error: 'Project not found' });
       return;
     }
     res.json({ ok: true, item: row });
   } catch (err) {
+    next(err);
+  }
+});
+
+projectsRouter.patch('/projects/:id', async (req, res, next) => {
+  try {
+    const body = req.body;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      res.status(400).json({ ok: false, error: 'Request body must be a JSON object.' });
+      return;
+    }
+    const item = await applyProjectPatch(req.params.id, body as Record<string, unknown>);
+    res.json({ ok: true, item });
+  } catch (err) {
+    if (err instanceof PatchValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
     next(err);
   }
 });

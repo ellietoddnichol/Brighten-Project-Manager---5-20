@@ -28,7 +28,20 @@ export interface ProjectDashboardApiRow {
   total_actual_income?: number | null;
   profit?: number | null;
   profit_margin_percent?: number | null;
+  /** From projects table merge on GET/PATCH detail */
+  address?: string | null;
+  city?: string | null;
+  state?: string | null;
+  zip?: string | null;
+  county_code?: string | null;
+  start_date?: string | null;
+  target_end_date?: string | null;
+  tax_exempt?: boolean | number | null;
+  bond_required?: boolean | number | null;
 }
+
+/** UI-shaped body for PATCH /api/projects/:id */
+export type ProjectApiUpdateBody = Record<string, unknown>;
 
 export interface ApiListResponse<T> {
   ok: boolean;

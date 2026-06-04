@@ -50,6 +50,12 @@ function normalizeJobNumber(jobNumber: string): string {
   return jobNumber.replace(/^J/i, '').trim();
 }
 
+function formatDateField(value: string | Date | null | undefined): string | undefined {
+  if (value == null || value === '') return undefined;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
 /** Standard Google Drive folder URL when only folder id is known from SQL. */
 export function driveFolderUrlFromId(folderId: string | null | undefined): string | undefined {
   const id = folderId?.trim();
@@ -65,12 +71,17 @@ export function mapDashboardRowToProject(row: ProjectDashboardApiRow): Project {
     && !row.revised_contract_amount
     && row.billing_status?.toLowerCase() === 'pending_contract';
   const driveFolderId = row.drive_folder_id ?? undefined;
+  const county = row.county_code ?? undefined;
 
   return {
     id: row.id,
     projectNumber: jobNumber,
     projectName: row.project_name,
     customer: row.customer ?? 'Brighten Builders LLC',
+    address: row.address ?? undefined,
+    city: row.city ?? undefined,
+    state: row.state ?? undefined,
+    county,
     superintendent: row.foreman ?? undefined,
     status: mapProjectStatus(row.project_status),
     projectStatus: row.project_status as Project['projectStatus'],
@@ -78,7 +89,10 @@ export function mapDashboardRowToProject(row: ProjectDashboardApiRow): Project {
     originalContractAmount: row.original_contract_amount ?? undefined,
     contractPending,
     prevailingWage: asBool(row.prevailing_wage),
-    certifiedPayrollRequired: asBool(row.cpr_required),
+    certifiedPayrollRequired: asBool(row.cpr_required ?? row.prevailing_wage),
+    taxExempt: asBool(row.tax_exempt),
+    startDate: formatDateField(row.start_date),
+    targetCompletionDate: formatDateField(row.target_end_date),
     driveFolderId,
     driveFolderUrl: driveFolderUrlFromId(driveFolderId),
     billedToDate: row.billed_to_date ?? undefined,

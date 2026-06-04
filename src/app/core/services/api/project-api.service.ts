@@ -5,8 +5,10 @@ import {
   ApiHealthResponse,
   ApiItemResponse,
   ApiListResponse,
+  ProjectApiUpdateBody,
   ProjectDashboardApiRow,
 } from './project-api.types';
+import type { ProjectApiUpdatePayload } from './project-api-update';
 import { Project } from '@app/models/types';
 import { apiConfig, ApiDataSource } from '@app/config/api.config';
 
@@ -107,5 +109,32 @@ export class ProjectApiService {
     } finally {
       this.detailLoading.set(false);
     }
+  }
+
+  /**
+   * Persist project edits to Cloud SQL. Throws on failure — no Firestore fallback.
+   */
+  async updateProject(idOrJob: string, patch: ProjectApiUpdatePayload): Promise<Project> {
+    const resp = await this.api.patch<ApiItemResponse<ProjectDashboardApiRow>>(
+      `/api/projects/${encodeURIComponent(idOrJob)}`,
+      patch as ProjectApiUpdateBody,
+    );
+    const project = mapDashboardRowToProject(resp.item);
+    this.detailProject.set(project);
+    this.detailProjectId.set(idOrJob);
+    this.detailActiveSource.set('api');
+    this.detailError.set(null);
+
+    const list = this.projects();
+    const idx = list.findIndex(
+      p => p.id === project.id || p.projectNumber === project.projectNumber,
+    );
+    if (idx >= 0) {
+      const next = [...list];
+      next[idx] = project;
+      this.projects.set(next);
+    }
+
+    return project;
   }
 }

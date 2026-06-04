@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '@core/services/data.service';
 import { ProjectApiService } from '@core/services/api/project-api.service';
+import { buildProjectApiUpdatePayload, hasApiUpdateFields } from '@core/services/api/project-api-update';
+import { apiConfig } from '@app/config/api.config';
 import { AuthService } from '@core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -228,6 +230,9 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
                 <input type="number" [(ngModel)]="editDraft.retainagePercent" name="editRet" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
               </div>
             </div>
+            @if (saveEditError()) {
+              <p class="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{{ saveEditError() }}</p>
+            }
             <div class="flex justify-end gap-2 pt-2">
               <button type="button" (click)="showEditModal.set(false)" class="px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
               <button type="submit" [disabled]="savingEdit()" class="bg-slate-900 text-white px-5 py-2 rounded-lg text-sm font-bold disabled:opacity-50">
@@ -471,6 +476,7 @@ export class ProjectDetails implements OnInit {
   nav = signal<ProjectNavState>(defaultNavState());
   showEditModal = signal(false);
   savingEdit = signal(false);
+  saveEditError = signal<string | null>(null);
   editDraft: Partial<Project> = {};
   projectStatuses = PROJECT_STATUSES;
 
@@ -598,6 +604,7 @@ export class ProjectDetails implements OnInit {
     const p = this.project();
     if (!p) return;
     this.editDraft = { ...p };
+    this.saveEditError.set(null);
     this.showEditModal.set(true);
   }
 
@@ -610,12 +617,37 @@ export class ProjectDetails implements OnInit {
     if (!this.projectId) return;
     const current = this.project();
     if (!current) return;
-    this.savingEdit.set(true);
-    const patch = stripMasterSheetFieldsFromUserPatch(current, {
+
+    const firestorePatch = stripMasterSheetFieldsFromUserPatch(current, {
       ...this.editDraft,
       taxable: !this.editDraft.taxExempt,
     });
-    this.dataService.updateProject(this.projectId, patch).subscribe({
+
+    if (apiConfig.useApiBackend && this.projectApi.isEnabled()) {
+      const apiPatch = buildProjectApiUpdatePayload(current, this.editDraft);
+      if (!hasApiUpdateFields(apiPatch)) {
+        this.showEditModal.set(false);
+        return;
+      }
+      this.savingEdit.set(true);
+      this.saveEditError.set(null);
+      void this.projectApi.updateProject(this.projectId, apiPatch).then((updated) => {
+        this.savingEdit.set(false);
+        this.showEditModal.set(false);
+        if (isCertifiedPayrollProject(updated)) {
+          void this.certifiedPayroll.ensureComplianceForProject(updated);
+        }
+      }).catch((err: unknown) => {
+        this.savingEdit.set(false);
+        const message = err instanceof Error ? err.message : 'Failed to save project to Cloud SQL.';
+        this.saveEditError.set(message);
+      });
+      return;
+    }
+
+    this.savingEdit.set(true);
+    this.saveEditError.set(null);
+    this.dataService.updateProject(this.projectId, firestorePatch).subscribe({
       next: (updated) => {
         this.savingEdit.set(false);
         this.showEditModal.set(false);
@@ -625,7 +657,7 @@ export class ProjectDetails implements OnInit {
       },
       error: () => {
         this.savingEdit.set(false);
-        alert('Failed to save project changes.');
+        this.saveEditError.set('Failed to save project changes to Firestore.');
       },
     });
   }

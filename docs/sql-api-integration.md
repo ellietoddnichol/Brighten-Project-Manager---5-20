@@ -8,7 +8,8 @@ Read-only first phase: the existing Angular app calls a Node/Express API; the AP
 - **Add an API layer only** — Angular talks to HTTP; the API talks to Cloud SQL.
 - **Inspect before coding** — find which service feeds the screen you are wiring (Projects list uses `DataService` + `ProjectApiService` on `/projects` only).
 - **Test the API alone first** — `curl` / `Invoke-RestMethod` before starting Angular or editing page templates.
-- **Start read-only** — no create/update/delete until list + detail reads are verified.
+- **Cloud SQL is source of truth** for project records; Firestore is read fallback during migration only.
+- **Failed SQL writes do not fall back to Firestore** — show an error and keep edits unsaved.
 - **Use views first** — `v_project_dashboard`, `v_project_tasks`, etc.; avoid large ad-hoc joins in app code.
 - **Do not invent missing data** — empty module tables and `needed` document rows are expected; show as missing/review.
 
@@ -143,7 +144,8 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 |--------|------|--------------|
 | GET | `/api/health` | connection ping |
 | GET | `/api/projects` | `brighten_pm.v_project_dashboard` |
-| GET | `/api/projects/:id` | `v_project_dashboard` |
+| GET | `/api/projects/:id` | `v_project_dashboard` + merged `projects` columns (address, dates, etc.) |
+| PATCH | `/api/projects/:id` | `brighten_pm.projects` (whitelist only; returns refreshed dashboard row) |
 | GET | `/api/projects/:id/readiness` | `v_project_readiness` |
 | GET | `/api/projects/:id/tasks` | `v_project_tasks` |
 | GET | `/api/projects/:id/documents` | `v_project_documents` |
@@ -166,9 +168,14 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 **Wired today:**
 
 - Projects list (`/projects`) — `GET /api/projects`
-- Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id` (same `v_project_dashboard` row; tabs/workflows/tasks/documents/financials and all writes still use Firestore)
+- Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id`
+- Project edit modal (Phase 1A) — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false
 
-**Not wired yet:** Home, project detail tab data (tasks, documents, financials, workflows via API), global tasks/documents/financials pages, write endpoints, Firebase removal.
+**PATCH whitelist (Phase 1A):** `projectName`, `status`, `address`, `city`, `state`, `zip`, `county`, `customer` (exact company match), `superintendent` (exact user match), `originalContractAmount`, `billingStatus`, `startDate`, `targetEndDate`, `prevailingWage`/`certifiedPayrollRequired` (both columns set together), `taxExempt`, `bondRequired`, `driveFolderId`, optional `projectNumber`.
+
+**Phase 1B (not yet):** scope fields, `projectProfile`, PM, retainage, wage orders, tab data writes.
+
+**Not wired yet:** Home, project detail tab reads (tasks, documents, financials, workflows), other entity write routes, Firebase removal.
 
 ---
 
