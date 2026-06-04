@@ -20,6 +20,12 @@ export class ProjectApiService {
   activeSource = signal<ApiDataSource>('firestore');
   projects = signal<Project[]>([]);
 
+  detailLoading = signal(false);
+  detailError = signal<string | null>(null);
+  detailActiveSource = signal<ApiDataSource>('firestore');
+  detailProject = signal<Project | null>(null);
+  detailProjectId = signal<string | null>(null);
+
   isEnabled(): boolean {
     return apiConfig.useApiBackend;
   }
@@ -64,6 +70,42 @@ export class ProjectApiService {
       return mapDashboardRowToProject(resp.item);
     } catch {
       return null;
+    }
+  }
+
+  /** Load one project for detail shell/header. Falls back silently on failure. */
+  async loadProjectDetail(idOrJob: string): Promise<Project | null> {
+    this.detailProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.detailActiveSource.set('firestore');
+      this.detailError.set(null);
+      this.detailProject.set(null);
+      return null;
+    }
+
+    this.detailLoading.set(true);
+    this.detailError.set(null);
+    this.detailProject.set(null);
+    this.detailActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ApiItemResponse<ProjectDashboardApiRow>>(
+        `/api/projects/${encodeURIComponent(idOrJob)}`,
+      );
+      const project = mapDashboardRowToProject(resp.item);
+      this.detailProject.set(project);
+      this.detailActiveSource.set('api');
+      return project;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project from API';
+      this.detailError.set(message);
+      this.detailActiveSource.set('firestore');
+      this.detailProject.set(null);
+      console.warn('[ProjectApiService] detail', message);
+      return null;
+    } finally {
+      this.detailLoading.set(false);
     }
   }
 }

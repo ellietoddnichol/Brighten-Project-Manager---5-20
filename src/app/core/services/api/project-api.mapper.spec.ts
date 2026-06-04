@@ -46,4 +46,16 @@ describe('mapDashboardRowToProject', () => {
     expect(project.contractPending).toBe(true);
     expect(project.projectNumber).toBe('220');
   });
+
+  it('builds driveFolderUrl from drive_folder_id', () => {
+    const project = mapDashboardRowToProject({
+      id: 'proj-2',
+      job_number: '204',
+      project_name: 'Lightedge',
+      drive_folder_id: 'abc123XYZ',
+    });
+
+    expect(project.driveFolderId).toBe('abc123XYZ');
+    expect(project.driveFolderUrl).toBe('https://drive.google.com/drive/folders/abc123XYZ');
+  });
 });

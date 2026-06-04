@@ -50,6 +50,13 @@ function normalizeJobNumber(jobNumber: string): string {
   return jobNumber.replace(/^J/i, '').trim();
 }
 
+/** Standard Google Drive folder URL when only folder id is known from SQL. */
+export function driveFolderUrlFromId(folderId: string | null | undefined): string | undefined {
+  const id = folderId?.trim();
+  if (!id) return undefined;
+  return `https://drive.google.com/drive/folders/${id}`;
+}
+
 /** Map Cloud SQL v_project_dashboard row → existing Angular Project model. */
 export function mapDashboardRowToProject(row: ProjectDashboardApiRow): Project {
   const jobNumber = normalizeJobNumber(row.job_number);
@@ -57,6 +64,7 @@ export function mapDashboardRowToProject(row: ProjectDashboardApiRow): Project {
     !row.original_contract_amount
     && !row.revised_contract_amount
     && row.billing_status?.toLowerCase() === 'pending_contract';
+  const driveFolderId = row.drive_folder_id ?? undefined;
 
   return {
     id: row.id,
@@ -71,7 +79,8 @@ export function mapDashboardRowToProject(row: ProjectDashboardApiRow): Project {
     contractPending,
     prevailingWage: asBool(row.prevailing_wage),
     certifiedPayrollRequired: asBool(row.cpr_required),
-    driveFolderId: row.drive_folder_id ?? undefined,
+    driveFolderId,
+    driveFolderUrl: driveFolderUrlFromId(driveFolderId),
     billedToDate: row.billed_to_date ?? undefined,
     wipLeftToBill: row.balance_to_bill ?? undefined,
     estCostBudget: row.total_estimated_cost ?? undefined,

@@ -1,8 +1,9 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DataService } from '@core/services/data.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { AuthService } from '@core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -67,6 +68,11 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
   ],
   template: `
     <div class="h-full flex flex-col bg-slate-50/50">
+      @if (projectApi.detailError()) {
+        <p class="text-sm text-amber-700 px-6 py-2 bg-white border-b border-slate-100">
+          Using Firestore fallback — {{ projectApi.detailError() }}
+        </p>
+      }
       @if (project(); as p) {
         <app-project-header
           [project]="p"
@@ -235,9 +241,10 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProjectDetails {
+export class ProjectDetails implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  readonly projectApi = inject(ProjectApiService);
   private projectData = inject(ProjectDataService);
   private dataService = inject(DataService);
   private authService = inject(AuthService);
@@ -248,15 +255,34 @@ export class ProjectDetails {
   private needsSvc = inject(ProjectNeedsService);
   private lifecycleSvc = inject(ProjectLifecycleService);
 
-  projectId = this.route.snapshot.paramMap.get('id');
+  projectId: string | null = this.route.snapshot.paramMap.get('id');
 
-  projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
+  firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] });
   project = computed(() => {
-    const firestoreProject = (this.projects() || []).find(
-      p => p.id === this.projectId || p.seedProjectId === this.projectId,
+    const routeId = this.projectId;
+    if (!routeId) return undefined;
+
+    const apiDetail = this.projectApi.detailProject();
+    if (
+      apiDetail
+      && this.projectApi.detailActiveSource() === 'api'
+      && this.projectApi.detailProjectId() === routeId
+      && this.matchesRouteProject(apiDetail, routeId)
+    ) {
+      return apiDetail;
+    }
+
+    if (this.projectApi.activeSource() === 'api') {
+      const cached = (this.projectApi.projects() || []).find(p => this.matchesRouteProject(p, routeId));
+      if (cached) return cached;
+    }
+
+    const firestoreProject = (this.firestoreProjects() || []).find(
+      p => this.matchesRouteProject(p, routeId),
     );
     if (firestoreProject) return firestoreProject;
-    const sheetProject = this.projectId ? this.projectData.getProjectDetail(this.projectId)?.project : null;
+
+    const sheetProject = this.projectData.getProjectDetail(routeId)?.project ?? null;
     return sheetProject ? normalizedProjectToProject(sheetProject) : undefined;
   });
 
@@ -484,6 +510,25 @@ export class ProjectDetails {
         void this.loadDriveFiles();
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.route.paramMap.subscribe(params => {
+      this.projectId = params.get('id');
+      if (this.projectId && this.projectApi.isEnabled()) {
+        void this.projectApi.loadProjectDetail(this.projectId);
+      }
+    });
+  }
+
+  private matchesRouteProject(project: Project, routeId: string): boolean {
+    const job = routeId.replace(/^J/i, '').trim();
+    return (
+      project.id === routeId
+      || project.seedProjectId === routeId
+      || project.projectNumber === routeId
+      || project.projectNumber === job
+    );
   }
 
   setSection(section: ProjectPrimarySection): void {

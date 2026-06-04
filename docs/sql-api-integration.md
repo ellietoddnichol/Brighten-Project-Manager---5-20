@@ -163,9 +163,12 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 - `ProjectApiService` — loads `/api/projects`, maps to `Project`
 - `project-api.mapper.ts` — snake_case view columns → existing models
 
-**Wired today:** Projects page (`/projects`) only.
+**Wired today:**
 
-**Not wired yet:** Home, project detail, tasks, documents, financials, write endpoints, Firebase removal.
+- Projects list (`/projects`) — `GET /api/projects`
+- Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id` (same `v_project_dashboard` row; tabs/workflows/tasks/documents/financials and all writes still use Firestore)
+
+**Not wired yet:** Home, project detail tab data (tasks, documents, financials, workflows via API), global tasks/documents/financials pages, write endpoints, Firebase removal.
 
 ---
 
@@ -181,7 +184,7 @@ Empty tables are **backend-ready** (RFIs, subs, POs, CPR weeks, etc.) — not br
 
 ## Next steps (one screen at a time)
 
-1. Stabilize `/projects` against live API (this gate).
-2. Project detail reads (tasks, documents, financials).
+1. Stabilize `/projects` and project detail shell against live API (this gate).
+2. Project detail tab reads (tasks, documents, financials) — one endpoint at a time.
 3. Home / Active 2026 (`/api/action-center`, `/api/backend-readiness`).
 4. Write endpoints only after reads are verified in production.
