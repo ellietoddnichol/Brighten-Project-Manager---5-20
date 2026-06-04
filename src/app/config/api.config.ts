@@ -2,15 +2,41 @@
 const API_BASE_URL_KEY = 'brighten.apiBaseUrl';
 const USE_API_BACKEND_KEY = 'brighten.useApiBackend';
 
-const DEFAULT_API_BASE_URL = 'http://localhost:8080';
+const LOCAL_API_BASE_URL = 'http://localhost:8080';
+
+function isLocalHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function defaultApiBaseUrl(): string {
+  if (typeof window !== 'undefined' && window.location?.origin && !isLocalHost(window.location.hostname)) {
+    return window.location.origin;
+  }
+  return LOCAL_API_BASE_URL;
+}
+
+function isLocalApiUrl(url: string): boolean {
+  try {
+    return isLocalHost(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
 
 export const apiConfig = {
   get baseUrl(): string {
+    const fallback = defaultApiBaseUrl();
     if (typeof localStorage !== 'undefined') {
       const stored = localStorage.getItem(API_BASE_URL_KEY);
-      if (stored?.trim()) return stored.trim().replace(/\/+$/, '');
+      if (stored?.trim()) {
+        const normalized = stored.trim().replace(/\/+$/, '');
+        if (typeof window !== 'undefined' && !isLocalHost(window.location.hostname) && isLocalApiUrl(normalized)) {
+          return fallback;
+        }
+        return normalized;
+      }
     }
-    return DEFAULT_API_BASE_URL;
+    return fallback;
   },
 
   setBaseUrl(url: string): void {

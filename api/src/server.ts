@@ -1,6 +1,7 @@
 import './loadEnv.js';
 import cors from 'cors';
 import express from 'express';
+import path from 'node:path';
 import { healthRouter } from './routes/health.routes.js';
 import { projectsRouter } from './routes/projects.routes.js';
 import { actionCenterRouter } from './routes/action-center.routes.js';
@@ -9,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 const app = express();
 const port = Number(process.env.API_PORT ?? 8080);
 const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+const staticDir = process.env.APP_STATIC_DIR;
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(express.json());
@@ -16,6 +18,17 @@ app.use(express.json());
 app.use('/api', healthRouter);
 app.use('/api', projectsRouter);
 app.use('/api', actionCenterRouter);
+
+if (staticDir) {
+  app.use(express.static(staticDir));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      next();
+      return;
+    }
+    res.sendFile(path.join(staticDir, 'index.html'));
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);

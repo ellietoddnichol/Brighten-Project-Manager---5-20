@@ -34,6 +34,10 @@ steps:
       - >-
         --labels=managed-by=gcp-cloud-build-deploy-cloud-run,commit-sha=$COMMIT_SHA,gcb-build-id=$BUILD_ID,gcb-trigger-id=$_TRIGGER_ID
       - '--region=$_DEPLOY_REGION'
+      - >-
+        --add-cloudsql-instances=$_CLOUD_SQL_INSTANCE
+      - >-
+        --update-env-vars=DB_SOCKET_PATH=/cloudsql/$_CLOUD_SQL_INSTANCE
       - '--quiet'
     id: Deploy
 
@@ -51,4 +55,5 @@ substitutions:
   _DEPLOY_REGION: europe-west1
   _PLATFORM: managed
   _SERVICE_NAME: projectmanager06
+  _CLOUD_SQL_INSTANCE: project-manager-498120:us-central1:databaseprojectmgmt63
   _TRIGGER_ID: 09726dad-508a-4cc1-806f-4998a223f618

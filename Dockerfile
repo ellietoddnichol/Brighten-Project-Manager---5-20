@@ -1,4 +1,3 @@
-# Build Angular app
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -6,17 +5,29 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+COPY api/package.json api/package-lock.json ./api/
+RUN npm ci --prefix api
+
 COPY . .
 
 ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN npm run build
+RUN npm run build --prefix api
 
-# Serve static files on Cloud Run (PORT defaults to 8080)
-FROM nginx:1.27-alpine
+FROM node:20-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/dist/app/browser /usr/share/nginx/html
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV API_PORT=8080
+ENV APP_STATIC_DIR=/app/public
+
+COPY api/package.json api/package-lock.json ./api/
+RUN npm ci --prefix api --omit=dev
+
+COPY --from=build /app/api/dist ./api/dist
+COPY --from=build /app/dist/app/browser ./public
 
 EXPOSE 8080
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["node", "api/dist/server.js"]
