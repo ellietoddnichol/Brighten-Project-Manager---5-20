@@ -257,20 +257,29 @@ projectsRouter.get('/projects/:id/financials', async (req, res, next) => {
 
 projectsRouter.get('/projects/:id/budget', async (req, res, next) => {
   try {
-    const params = projectFilterParams(req.params.id);
+    const job = normalizeJobNumber(req.params.id);
+    const params = [req.params.id, job, `J${job}`];
     const summary = await queryOne<GenericViewRow>(
       `SELECT *
        FROM brighten_pm.v_project_budget_summary
-       WHERE project_id = ? OR id = ? OR job_number = ? OR job_number = ?
+       WHERE project_id = ? OR job_number = ? OR job_number = ?
        LIMIT 1`,
       params,
     );
+    const project = await queryOne<GenericViewRow>(
+      `SELECT id
+       FROM brighten_pm.v_project_dashboard
+       WHERE id = ? OR job_number = ? OR job_number = ?
+       LIMIT 1`,
+      params,
+    );
+    const projectId = summary?.project_id ?? project?.id ?? req.params.id;
     const lines = await queryRows<GenericViewRow>(
       `SELECT *
        FROM brighten_pm.budget_lines
-       WHERE project_id = ? OR job_number = ? OR job_number = ?
+       WHERE project_id = ?
        ORDER BY cost_code`,
-      [req.params.id, normalizeJobNumber(req.params.id), `J${normalizeJobNumber(req.params.id)}`],
+      [projectId],
     );
     res.json({ ok: true, summary, lines, lineCount: lines.length });
   } catch (err) {
