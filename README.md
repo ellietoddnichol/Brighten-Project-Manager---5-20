@@ -1,49 +1,86 @@
 # Brighten Project Manager
 
-Angular web app for Brighten project operations, including project financials, WIP tracking, billing, purchase orders, certified payroll, subcontractors, tasks, documents, and settings/import review tools.
+Angular web app for Brighten project operations: project financials, WIP, billing, labor, subcontractors, tasks, documents, and settings/import tools.
 
-## Local Setup
+## Local setup (Angular only)
 
 **Prerequisite:** Node.js.
 
-1. Install dependencies:
-   `npm install`
-2. Copy `.env.example` to `.env.local` and fill in the local values you need.
-3. Start the app:
-   `npm run dev`
-4. Open the local app at:
-   `http://localhost:3000`
+1. `npm install`
+2. Copy `.env.example` → `.env.local` for Google/Firebase workspace keys (not database credentials).
+3. `npm run dev`
+4. Open `http://localhost:3000`
 
-## Common Commands
+## Cloud SQL API (read-only integration)
 
-- `npm run dev` starts the local Angular dev server.
-- `npm run build` creates a production build.
-- `npm run lint` runs Angular/TypeScript linting.
-- `npm run test` runs unit tests.
-- `npm run import:seeds` rebuilds import-derived seed JSON from files in `src/app/data/imports`.
-- `npm run import:budgets` rebuilds the legacy job-cost budget seed.
-- `npm run import:project-costs` rebuilds the legacy project-cost seed.
-- `npm run load:budgets` loads budget seed data to Firestore.
+The app is gradually moving project data to **Google Cloud SQL (MySQL)** via a small **Node API** in `/api`. The browser never receives DB passwords.
 
-## Project Layout
+**Full workflow:** [docs/sql-api-integration.md](docs/sql-api-integration.md)
 
-- `src/app/pages` contains route-level screens.
-- `src/app/components` contains reusable UI, layout, chart, and project panels.
-- `src/app/services` contains data access, sync, import, save, and domain workflow services.
-- `src/app/utils` contains calculation and transformation helpers.
-- `src/app/models` contains shared TypeScript data shapes.
-- `src/app/config` contains app configuration and operational constants.
-- `src/app/data/seeds` contains app seed data used by import/review flows.
-- `src/app/data/imports` contains source files used by import scripts.
-- `scripts` contains one-off and repeatable data import/build tools.
-- `docs` contains project notes, setup guidance, smoke tests, and deployment readiness.
+### Inspect first / test API before Angular
 
-See `docs/project-setup-audit.md` for the current setup audit, cleanup notes, and organization conventions.
+1. **Do not commit** until `/api/health` and `/api/projects` work against your real database.
+2. Create **`api/.env.local`** locally only (never commit). Copy from `api/.env.example` and set:
+   - `DB_HOST`, `DB_PORT`, `DB_NAME=brighten_pm`, `DB_USER`, `DB_PASSWORD`
+   - `API_PORT=8080`
+   - `CORS_ORIGIN=http://localhost:3000` (must match Angular dev port)
+3. Run **only the API** first:
 
-## Import Files
+   ```powershell
+   cd api
+   npm install
+   npm run dev
+   ```
 
-Keep import source files under `src/app/data/imports` unless an import script is intentionally updated to use a new location. Do not leave working spreadsheets, PDFs, or downloaded reports in the repository root. Local-only reference files can go in `reference-files/`, which is ignored by Git.
+4. Test before starting Angular:
+
+   ```powershell
+   Invoke-RestMethod http://localhost:8080/api/health
+   Invoke-RestMethod http://localhost:8080/api/projects
+   ```
+
+5. When those pass, from repo root: `npm run dev`, open `/projects`.
+   - API mode: `localStorage brighten.useApiBackend` = `true` (default in code)
+   - Success: list loads from `/api/projects` (~28 rows)
+   - Fallback: amber “Using Firestore fallback” if API is down
+
+From repo root you can also run `npm run dev:api` (same as `npm run dev` inside `api/`).
+
+**Wired today:** Projects list only. Firebase, seeds, and other pages are unchanged.
+
+**Commit message** (only after live API tests pass):
+
+```text
+Add read-only Cloud SQL API and wire Projects list to /api/projects
+```
+
+## Common commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Angular dev server (port **3000**) |
+| `npm run dev:api` | Cloud SQL read API (port **8080**) |
+| `npm run build` | Production Angular build |
+| `npm run test` | Unit tests |
+| `npm run lint` | Lint |
+| `npm run import:seeds` | Rebuild import seeds from `mock-data/imports` |
+
+## Project layout
+
+Feature-based structure under `src/app/`:
+
+- `features/*/pages` — route screens (e.g. `features/projects/pages/projects.ts`)
+- `components/` — shared UI
+- `core/services/` — `DataService`, API client, sync/import infrastructure
+- `models/` — TypeScript types
+- `config/` — app constants + `api.config.ts`
+- `mock-data/` — seeds and import source files (static assets)
+- `api/` — read-only Express API for Cloud SQL
+- `scripts/` — import/build tools
+- `docs/` — setup, SQL API, deploy checklist
+
+See `docs/project-setup-audit.md` and `docs/data-storage-map.md` for data architecture notes.
 
 ## Deployment
 
-This app includes Firebase configuration and a Docker/nginx runtime setup. Before deploys, review `docs/deploy-readiness-checklist.md` and confirm environment values are present outside source control.
+Firebase + Docker/nginx. Review `docs/deploy-readiness-checklist.md` before deploy. DB credentials belong on the API service (Cloud Run env / Secret Manager), not in the Angular build.

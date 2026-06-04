@@ -1,0 +1,57 @@
+import mysql from 'mysql2/promise';
+
+const {
+  DB_HOST = '127.0.0.1',
+  DB_PORT = '3306',
+  DB_NAME = 'brighten_pm',
+  DB_USER = '',
+  DB_PASSWORD = '',
+  DB_SOCKET_PATH,
+} = process.env;
+
+let pool: mysql.Pool | null = null;
+
+export function getPool(): mysql.Pool {
+  if (!pool) {
+    const base = DB_SOCKET_PATH
+      ? { socketPath: DB_SOCKET_PATH }
+      : { host: DB_HOST, port: Number(DB_PORT) };
+
+    pool = mysql.createPool({
+      ...base,
+      user: DB_USER,
+      password: DB_PASSWORD,
+      database: DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      namedPlaceholders: false,
+    });
+  }
+  return pool;
+}
+
+export async function pingDatabase(): Promise<void> {
+  const conn = await getPool().getConnection();
+  try {
+    await conn.query('SELECT 1');
+  } finally {
+    conn.release();
+  }
+}
+
+export async function queryRows<T extends mysql.RowDataPacket>(
+  sql: string,
+  params: unknown[] = [],
+): Promise<T[]> {
+  const [rows] = await getPool().query<T[]>(sql, params);
+  return rows;
+}
+
+export async function queryOne<T extends mysql.RowDataPacket>(
+  sql: string,
+  params: unknown[] = [],
+): Promise<T | null> {
+  const rows = await queryRows<T>(sql, params);
+  return rows[0] ?? null;
+}

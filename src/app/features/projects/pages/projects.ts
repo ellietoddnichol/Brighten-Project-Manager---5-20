@@ -5,6 +5,7 @@ import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { DataService } from '@core/services/data.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -186,6 +187,12 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
       @if (syncMessage()) {
 
         <p class="text-sm text-emerald-700 -mt-2">{{ syncMessage() }}</p>
+
+      }
+
+      @if (projectApi.error()) {
+
+        <p class="text-sm text-amber-700 -mt-2">Using Firestore fallback — {{ projectApi.error() }}</p>
 
       }
 
@@ -754,6 +761,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 export class Projects implements OnInit {
 
   private dataService = inject(DataService);
+  readonly projectApi = inject(ProjectApiService);
 
   private controls = inject(ProjectControlsService);
 
@@ -839,7 +847,15 @@ export class Projects implements OnInit {
 
 
 
-  projects = toSignal(this.dataService.getProjects(), { initialValue: [] as Project[] });
+  firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] as Project[] });
+
+  projects = computed(() => {
+    const apiProjects = this.projectApi.projects();
+    if (this.projectApi.activeSource() === 'api' && apiProjects.length > 0) {
+      return apiProjects;
+    }
+    return this.firestoreProjects() ?? [];
+  });
 
   uniqueProjects = computed(() => dedupeProjectsForDisplay(this.projects() || []));
 
@@ -1134,9 +1150,8 @@ export class Projects implements OnInit {
 
 
   ngOnInit(): void {
-
     this.syncAdvancedDraft();
-
+    void this.projectApi.loadProjects();
   }
 
 

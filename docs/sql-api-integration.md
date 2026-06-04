@@ -1,0 +1,187 @@
+# Cloud SQL API Integration
+
+Read-only first phase: the existing Angular app calls a Node/Express API; the API reads `brighten_pm` MySQL **views**. Do not put database credentials in the browser.
+
+## Rules (do not skip)
+
+- **Do not rebuild the front end** — keep pages, components, routes, styling, and workflows.
+- **Add an API layer only** — Angular talks to HTTP; the API talks to Cloud SQL.
+- **Inspect before coding** — find which service feeds the screen you are wiring (Projects list uses `DataService` + `ProjectApiService` on `/projects` only).
+- **Test the API alone first** — `curl` / `Invoke-RestMethod` before starting Angular or editing page templates.
+- **Start read-only** — no create/update/delete until list + detail reads are verified.
+- **Use views first** — `v_project_dashboard`, `v_project_tasks`, etc.; avoid large ad-hoc joins in app code.
+- **Do not invent missing data** — empty module tables and `needed` document rows are expected; show as missing/review.
+
+**Do not commit** until real DB responses pass:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/api/health
+Invoke-RestMethod http://localhost:8080/api/projects
+```
+
+---
+
+## Inspect first (before any Angular change)
+
+| Screen | Route | Primary data today | API wiring status |
+|--------|-------|-------------------|-------------------|
+| Projects list | `/projects` | `DataService.getProjects()` (Firestore) | `ProjectApiService` when API healthy |
+| Home, detail, tasks, docs, financials | other routes | `DataService` / feature services | **Not wired yet** |
+
+Relevant files (Projects list only):
+
+- `src/app/features/projects/pages/projects.ts` — chooses API vs Firestore list
+- `src/app/core/services/api/project-api.service.ts` — `GET /api/projects`
+- `src/app/core/services/api/project-api.mapper.ts` — view rows → `Project` model
+- `src/app/core/services/data.service.ts` — Firestore fallback (unchanged)
+- `api/src/routes/projects.routes.ts` — reads `brighten_pm.v_project_dashboard`
+
+---
+
+## Step 1 — API only (no Angular)
+
+### 1. Create `api/.env.local` (local machine only)
+
+Copy `api/.env.example` → `api/.env.local`. **Never commit** `api/.env.local` (covered by root `.gitignore` rule `.env*`).
+
+Required variables:
+
+| Variable | Example | Notes |
+|----------|---------|--------|
+| `DB_HOST` | `127.0.0.1` | Or Cloud SQL Auth Proxy host |
+| `DB_PORT` | `3306` | MySQL |
+| `DB_NAME` | `brighten_pm` | Use fully qualified names in SQL: `brighten_pm.projects` |
+| `DB_USER` | *(your user)* | Server-side only |
+| `DB_PASSWORD` | *(your password)* | Server-side only |
+| `API_PORT` | `8080` | API listen port |
+| `CORS_ORIGIN` | `http://localhost:3000` | Must match **actual** Angular dev URL |
+
+Optional (Cloud Run / connector later):
+
+- `INSTANCE_CONNECTION_NAME`
+- `DB_SOCKET_PATH`
+
+### 2. Install and run the API by itself
+
+```powershell
+cd api
+npm install
+npm run dev
+```
+
+Expected console: `Brighten PM API listening on http://localhost:8080`
+
+### 3. Test with PowerShell (must pass before Angular)
+
+```powershell
+Invoke-RestMethod http://localhost:8080/api/health
+Invoke-RestMethod http://localhost:8080/api/projects
+```
+
+**Health** — expect JSON like:
+
+```json
+{ "ok": true, "database": "brighten_pm", "timestamp": "..." }
+```
+
+**Projects** — expect `ok: true`, `count: 28` (or current loaded count), `items` array with `job_number`, `project_name`, etc.
+
+If health fails: fix DB connectivity/proxy/credentials before touching Angular.
+
+Browser alternative: open `http://localhost:8080/api/health` and `http://localhost:8080/api/projects`.
+
+---
+
+## Step 2 — Angular (only after Step 1 passes)
+
+### 4. Confirm dev port and CORS
+
+This repo serves Angular on **port 3000** (`npm run dev` → `http://localhost:3000`). Set `CORS_ORIGIN=http://localhost:3000` in `api/.env.local`. If you use a different port, update both `ng serve` and `CORS_ORIGIN`.
+
+### 5. Start Angular
+
+From repo root:
+
+```powershell
+npm run dev
+```
+
+Open `http://localhost:3000/projects`.
+
+### 6. Browser API flags (no DB secrets in Angular)
+
+```js
+localStorage.setItem('brighten.apiBaseUrl', 'http://localhost:8080');
+localStorage.setItem('brighten.useApiBackend', 'true');  // default when unset in code
+```
+
+| Behavior | When |
+|----------|------|
+| Loads from `/api/projects` | `brighten.useApiBackend` is true **and** API returns rows |
+| Amber “Using Firestore fallback” | API enabled but request failed |
+| Firestore only | `localStorage.setItem('brighten.useApiBackend', 'false')` |
+
+Verify: Network tab shows `GET http://localhost:8080/api/projects` with 200 and ~28 items; no amber fallback banner.
+
+---
+
+## Commit gate
+
+Commit **only after** live tests succeed:
+
+```text
+Add read-only Cloud SQL API and wire Projects list to /api/projects
+```
+
+Do **not** commit if `/api/health` or `/api/projects` were not verified against the real database.
+
+---
+
+## API endpoints (read-only)
+
+| Method | Path | MySQL source |
+|--------|------|--------------|
+| GET | `/api/health` | connection ping |
+| GET | `/api/projects` | `brighten_pm.v_project_dashboard` |
+| GET | `/api/projects/:id` | `v_project_dashboard` |
+| GET | `/api/projects/:id/readiness` | `v_project_readiness` |
+| GET | `/api/projects/:id/tasks` | `v_project_tasks` |
+| GET | `/api/projects/:id/documents` | `v_project_documents` |
+| GET | `/api/projects/:id/financials` | `v_project_financial_detail` |
+| GET | `/api/projects/:id/budget` | `v_project_budget_summary` + `budget_lines` |
+| GET | `/api/action-center` | `v_action_center` |
+| GET | `/api/backend-readiness` | `v_backend_readiness_summary` |
+
+`:id` accepts project UUID or job number (`208`, `J208`).
+
+---
+
+## Angular services (no UI redesign)
+
+- `src/app/config/api.config.ts` — base URL + `useApiBackend` flags (localStorage)
+- `ApiClientService` — HTTP wrapper
+- `ProjectApiService` — loads `/api/projects`, maps to `Project`
+- `project-api.mapper.ts` — snake_case view columns → existing models
+
+**Wired today:** Projects page (`/projects`) only.
+
+**Not wired yet:** Home, project detail, tasks, documents, financials, write endpoints, Firebase removal.
+
+---
+
+## Tables and views
+
+Prefer views: `v_project_dashboard`, `v_project_tasks`, `v_project_documents`, `v_project_financial_detail`, `v_project_budget_summary`, `v_action_center`, `v_backend_readiness_summary`.
+
+Core tables with data today: `projects`, `companies`, `users`, `project_folders`, `documents`, `tasks`, financial snapshots, `ar_snapshots`, `pay_apps`, `sov_lines`, `change_orders`, `budget_lines`, `wage_orders`.
+
+Empty tables are **backend-ready** (RFIs, subs, POs, CPR weeks, etc.) — not broken.
+
+---
+
+## Next steps (one screen at a time)
+
+1. Stabilize `/projects` against live API (this gate).
+2. Project detail reads (tasks, documents, financials).
+3. Home / Active 2026 (`/api/action-center`, `/api/backend-readiness`).
+4. Write endpoints only after reads are verified in production.
