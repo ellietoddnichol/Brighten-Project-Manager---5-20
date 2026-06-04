@@ -32,6 +32,18 @@ function dateOrNull(value: unknown): string | null {
   return String(value).slice(0, 10);
 }
 
+function timestampOrNull(value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value.toISOString();
+  return String(value);
+}
+
+function textOrNull(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value);
+  return text === '' ? null : text;
+}
+
 function buildFinancialWarnings(row: GenericViewRow): string[] {
   const warnings: string[] = [];
   const confidence = typeof row.confidence === 'string' ? row.confidence.trim() : '';
@@ -63,6 +75,73 @@ function costCategory(
     budget: null,
     actual: numericOrNull(actual),
     remaining: null,
+  };
+}
+
+function projectLookupParams(key: string): [string, string, string] {
+  const job = normalizeJobNumber(key);
+  return [key, job, `J${job}`];
+}
+
+async function findProjectIdentity(key: string): Promise<{ projectId: string; jobNumber: string } | null> {
+  const project = await queryOne<GenericViewRow>(
+    `SELECT id, job_number
+     FROM brighten_pm.projects
+     WHERE id = ? OR job_number = ? OR job_number = ?
+     LIMIT 1`,
+    projectLookupParams(key),
+  );
+
+  if (!project?.id || !project?.job_number) return null;
+  return {
+    projectId: String(project.id),
+    jobNumber: String(project.job_number),
+  };
+}
+
+function mapPayAppHeader(row: GenericViewRow): Record<string, unknown> {
+  return {
+    id: textOrNull(row.id),
+    projectId: textOrNull(row.project_id),
+    jobNumber: textOrNull(row.job_number),
+    payAppNumber: textOrNull(row.pay_app_number),
+    billingPeriodStart: dateOrNull(row.billing_period_start),
+    billingPeriodEnd: dateOrNull(row.billing_period_end),
+    applicationDate: dateOrNull(row.application_date),
+    contractSum: numericOrNull(row.contract_sum),
+    netChangeByChangeOrders: numericOrNull(row.net_change_by_change_orders),
+    contractSumToDate: numericOrNull(row.contract_sum_to_date),
+    totalCompletedStoredToDate: numericOrNull(row.total_completed_stored_to_date),
+    retainageAmount: numericOrNull(row.retainage_amount),
+    totalEarnedLessRetainage: numericOrNull(row.total_earned_less_retainage),
+    previousCertificates: numericOrNull(row.previous_certificates),
+    currentPaymentDue: numericOrNull(row.current_payment_due),
+    balanceToFinish: numericOrNull(row.balance_to_finish),
+    status: textOrNull(row.status),
+    notes: textOrNull(row.notes),
+    sovLineCount: numericOrNull(row.sov_line_count) ?? 0,
+    sourceDocumentId: textOrNull(row.source_document_id),
+    createdAt: timestampOrNull(row.created_at),
+  };
+}
+
+function mapSovLine(row: GenericViewRow): Record<string, unknown> {
+  return {
+    id: textOrNull(row.id),
+    payAppId: textOrNull(row.pay_app_id),
+    projectId: textOrNull(row.project_id),
+    lineNumber: textOrNull(row.line_number),
+    description: textOrNull(row.description),
+    scheduledValue: numericOrNull(row.scheduled_value),
+    workCompletedPrevious: numericOrNull(row.work_completed_previous),
+    workCompletedThisPeriod: numericOrNull(row.work_completed_this_period),
+    materialsPresentlyStored: numericOrNull(row.materials_presently_stored),
+    totalCompletedAndStored: numericOrNull(row.total_completed_and_stored),
+    percentComplete: numericOrNull(row.percent_complete),
+    balanceToFinish: numericOrNull(row.balance_to_finish),
+    retainage: numericOrNull(row.retainage),
+    costCode: textOrNull(row.cost_code),
+    createdAt: timestampOrNull(row.created_at),
   };
 }
 
@@ -248,6 +327,115 @@ projectsRouter.get('/projects/:id/financials', async (req, res, next) => {
         },
         dataWarnings: buildFinancialWarnings(row),
         costBreakdown: buildCostBreakdown(row),
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+projectsRouter.get('/projects/:id/pay-apps', async (req, res, next) => {
+  try {
+    const project = await findProjectIdentity(req.params.id);
+    if (!project) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+
+    const rows = await queryRows<GenericViewRow>(
+      `SELECT
+         pa.*,
+         p.job_number,
+         COUNT(sl.id) AS sov_line_count
+       FROM brighten_pm.pay_apps pa
+       JOIN brighten_pm.projects p
+         ON p.id = pa.project_id
+       LEFT JOIN brighten_pm.sov_lines sl
+         ON sl.pay_app_id = pa.id
+       WHERE pa.project_id = ?
+       GROUP BY
+         pa.id, pa.project_id, pa.pay_app_number, pa.billing_period_start,
+         pa.billing_period_end, pa.application_date, pa.contract_sum,
+         pa.net_change_by_change_orders, pa.contract_sum_to_date,
+         pa.total_completed_stored_to_date, pa.retainage_amount,
+         pa.total_earned_less_retainage, pa.previous_certificates,
+         pa.current_payment_due, pa.balance_to_finish, pa.status,
+         pa.source_document_id, pa.notes, pa.created_at, p.job_number
+       ORDER BY
+         pa.billing_period_end DESC,
+         pa.application_date DESC,
+         pa.created_at DESC`,
+      [project.projectId],
+    );
+
+    res.json({
+      ok: true,
+      source: 'sql',
+      projectId: project.projectId,
+      jobNumber: project.jobNumber,
+      items: rows.map(mapPayAppHeader),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+projectsRouter.get('/projects/:id/pay-apps/:payAppId', async (req, res, next) => {
+  try {
+    const project = await findProjectIdentity(req.params.id);
+    if (!project) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+
+    const row = await queryOne<GenericViewRow>(
+      `SELECT
+         pa.*,
+         p.job_number,
+         COUNT(sl.id) AS sov_line_count
+       FROM brighten_pm.pay_apps pa
+       JOIN brighten_pm.projects p
+         ON p.id = pa.project_id
+       LEFT JOIN brighten_pm.sov_lines sl
+         ON sl.pay_app_id = pa.id
+       WHERE pa.project_id = ?
+         AND pa.id = ?
+       GROUP BY
+         pa.id, pa.project_id, pa.pay_app_number, pa.billing_period_start,
+         pa.billing_period_end, pa.application_date, pa.contract_sum,
+         pa.net_change_by_change_orders, pa.contract_sum_to_date,
+         pa.total_completed_stored_to_date, pa.retainage_amount,
+         pa.total_earned_less_retainage, pa.previous_certificates,
+         pa.current_payment_due, pa.balance_to_finish, pa.status,
+         pa.source_document_id, pa.notes, pa.created_at, p.job_number
+       LIMIT 1`,
+      [project.projectId, req.params.payAppId],
+    );
+
+    if (!row) {
+      res.status(404).json({ ok: false, error: 'Pay app not found for project' });
+      return;
+    }
+
+    const lines = await queryRows<GenericViewRow>(
+      `SELECT *
+       FROM brighten_pm.sov_lines
+       WHERE pay_app_id = ?
+         AND project_id = ?
+       ORDER BY
+         CAST(line_number AS UNSIGNED),
+         line_number`,
+      [req.params.payAppId, project.projectId],
+    );
+
+    res.json({
+      ok: true,
+      source: 'sql',
+      projectId: project.projectId,
+      jobNumber: project.jobNumber,
+      item: {
+        ...mapPayAppHeader(row),
+        lines: lines.map(mapSovLine),
       },
     });
   } catch (err) {
