@@ -317,12 +317,22 @@ export class ProjectDetails implements OnInit {
     const routeId = this.projectId;
     if (!routeId) return undefined;
 
+    const fallbackProject = this.fallbackProjectForRoute(routeId);
+
     const apiDetail = this.projectApi.detailProject();
     if (
       apiDetail
       && this.projectApi.detailActiveSource() === 'api'
-      && this.projectApi.detailProjectId() === routeId
-      && this.matchesRouteProject(apiDetail, routeId)
+      && (
+        (
+          this.projectApi.detailProjectId() === routeId
+          && this.matchesRouteProject(apiDetail, routeId)
+        )
+        || (
+          fallbackProject?.projectNumber
+          && apiDetail.projectNumber === fallbackProject.projectNumber
+        )
+      )
     ) {
       return apiDetail;
     }
@@ -332,13 +342,7 @@ export class ProjectDetails implements OnInit {
       if (cached) return cached;
     }
 
-    const firestoreProject = (this.firestoreProjects() || []).find(
-      p => this.matchesRouteProject(p, routeId),
-    );
-    if (firestoreProject) return firestoreProject;
-
-    const sheetProject = this.projectData.getProjectDetail(routeId)?.project ?? null;
-    return sheetProject ? normalizedProjectToProject(sheetProject) : undefined;
+    return fallbackProject;
   });
 
   changeOrders = toSignal(this.dataService.getChangeOrders(), { initialValue: [] });
@@ -568,6 +572,21 @@ export class ProjectDetails implements OnInit {
         void this.loadDriveFiles();
       }
     });
+
+    effect(() => {
+      const routeId = this.projectId;
+      const fallbackProject = routeId ? this.fallbackProjectForRoute(routeId) : undefined;
+      if (
+        routeId
+        && fallbackProject?.projectNumber
+        && fallbackProject.projectNumber !== routeId
+        && this.projectApi.detailProjectId() === routeId
+        && this.projectApi.detailActiveSource() === 'firestore'
+        && this.projectApi.detailError()
+      ) {
+        void this.projectApi.loadProjectDetail(fallbackProject.projectNumber);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -587,6 +606,16 @@ export class ProjectDetails implements OnInit {
       || project.projectNumber === routeId
       || project.projectNumber === job
     );
+  }
+
+  private fallbackProjectForRoute(routeId: string): Project | undefined {
+    const firestoreProject = (this.firestoreProjects() || []).find(
+      p => this.matchesRouteProject(p, routeId),
+    );
+    if (firestoreProject) return firestoreProject;
+
+    const sheetProject = this.projectData.getProjectDetail(routeId)?.project ?? null;
+    return sheetProject ? normalizedProjectToProject(sheetProject) : undefined;
   }
 
   setSection(section: ProjectPrimarySection): void {
@@ -683,7 +712,8 @@ export class ProjectDetails implements OnInit {
       }
       this.savingEdit.set(true);
       this.saveEditError.set(null);
-      void this.projectApi.updateProject(this.projectId, apiPatch).then((updated) => {
+      const apiProjectKey = current.projectNumber || this.projectId;
+      void this.projectApi.updateProject(apiProjectKey, apiPatch).then((updated) => {
         this.savingEdit.set(false);
         this.showEditModal.set(false);
         if (isCertifiedPayrollProject(updated)) {
