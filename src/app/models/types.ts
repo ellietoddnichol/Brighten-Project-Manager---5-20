@@ -48,6 +48,7 @@ export interface Project {
   retainagePercent?: number;
   taxable?: boolean;
   taxExempt?: boolean;
+  bondRequired?: boolean;
   prevailingWage?: boolean;
   certifiedPayrollRequired?: boolean;
   payrollComplianceType?: PayrollComplianceType;

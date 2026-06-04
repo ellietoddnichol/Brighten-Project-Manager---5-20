@@ -88,6 +88,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
           (sectionChange)="setSection($event)" />
 
         @if (project(); as p) {
+          @if (nav().section !== 'overview') {
           <div class="px-6 py-2 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
             <p class="text-xs text-slate-500">
               @if (enabledModules().profile) {
@@ -99,6 +100,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
               Show all tools
             </label>
           </div>
+          }
         }
 
         <div class="flex-1 overflow-y-auto p-6 lg:p-8">
@@ -129,7 +131,8 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
                   [nextAction]="nextAction()"
                   (navigateWorkflow)="goWorkflow($event)"
                   (navigateFinancial)="goFinancial($event)"
-                  (navigateAction)="goActionItem($event)" />
+                  (navigateAction)="goActionItem($event)"
+                  (editProject)="openEdit()" />
               }
               @case ('workflows') {
                 <app-project-workflows-panel

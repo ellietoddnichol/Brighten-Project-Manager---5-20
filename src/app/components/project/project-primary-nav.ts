@@ -15,22 +15,20 @@ interface PrimaryNavItem {
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <nav class="px-6 py-4 bg-slate-50/80 border-b border-slate-200">
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl">
+    <nav class="px-6 bg-white border-b border-slate-200 shadow-sm">
+      <div class="flex flex-wrap gap-1">
         @for (item of items; track item.id) {
           <button type="button"
                   (click)="sectionChange.emit(item.id)"
-                  [class.ring-2]="active === item.id"
-                  [class.ring-slate-900]="active === item.id"
-                  [class.bg-white]="active === item.id"
-                  [class.shadow-sm]="active === item.id"
-                  [class.bg-white/60]="active !== item.id"
-                  class="text-left rounded-xl border border-slate-200 p-4 transition-all hover:bg-white hover:shadow-sm">
-            <div class="flex items-center gap-2 mb-1">
-              <mat-icon class="!text-[20px] text-slate-500">{{ item.icon }}</mat-icon>
-              <span class="font-bold text-slate-900 text-sm">{{ item.label }}</span>
+                  [class.text-slate-950]="active === item.id"
+                  [class.border-slate-950]="active === item.id"
+                  [class.text-slate-500]="active !== item.id"
+                  [class.border-transparent]="active !== item.id"
+                  class="text-left border-b-2 px-4 py-3 transition-colors hover:text-slate-950">
+            <div class="flex items-center gap-2">
+              <mat-icon class="!text-[18px]">{{ item.icon }}</mat-icon>
+              <span class="font-bold text-sm">{{ item.label }}</span>
             </div>
-            <p class="text-xs text-slate-500 leading-snug">{{ item.description }}</p>
           </button>
         }
       </div>
@@ -43,7 +41,7 @@ export class ProjectPrimaryNavComponent {
   @Output() sectionChange = new EventEmitter<ProjectPrimarySection>();
 
   readonly items: PrimaryNavItem[] = [
-    { id: 'overview', label: 'Overview', icon: 'dashboard', description: 'Status, margin, next action' },
+    { id: 'overview', label: 'Overview', icon: 'dashboard', description: 'Project profile and scope' },
     { id: 'workflows', label: 'Work', icon: 'construction', description: 'Tasks, changes, field work' },
     { id: 'financials', label: 'Money', icon: 'account_balance', description: 'Budget, billing, purchase orders' },
     { id: 'documents', label: 'Files', icon: 'folder_open', description: 'Documents and Drive' },

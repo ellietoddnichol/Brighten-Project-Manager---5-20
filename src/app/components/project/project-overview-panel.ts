@@ -1,8 +1,6 @@
-import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-
-import { RouterLink } from '@angular/router';
 
 import { MatIconModule } from '@angular/material/icon';
 
@@ -12,19 +10,13 @@ import { ProjectFinancialSummary } from '@shared/utils/financial';
 
 import { isOverheadJob } from '@shared/utils/project';
 
-import { WorkflowSummaryStripComponent } from './workflow-summary-strip';
+import { PROJECT_PROFILE_LABELS } from '@app/models/project-requirements.types';
 
-import { HealthStatus, WorkflowChip, WorkflowView, FinancialView, ProjectNavState } from './project-detail.types';
-
-import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
-
-import { BRIGHTEN_PROFIT_TARGET } from '@app/config/active-2026-jobs.config';
+import { WorkflowChip, WorkflowView, FinancialView, ProjectNavState } from './project-detail.types';
 
 import { ControlNextAction } from '@app/models/active-2026-control.types';
 
 import { ActionItem } from '@shared/utils/action-items';
-
-import { resolveActionItemNav } from '@shared/utils/action-item-navigation';
 
 
 
@@ -50,249 +42,327 @@ export interface ActivityRow {
 
   standalone: true,
 
-  imports: [CommonModule, MatIconModule, RouterLink, WorkflowSummaryStripComponent],
+  imports: [CommonModule, MatIconModule],
 
   template: `
-
     @if (project && !isOverheadJob(project)) {
-
       <div class="space-y-6">
-
-        <div class="flex flex-wrap items-center gap-3">
-
-          <span class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-800">{{ project.status }}</span>
-
-          @if (lifecycleGroup) {
-
-            <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800">{{ lifecycleGroup }}</span>
-
-          }
-
-          <span class="px-3 py-1 rounded-full text-sm font-bold"
-
-                [class.bg-emerald-100]="healthStatus() === 'On Track'"
-
-                [class.text-emerald-800]="healthStatus() === 'On Track'"
-
-                [class.bg-amber-100]="healthStatus() === 'Needs Attention'"
-
-                [class.text-amber-800]="healthStatus() === 'Needs Attention'"
-
-                [class.bg-red-100]="healthStatus() === 'At Risk'"
-
-                [class.text-red-800]="healthStatus() === 'At Risk'">
-
-            {{ healthStatus() }}
-
-          </span>
-
-        </div>
-
-
-
-        <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
-
-          @for (kpi of kpis(); track kpi.label) {
-
-            <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{{ kpi.label }}</p>
-
-              <p class="text-xl font-bold" [class.text-slate-900]="!kpi.alert" [class.text-rose-700]="kpi.alert">{{ kpi.value }}</p>
-
-              @if (kpi.hint) {
-
-                <p class="text-[10px] text-amber-600 mt-1">{{ kpi.hint }}</p>
-
+        <section class="rounded-2xl bg-slate-900 text-white shadow-sm overflow-hidden">
+          <div class="p-6 lg:p-7 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
+            <div class="min-w-0">
+              <p class="text-xs uppercase tracking-[0.2em] text-slate-300 font-bold mb-2">Project Overview</p>
+              <h2 class="text-2xl lg:text-3xl font-bold tracking-tight truncate">{{ project.projectName }}</h2>
+              <p class="text-sm text-slate-300 mt-2">{{ project.customer || 'Client not available' }}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="rounded-full bg-white/10 border border-white/15 px-3 py-1 text-xs font-bold">{{ project.status }}</span>
+              @if (project.currentPhase) {
+                <span class="rounded-full bg-blue-400/15 border border-blue-300/20 px-3 py-1 text-xs font-bold text-blue-100">
+                  {{ project.currentPhase }}
+                </span>
               }
-
+              <button type="button" (click)="editProject.emit()"
+                      class="rounded-lg bg-white text-slate-900 px-4 py-2 text-sm font-bold shadow-sm hover:bg-slate-100 transition-colors flex items-center gap-2">
+                <mat-icon class="!text-[18px]">edit</mat-icon>
+                Edit Overview
+              </button>
             </div>
+          </div>
+        </section>
 
-          }
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section class="overview-card">
+            <div class="card-title">
+              <div>
+                <p class="eyebrow">Project Information</p>
+                <h3>Project profile</h3>
+              </div>
+              <mat-icon>assignment</mat-icon>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="info-box">
+                <span>Project Number</span>
+                <strong>#{{ project.projectNumber }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Project Status</span>
+                <strong>{{ project.status }}</strong>
+              </div>
+              <div class="info-box sm:col-span-2">
+                <span>Project Name</span>
+                <strong>{{ project.projectName }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Client / Customer</span>
+                <strong>{{ project.customer || 'Not available' }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Project Type / Profile</span>
+                <strong>{{ projectProfileLabel() }}</strong>
+              </div>
+              <div class="info-box sm:col-span-2">
+                <span>Project Location / Address</span>
+                <strong>{{ projectLocation() }}</strong>
+              </div>
+            </div>
+          </section>
 
+          <section class="overview-card">
+            <div class="card-title">
+              <div>
+                <p class="eyebrow">Project Team</p>
+                <h3>Assignments</h3>
+              </div>
+              <mat-icon>groups</mat-icon>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="info-box">
+                <span>Superintendent / Foreman</span>
+                <strong>{{ project.superintendent || 'Not assigned' }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Project Manager</span>
+                <strong>{{ project.projectManager || 'Not assigned' }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Client Contact</span>
+                <strong>Not available</strong>
+              </div>
+              <div class="info-box">
+                <span>Billing Contact</span>
+                <strong>Not available</strong>
+              </div>
+            </div>
+            <p class="mt-3 text-xs text-slate-500">Contacts and PM assignment are read-only placeholders until SQL support is added.</p>
+          </section>
         </div>
 
-
-
-        @if (nextAction) {
-
-          <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-
+        <section class="overview-card">
+          <div class="card-title">
             <div>
-
-              <p class="text-[10px] font-bold uppercase text-indigo-600">Next action</p>
-
-              <p class="text-sm font-semibold text-indigo-900">{{ nextAction.label }}</p>
-
+              <p class="eyebrow">Contract / Billing Snapshot</p>
+              <h3>Commercial summary</h3>
             </div>
-
-            <a [routerLink]="nextAction.route" [queryParams]="nextAction.queryParams" [fragment]="nextAction.fragment"
-
-               class="text-sm font-bold text-indigo-700 underline">Go</a>
-
+            <mat-icon>request_quote</mat-icon>
           </div>
-
-        }
-
-
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          <div class="space-y-6">
-
-            @if (criticalActionItems.length) {
-
-              <div class="bg-white rounded-xl border border-amber-200 overflow-hidden shadow-sm">
-
-                <div class="px-5 py-4 border-b bg-amber-50">
-
-                  <h3 class="text-sm font-bold text-amber-900">Missing critical info</h3>
-
-                </div>
-
-                <div class="divide-y divide-slate-100">
-
-                  @for (item of criticalActionItems.slice(0, 5); track item.id) {
-
-                    <button type="button" (click)="openActionItem(item)"
-
-                            class="w-full text-left px-5 py-3 hover:bg-slate-50/80 focus:outline-none focus:bg-slate-50 transition-colors group">
-
-                      <div class="flex flex-wrap items-start justify-between gap-2">
-
-                        <div class="min-w-0 flex-1">
-
-                          <p class="text-sm font-semibold text-slate-900 group-hover:text-indigo-900">{{ item.title }}</p>
-
-                          <p class="text-xs text-slate-500 mt-0.5">{{ item.description }}</p>
-
-                        </div>
-
-                        <span class="text-xs font-semibold text-indigo-700 shrink-0">
-
-                          {{ actionNavLabel(item) }} →
-
-                        </span>
-
-                      </div>
-
-                    </button>
-
-                  }
-
-                </div>
-
-              </div>
-
-            }
-
-          </div>
-
-
-
-          <div class="lg:col-span-2 space-y-6">
-
-            @if (visibleWorkflowChips.length) {
-
-              <app-workflow-summary-strip [chips]="visibleWorkflowChips" (chipClick)="onChip($event)" />
-
-            }
-
-
-
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-
-              <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex justify-between">
-
-                <h3 class="text-sm font-bold text-slate-900">Recent activity</h3>
-
-                <button type="button" (click)="navigateWorkflow.emit('changes')" class="text-xs font-bold text-blue-600 hover:underline">View changes</button>
-
-              </div>
-
-              <div class="divide-y divide-slate-100">
-
-                @for (item of activityFeed.slice(0, 8); track item.id) {
-
-                  <div class="px-5 py-3">
-
-                    <p class="text-xs text-slate-400">@if (item.createdAt) { {{ $any(item.createdAt) | date:'short' }} }</p>
-
-                    <p class="text-sm font-medium text-slate-900">{{ item.title }}</p>
-
-                    @if (item.description) {
-
-                      <p class="text-xs text-slate-500">{{ item.description }}</p>
-
-                    }
-
-                  </div>
-
-                } @empty {
-
-                  <p class="px-5 py-8 text-sm text-slate-400 italic text-center">No recent activity.</p>
-
-                }
-
-              </div>
-
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+            <div class="metric-box">
+              <span>Contract Amount</span>
+              <strong>{{ money(project.originalContractAmount) }}</strong>
             </div>
-
-
-
-            @if (latestChangeOrders.length) {
-
-              <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-
-                <div class="px-5 py-4 border-b border-slate-100 bg-slate-50">
-
-                  <h3 class="text-sm font-bold text-slate-900">Latest changes</h3>
-
-                </div>
-
-                <div class="divide-y divide-slate-100">
-
-                  @for (co of latestChangeOrders.slice(0, 4); track co.id) {
-
-                    <div class="px-5 py-3 flex justify-between gap-4">
-
-                      <div class="min-w-0">
-
-                        <p class="text-sm font-semibold text-slate-900">{{ co.coNumber || 'CO' }} — {{ co.title }}</p>
-
-                        <p class="text-xs text-slate-500">{{ co.status }}</p>
-
-                      </div>
-
-                      <p class="font-mono text-sm shrink-0">{{ (co.approvedAmount || co.sellPrice || 0) | currency }}</p>
-
-                    </div>
-
-                  }
-
-                </div>
-
-              </div>
-
-            }
-
+            <div class="metric-box">
+              <span>Billed to Date</span>
+              <strong>{{ money(project.billedToDate) }}</strong>
+            </div>
+            <div class="metric-box">
+              <span>Remaining to Bill</span>
+              <strong>{{ money(project.wipLeftToBill) }}</strong>
+            </div>
+            <div class="metric-box">
+              <span>Billing Status</span>
+              <strong>{{ project.billingStatus || 'Not available' }}</strong>
+            </div>
+            <div class="metric-box">
+              <span>Retainage %</span>
+              <strong>{{ percent(project.retainagePercent) }}</strong>
+            </div>
           </div>
+        </section>
 
+        <section class="overview-card">
+          <div class="card-title">
+            <div>
+              <p class="eyebrow">Scope of Work</p>
+              <h3>Project scope</h3>
+            </div>
+            <mat-icon>format_list_bulleted</mat-icon>
+          </div>
+          <div class="space-y-3">
+            <div class="scope-box">
+              <span>Scope Summary</span>
+              <p>{{ text(project.scopeSummary, 'No scope summary provided.') }}</p>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-3">
+              <div class="scope-box">
+                <span>Included Work</span>
+                <p>{{ text(project.includedWork, 'No included work listed.') }}</p>
+              </div>
+              <div class="scope-box">
+                <span>Exclusions / By Others</span>
+                <p>{{ text(project.exclusions, 'No exclusions listed.') }}</p>
+              </div>
+              <div class="scope-box">
+                <span>Schedule / Access Notes</span>
+                <p>{{ text(project.scheduleAccessNotes, 'No schedule or access notes listed.') }}</p>
+              </div>
+              <div class="scope-box">
+                <span>Closeout / Special Requirements</span>
+                <p>{{ text(project.closeoutRequirements, 'No closeout requirements listed.') }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <section class="overview-card">
+            <div class="card-title">
+              <div>
+                <p class="eyebrow">Schedule</p>
+                <h3>Key dates</h3>
+              </div>
+              <mat-icon>event</mat-icon>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="info-box">
+                <span>Award Date</span>
+                <strong>{{ date(project.awardDate) }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Planned Start</span>
+                <strong>{{ date(project.startDate) }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Target Completion</span>
+                <strong>{{ date(project.targetCompletionDate) }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Current Phase</span>
+                <strong>{{ project.currentPhase || 'Not set' }}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="overview-card">
+            <div class="card-title">
+              <div>
+                <p class="eyebrow">Project Requirements</p>
+                <h3>Compliance setup</h3>
+              </div>
+              <mat-icon>verified_user</mat-icon>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-3">
+              <div class="info-box">
+                <span>Prevailing Wage / Certified Payroll Required</span>
+                <strong>{{ yesNo(requiresCertifiedPayroll()) }}</strong>
+              </div>
+              <div class="info-box">
+                <span>County / Wage Area</span>
+                <strong>{{ project.county || 'Not available' }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Tax Exempt</span>
+                <strong>{{ yesNo(project.taxExempt) }}</strong>
+              </div>
+              <div class="info-box">
+                <span>Bond Required</span>
+                <strong>{{ yesNo(project.bondRequired) }}</strong>
+              </div>
+            </div>
+            @if (requiresCertifiedPayroll()) {
+              <p class="mt-3 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                Prevailing wage / certified payroll setup is required for this project.
+              </p>
+            }
+          </section>
         </div>
-
       </div>
-
     } @else if (project) {
-
       <div class="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-600">
-
         Overhead project — use Work and Money for POs and time tracking.
-
       </div>
+    }
+  `,
 
+  styles: [`
+    .overview-card {
+      border: 1px solid rgb(226 232 240);
+      border-radius: 1rem;
+      background: white;
+      padding: 1.25rem;
+      box-shadow: 0 1px 2px rgb(15 23 42 / 0.05);
     }
 
-  `,
+    .card-title {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title h3 {
+      margin: 0;
+      color: rgb(15 23 42);
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+    }
+
+    .card-title mat-icon {
+      color: rgb(100 116 139);
+      background: rgb(248 250 252);
+      border: 1px solid rgb(226 232 240);
+      border-radius: 0.75rem;
+      padding: 0.5rem;
+      height: 2.25rem;
+      width: 2.25rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.25rem;
+      color: rgb(100 116 139);
+      font-size: 0.65rem;
+      line-height: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .info-box,
+    .metric-box,
+    .scope-box {
+      background: rgb(248 250 252);
+      border: 1px solid rgb(226 232 240);
+      border-radius: 0.875rem;
+      padding: 0.875rem;
+    }
+
+    .info-box span,
+    .metric-box span,
+    .scope-box span {
+      display: block;
+      color: rgb(100 116 139);
+      font-size: 0.65rem;
+      line-height: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .info-box strong,
+    .metric-box strong {
+      color: rgb(15 23 42);
+      font-size: 0.95rem;
+      line-height: 1.35rem;
+      font-weight: 800;
+    }
+
+    .metric-box strong {
+      font-size: 1.15rem;
+    }
+
+    .scope-box p {
+      color: rgb(30 41 59);
+      font-size: 0.875rem;
+      line-height: 1.5rem;
+      margin: 0;
+      white-space: pre-line;
+    }
+  `],
 
   changeDetection: ChangeDetectionStrategy.OnPush,
 
@@ -324,110 +394,62 @@ export class ProjectOverviewPanelComponent {
 
   @Output() navigateAction = new EventEmitter<ProjectNavState>();
 
-
+  @Output() editProject = new EventEmitter<void>();
 
   isOverheadJob = isOverheadJob;
 
-
-
-  private financialSvc = inject(ProjectFinancialService);
-
-
-
-  get criticalActionItems(): ActionItem[] {
-    return this.actionItems.filter(a => a.severity === 'error' || a.severity === 'warning');
-  }
-
-  actionNavLabel(item: ActionItem): string {
-    return resolveActionItemNav(item).label;
-  }
-
-  openActionItem(item: ActionItem): void {
-    this.navigateAction.emit(resolveActionItemNav(item).nav);
-  }
-
-  healthScore = computed(() => {
-
-    const errors = this.actionItems.filter(a => a.severity === 'error').length;
-
-    const warnings = this.actionItems.filter(a => a.severity === 'warning').length;
-
-    return Math.max(0, 100 - errors * 20 - warnings * 8);
-
-  });
-
-
-
-  healthStatus = computed((): HealthStatus => {
-
-    const score = this.healthScore();
-
-    if (score >= 80) return 'On Track';
-
-    if (score >= 55) return 'Needs Attention';
-
-    return 'At Risk';
-
-  });
-
-
-
-  kpis = computed(() => {
-
-    const fin = this.financialSvc.computeForProject(this.project);
-
-    const marginAlert = fin.forecastMargin < BRIGHTEN_PROFIT_TARGET * 100 && fin.currentContractAmount > 0;
-
-    return [
-
-      { label: 'Contract', value: this.formatCurrency(fin.currentContractAmount) },
-
-      {
-
-        label: 'Budget',
-
-        value: this.formatCurrency(fin.budgetAmount),
-
-        hint: fin.budgetIsEstimated ? '80% estimate' : fin.budgetBasis === 'Imported' ? 'Imported' : undefined,
-
-      },
-
-      { label: 'Actual Cost', value: this.formatCurrency(fin.costToDate) },
-
-      { label: 'Projected Margin', value: `${fin.forecastMargin.toFixed(1)}%`, alert: marginAlert },
-
-      { label: 'Billed to Date', value: this.formatCurrency(fin.billedToDate) },
-
-      { label: 'Open AR', value: this.formatCurrency(fin.arBalance || this.project.currentAR || 0) },
-
-    ];
-
-  });
-
-
-
   onChip(id: string): void {
-
     if (id === 'billing') {
-
       this.navigateFinancial.emit('billing');
-
     } else {
-
       this.navigateWorkflow.emit(id as WorkflowView);
-
     }
-
   }
 
-
-
-  private formatCurrency(n: number): string {
-
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
-
+  projectProfileLabel(): string {
+    const profile = this.project.projectProfile;
+    return profile ? (PROJECT_PROFILE_LABELS[profile] ?? profile) : 'Not set';
   }
 
+  projectLocation(): string {
+    const cityState = [this.project.city, this.project.state].filter(Boolean).join(', ');
+    const parts = [
+      this.project.address,
+      cityState,
+      this.project.county ? `${this.project.county} County` : undefined,
+    ].filter(Boolean);
+    return parts.length ? parts.join(' · ') : 'Not available';
+  }
+
+  requiresCertifiedPayroll(): boolean {
+    return Boolean(this.project.prevailingWage || this.project.certifiedPayrollRequired);
+  }
+
+  yesNo(value: unknown): string {
+    return value ? 'Yes' : 'No';
+  }
+
+  text(value: string | null | undefined, fallback: string): string {
+    return value?.trim() || fallback;
+  }
+
+  money(value: number | string | null | undefined): string {
+    const n = Number(value ?? 0);
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0);
+  }
+
+  percent(value: number | string | null | undefined): string {
+    if (value === null || value === undefined || value === '') return 'Not set';
+    const n = Number(value);
+    return Number.isFinite(n) ? `${n.toFixed(2).replace(/\.00$/, '')}%` : 'Not set';
+  }
+
+  date(value: string | null | undefined): string {
+    if (!value) return 'Not set';
+    const d = new Date(`${value}`.slice(0, 10) + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return 'Not set';
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  }
 }
 
 
