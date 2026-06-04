@@ -64,6 +64,40 @@ export interface ApiItemResponse<T> {
   item: T;
 }
 
+export interface ProjectFinancialSummaryApiResponse {
+  ok: boolean;
+  source: 'sql';
+  asOfDate: string | null;
+  item: ProjectFinancialSummaryApiItem;
+}
+
+export interface ProjectFinancialSummaryApiItem {
+  projectId: string;
+  jobNumber: string;
+  contract: {
+    originalContractAmount: number | string | null;
+    revisedContractAmount: number | string | null;
+  };
+  billing: {
+    billedToDate: number | string | null;
+    remainingToBill: number | string | null;
+    arBalance: number | string | null;
+  };
+  cost: {
+    estimatedCost: number | string | null;
+    actualCost: number | string | null;
+    laborActual: number | string | null;
+    materialsActual: number | string | null;
+    subcontractorsActual: number | string | null;
+    otherPreconActual: number | string | null;
+  };
+  profit: {
+    profit: number | string | null;
+    marginPercent: number | string | null;
+  };
+  dataWarnings: string[];
+}
+
 export interface ApiHealthResponse {
   ok: boolean;
   database: string;

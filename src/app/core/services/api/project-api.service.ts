@@ -1,12 +1,14 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { ApiClientService } from './api-client.service';
 import { mapDashboardRowsToProjects, mapDashboardRowToProject } from './project-api.mapper';
+import { mapFinancialSummaryResponse, ProjectSqlFinancialSummary } from './project-financial-api.mapper';
 import {
   ApiHealthResponse,
   ApiItemResponse,
   ApiListResponse,
   ProjectApiUpdateBody,
   ProjectDashboardApiRow,
+  ProjectFinancialSummaryApiResponse,
 } from './project-api.types';
 import type { ProjectApiUpdatePayload } from './project-api-update';
 import { Project } from '@app/models/types';
@@ -27,6 +29,12 @@ export class ProjectApiService {
   detailActiveSource = signal<ApiDataSource>('firestore');
   detailProject = signal<Project | null>(null);
   detailProjectId = signal<string | null>(null);
+
+  financialLoading = signal(false);
+  financialError = signal<string | null>(null);
+  financialActiveSource = signal<ApiDataSource>('firestore');
+  financialSummary = signal<ProjectSqlFinancialSummary | null>(null);
+  financialProjectId = signal<string | null>(null);
 
   isEnabled(): boolean {
     return apiConfig.useApiBackend;
@@ -136,5 +144,40 @@ export class ProjectApiService {
     }
 
     return project;
+  }
+
+  /** Load SQL-backed financial summary. Falls back to existing computed/Firestore path on failure. */
+  async loadProjectFinancials(idOrJob: string): Promise<ProjectSqlFinancialSummary | null> {
+    this.financialProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.financialActiveSource.set('firestore');
+      this.financialError.set(null);
+      this.financialSummary.set(null);
+      return null;
+    }
+
+    this.financialLoading.set(true);
+    this.financialError.set(null);
+    this.financialActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ProjectFinancialSummaryApiResponse>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/financials`,
+      );
+      const mapped = mapFinancialSummaryResponse(resp);
+      this.financialSummary.set(mapped);
+      this.financialActiveSource.set('api');
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project financials from API';
+      this.financialError.set(message);
+      this.financialSummary.set(null);
+      this.financialActiveSource.set('firestore');
+      console.warn('[ProjectApiService] financials', message);
+      return null;
+    } finally {
+      this.financialLoading.set(false);
+    }
   }
 }

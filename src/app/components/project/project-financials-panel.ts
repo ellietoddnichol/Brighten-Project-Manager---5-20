@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, OnChanges, SimpleChanges, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { Project } from '@app/models/types';
@@ -15,6 +15,8 @@ import { ProjectFinancialService } from '@features/projects/services/project-fin
 import { DataService } from '@core/services/data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
+import { ProjectSqlFinancialSummary } from '@core/services/api/project-financial-api.mapper';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { isApprovedUnbilledCo } from '@features/projects/utils/change-management';
 import { arPastDueForProject } from '@features/financials/utils/ar.compute';
@@ -79,38 +81,88 @@ import {
       </div>
 
       @if (activeView === 'summary') {
-        @for (prompt of moneyPrompts(); track prompt.id) {
-          <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
-            <p class="text-sm font-semibold text-amber-900">{{ prompt.label }}</p>
-            <button type="button" (click)="viewChange.emit(prompt.view)"
-                    class="text-xs font-bold text-indigo-700 underline">{{ prompt.actionLabel }}</button>
+        @if (projectApi.financialError()) {
+          <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Financial summary is using the existing computed view because the SQL summary could not load.
           </div>
         }
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          @for (card of overviewCards(); track card.id) {
-            <button type="button" (click)="openDrawer(cardDrawerType(card.id))"
-                    class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-              <app-stat-card
-                [label]="card.label"
-                [value]="card.value"
-                [subtext]="card.subtext"
-                [trend]="card.alert ? 'Needs attention' : undefined"
-                [trendPositive]="false" />
-            </button>
-          }
-        </div>
-
-        <app-compact-stat-strip [stats]="compactStrip()" />
-
-        @if (nextAction(); as action) {
-          <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p class="text-[10px] font-bold uppercase text-indigo-600">Next money action</p>
-              <p class="text-sm font-semibold text-indigo-900">{{ action.label }}</p>
+        @if (sqlFinancial(); as sql) {
+          <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">SQL Financial Summary</p>
+                <p class="text-sm text-slate-600">Read-only snapshot from Cloud SQL</p>
+              </div>
+              <span class="text-xs font-semibold text-slate-600">As of {{ dateLabel(sql.asOfDate) }}</span>
             </div>
-            <button type="button" (click)="goAction(action)" class="text-sm font-bold text-indigo-700 underline">Open</button>
+            <div class="p-5 space-y-4">
+              <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                @for (card of sqlSummaryCards(sql); track card.label) {
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">{{ card.label }}</p>
+                    <p class="text-xl font-bold text-slate-900">{{ card.value }}</p>
+                  </div>
+                }
+              </div>
+
+              @if (sqlCostBreakdown(sql).length) {
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  @for (row of sqlCostBreakdown(sql); track row.label) {
+                    <div class="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">{{ row.label }}</p>
+                      <p class="text-sm font-bold text-slate-900">{{ row.value }}</p>
+                    </div>
+                  }
+                </div>
+              }
+
+              @if (sql.dataWarnings.length) {
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p class="text-xs font-bold uppercase tracking-widest text-amber-700 mb-1">Data warnings</p>
+                  <ul class="list-disc pl-5 text-sm text-amber-900 space-y-1">
+                    @for (warning of sql.dataWarnings; track warning) {
+                      <li>{{ warning }}</li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
           </div>
+        } @else {
+          @for (prompt of moneyPrompts(); track prompt.id) {
+            <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <p class="text-sm font-semibold text-amber-900">{{ prompt.label }}</p>
+              <button type="button" (click)="viewChange.emit(prompt.view)"
+                      class="text-xs font-bold text-indigo-700 underline">{{ prompt.actionLabel }}</button>
+            </div>
+          }
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (card of overviewCards(); track card.id) {
+              <button type="button" (click)="openDrawer(cardDrawerType(card.id))"
+                      class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
+                <app-stat-card
+                  [label]="card.label"
+                  [value]="card.value"
+                  [subtext]="card.subtext"
+                  [trend]="card.alert ? 'Needs attention' : undefined"
+                  [trendPositive]="false" />
+              </button>
+            }
+          </div>
+
+          <app-compact-stat-strip [stats]="compactStrip()" />
+
+          @if (nextAction(); as action) {
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p class="text-[10px] font-bold uppercase text-indigo-600">Next money action</p>
+                <p class="text-sm font-semibold text-indigo-900">{{ action.label }}</p>
+              </div>
+              <button type="button" (click)="goAction(action)" class="text-sm font-bold text-indigo-700 underline">Open</button>
+            </div>
+          }
         }
       }
 
@@ -236,7 +288,7 @@ import {
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProjectFinancialsPanelComponent {
+export class ProjectFinancialsPanelComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
   @Input({ required: true }) summary!: ProjectFinancialSummary;
   @Input({ required: true }) activeView!: FinancialView;
@@ -248,6 +300,7 @@ export class ProjectFinancialsPanelComponent {
   private qbSync = inject(QuickBooksSyncDataService);
   private lifecycle = inject(ProjectLifecycleService);
   private router = inject(Router);
+  readonly projectApi = inject(ProjectApiService);
 
   moreOpen = signal(false);
   drawerType = signal<MoneyDrawerType | null>(null);
@@ -257,6 +310,13 @@ export class ProjectFinancialsPanelComponent {
   changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] });
   projectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] });
   arRecords = toSignal(this.data.getArRecords(), { initialValue: [] });
+
+  sqlFinancial = computed(() => {
+    const summary = this.projectApi.financialSummary();
+    if (!summary || this.projectApi.financialActiveSource() !== 'api') return null;
+    if (summary.projectId === this.project.id || summary.jobNumber === this.project.projectNumber) return summary;
+    return null;
+  });
 
   readonly budgetSegmentOptions: SegmentOption<BudgetSegment>[] = [
     { id: 'budget', label: 'Budget' },
@@ -336,8 +396,57 @@ export class ProjectFinancialsPanelComponent {
       })),
   );
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'summary') {
+      void this.projectApi.loadProjectFinancials(this.project.id);
+    }
+  }
+
   fmt(n: number): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+  }
+
+  sqlSummaryCards(summary: ProjectSqlFinancialSummary): Array<{ label: string; value: string }> {
+    return [
+      { label: 'Contract Amount', value: this.fmtNullable(summary.contract.originalContractAmount) },
+      { label: 'Revised Contract', value: this.fmtNullable(summary.contract.revisedContractAmount) },
+      { label: 'Billed to Date', value: this.fmtNullable(summary.billing.billedToDate) },
+      { label: 'Remaining to Bill', value: this.fmtNullable(summary.billing.remainingToBill) },
+      { label: 'Actual Cost', value: this.fmtNullable(summary.cost.actualCost) },
+      { label: 'Estimated Cost', value: this.fmtNullable(summary.cost.estimatedCost) },
+      { label: 'Profit', value: this.fmtNullable(summary.profit.profit) },
+      { label: 'Margin', value: this.percentNullable(summary.profit.marginPercent) },
+    ];
+  }
+
+  sqlCostBreakdown(summary: ProjectSqlFinancialSummary): Array<{ label: string; value: string }> {
+    const rows = [
+      { label: 'Labor Actual', value: summary.cost.laborActual },
+      { label: 'Materials Actual', value: summary.cost.materialsActual },
+      { label: 'Subcontractors Actual', value: summary.cost.subcontractorsActual },
+      { label: 'Other / Precon Actual', value: summary.cost.otherPreconActual },
+      { label: 'AR Balance', value: summary.billing.arBalance },
+    ];
+    return rows
+      .filter(row => row.value !== null && row.value !== undefined)
+      .map(row => ({ label: row.label, value: this.fmtNullable(row.value) }));
+  }
+
+  dateLabel(value: string | null): string {
+    if (!value) return 'Not available';
+    const d = new Date(`${value.slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return 'Not available';
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d);
+  }
+
+  private fmtNullable(n: number | null): string {
+    if (n === null || n === undefined) return 'Pending';
+    return this.fmt(n);
+  }
+
+  private percentNullable(n: number | null): string {
+    if (n === null || n === undefined) return 'Pending';
+    return `${n.toFixed(1)}%`;
   }
 
   budgetBasisLabel(): string {

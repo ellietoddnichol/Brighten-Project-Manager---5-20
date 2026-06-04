@@ -20,6 +20,40 @@ const ONE_SQL = `
   LIMIT 1
 `;
 
+function numericOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function dateOrNull(value: unknown): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function buildFinancialWarnings(row: GenericViewRow): string[] {
+  const warnings: string[] = [];
+  const confidence = typeof row.confidence === 'string' ? row.confidence.trim() : '';
+  const missingNextStep = typeof row.missing_next_step === 'string' ? row.missing_next_step.trim() : '';
+  const estimatedCost = numericOrNull(row.total_estimated_cost);
+  const hasProfit = numericOrNull(row.profit) !== null || numericOrNull(row.profit_margin_percent) !== null;
+
+  if (confidence && confidence.toLowerCase() !== 'high') {
+    warnings.push(`Financial confidence is ${confidence}.`);
+  }
+  if (missingNextStep) {
+    warnings.push(missingNextStep);
+  }
+  if (estimatedCost === null) {
+    warnings.push('Estimated cost is not available from SQL.');
+  }
+  if (estimatedCost === null && hasProfit) {
+    warnings.push('Profit/margin may be incomplete because estimated cost is missing.');
+  }
+  return warnings;
+}
+
 projectsRouter.get('/projects', async (_req, res, next) => {
   try {
     const items = await queryRows<ProjectDashboardRow>(LIST_SQL);
@@ -115,19 +149,60 @@ projectsRouter.get('/projects/:id/documents', async (req, res, next) => {
 
 projectsRouter.get('/projects/:id/financials', async (req, res, next) => {
   try {
-    const params = projectFilterParams(req.params.id);
-    const item = await queryOne<GenericViewRow>(
+    const job = normalizeJobNumber(req.params.id);
+    const params = [req.params.id, job, `J${job}`];
+    const row = await queryOne<GenericViewRow>(
       `SELECT *
        FROM brighten_pm.v_project_financial_detail
-       WHERE project_id = ? OR id = ? OR job_number = ? OR job_number = ?
+       WHERE project_id = ? OR job_number = ? OR job_number = ?
        LIMIT 1`,
       params,
     );
-    if (!item) {
+    if (!row) {
       res.status(404).json({ ok: false, error: 'Financial detail not found for project' });
       return;
     }
-    res.json({ ok: true, item });
+
+    const dashboard = await queryOne<GenericViewRow>(
+      `SELECT latest_ar_total
+       FROM brighten_pm.v_project_dashboard
+       WHERE id = ? OR job_number = ? OR job_number = ?
+       LIMIT 1`,
+      params,
+    );
+
+    const asOfDate = dateOrNull(row.snapshot_date);
+    res.json({
+      ok: true,
+      source: 'sql',
+      asOfDate,
+      item: {
+        projectId: row.project_id,
+        jobNumber: row.job_number,
+        contract: {
+          originalContractAmount: numericOrNull(row.original_contract_amount),
+          revisedContractAmount: numericOrNull(row.revised_contract_amount),
+        },
+        billing: {
+          billedToDate: numericOrNull(row.billed_to_date),
+          remainingToBill: numericOrNull(row.balance_to_bill),
+          arBalance: numericOrNull(dashboard?.latest_ar_total),
+        },
+        cost: {
+          estimatedCost: numericOrNull(row.total_estimated_cost),
+          actualCost: numericOrNull(row.total_actual_cost),
+          laborActual: numericOrNull(row.labor_actual),
+          materialsActual: numericOrNull(row.materials_actual),
+          subcontractorsActual: numericOrNull(row.subcontractors_actual),
+          otherPreconActual: numericOrNull(row.other_precon_actual),
+        },
+        profit: {
+          profit: numericOrNull(row.profit),
+          marginPercent: numericOrNull(row.profit_margin_percent),
+        },
+        dataWarnings: buildFinancialWarnings(row),
+      },
+    });
   } catch (err) {
     next(err);
   }
