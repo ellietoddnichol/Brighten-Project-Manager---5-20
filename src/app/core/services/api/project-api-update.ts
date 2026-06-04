@@ -11,7 +11,8 @@ function datePart(value: string | undefined): string | undefined {
 
 /**
  * Build API PATCH body from edit draft vs current project.
- * Omits Phase 1B fields (PM, retainage, profile, scope) and master-sheet read-only fields.
+ * Covers Phase 1A fields plus Phase 1B Overview completion (profile, retainage,
+ * award date, current phase, project scope). PM/contacts remain out of scope.
  */
 export function buildProjectApiUpdatePayload(
   current: Project,
@@ -44,6 +45,17 @@ export function buildProjectApiUpdatePayload(
   setIfChanged('targetCompletionDate', (v) => datePart(v as string));
   setIfChanged('taxExempt');
   setIfChanged('driveFolderId');
+
+  // Phase 1B — Overview completion
+  setIfChanged('projectProfile');
+  setIfChanged('retainagePercent');
+  setIfChanged('awardDate', (v) => datePart(v as string));
+  setIfChanged('currentPhase');
+  setIfChanged('scopeSummary');
+  setIfChanged('includedWork');
+  setIfChanged('exclusions');
+  setIfChanged('scheduleAccessNotes');
+  setIfChanged('closeoutRequirements');
 
   if (!isMasterSheetReadOnlyField('superintendent', current)) {
     const sup = draft.superintendent;

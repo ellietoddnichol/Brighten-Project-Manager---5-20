@@ -38,6 +38,16 @@ export interface ProjectDashboardApiRow {
   target_end_date?: string | null;
   tax_exempt?: boolean | number | null;
   bond_required?: boolean | number | null;
+  /** Phase 1B — Overview completion columns + project_scope (1:1) */
+  project_profile?: string | null;
+  retainage_percent?: number | string | null;
+  award_date?: string | null;
+  current_phase?: string | null;
+  scope_summary?: string | null;
+  included_work?: string | null;
+  exclusions?: string | null;
+  schedule_access_notes?: string | null;
+  closeout_requirements?: string | null;
 }
 
 /** UI-shaped body for PATCH /api/projects/:id */

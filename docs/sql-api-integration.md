@@ -144,8 +144,8 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 |--------|------|--------------|
 | GET | `/api/health` | connection ping |
 | GET | `/api/projects` | `brighten_pm.v_project_dashboard` |
-| GET | `/api/projects/:id` | `v_project_dashboard` + merged `projects` columns (address, dates, etc.) |
-| PATCH | `/api/projects/:id` | `brighten_pm.projects` (whitelist only; returns refreshed dashboard row) |
+| GET | `/api/projects/:id` | `v_project_dashboard` + merged `projects` columns (address, dates, profile, retainage, award date, phase) + `project_scope` (1:1, nulls when absent) |
+| PATCH | `/api/projects/:id` | `brighten_pm.projects` + `project_scope` upsert (whitelist only; one transaction; returns refreshed detail) |
 | GET | `/api/projects/:id/readiness` | `v_project_readiness` |
 | GET | `/api/projects/:id/tasks` | `v_project_tasks` |
 | GET | `/api/projects/:id/documents` | `v_project_documents` |
@@ -169,11 +169,16 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 
 - Projects list (`/projects`) — `GET /api/projects`
 - Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id`
-- Project edit modal (Phase 1A) — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false
+- Project edit modal — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false. Failed SQL writes show an error and never fall back to Firestore.
 
 **PATCH whitelist (Phase 1A):** `projectName`, `status`, `address`, `city`, `state`, `zip`, `county`, `customer` (exact company match), `superintendent` (exact user match), `originalContractAmount`, `billingStatus`, `startDate`, `targetEndDate`, `prevailingWage`/`certifiedPayrollRequired` (both columns set together), `taxExempt`, `bondRequired`, `driveFolderId`, optional `projectNumber`.
 
-**Phase 1B (not yet):** scope fields, `projectProfile`, PM, retainage, wage orders, tab data writes.
+**PATCH whitelist (Phase 1B — Overview completion):**
+`projects` columns — `projectProfile`, `retainagePercent` (0–100), `awardDate` (ISO date or null), `currentPhase`.
+`project_scope` (1:1, upserted in the same transaction) — `scopeSummary`, `includedWork`, `exclusions`, `scheduleAccessNotes`, `closeoutRequirements`.
+Migration record: `db/manual/2026-06-04_phase_1b_overview_completion.sql` (additive nullable columns + `project_scope` table, FK to `projects.id ON DELETE CASCADE`, rollback in comments).
+
+**Still deferred:** project manager assignment (`project_users`), client/billing contacts (no schema), wage orders, certified payroll workflow, tab data writes.
 
 **Not wired yet:** Home, project detail tab reads (tasks, documents, financials, workflows), other entity write routes, Firebase removal.
 

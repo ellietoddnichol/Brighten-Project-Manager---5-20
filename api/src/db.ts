@@ -57,3 +57,25 @@ export async function queryOne<T extends mysql.RowDataPacket>(
   const rows = await queryRows<T>(sql, params);
   return rows[0] ?? null;
 }
+
+/** Run a set of writes inside a single transaction. Rolls back on any error. */
+export async function withTransaction<T>(
+  fn: (conn: mysql.PoolConnection) => Promise<T>,
+): Promise<T> {
+  const conn = await getPool().getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await fn(conn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    try {
+      await conn.rollback();
+    } catch {
+      // ignore rollback failure; original error is rethrown
+    }
+    throw err;
+  } finally {
+    conn.release();
+  }
+}

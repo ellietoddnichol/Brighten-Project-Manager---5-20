@@ -47,6 +47,46 @@ describe('mapDashboardRowToProject', () => {
     expect(project.projectNumber).toBe('220');
   });
 
+  it('maps Phase 1B Overview + project_scope fields', () => {
+    const project = mapDashboardRowToProject({
+      id: 'proj-1b',
+      job_number: 'J300',
+      project_name: 'Phase 1B Job',
+      project_profile: 'FullProject',
+      retainage_percent: '5.00',
+      award_date: '2026-01-15T06:00:00.000Z',
+      current_phase: 'Construction',
+      scope_summary: 'Summary',
+      included_work: 'Included',
+      exclusions: 'Excluded',
+      schedule_access_notes: 'Access notes',
+      closeout_requirements: 'Closeout',
+    });
+
+    expect(project.projectProfile).toBe('FullProject');
+    expect(project.retainagePercent).toBe(5);
+    expect(project.awardDate).toBe('2026-01-15');
+    expect(project.currentPhase).toBe('Construction');
+    expect(project.scopeSummary).toBe('Summary');
+    expect(project.includedWork).toBe('Included');
+    expect(project.exclusions).toBe('Excluded');
+    expect(project.scheduleAccessNotes).toBe('Access notes');
+    expect(project.closeoutRequirements).toBe('Closeout');
+  });
+
+  it('leaves Phase 1B fields undefined when scope row absent', () => {
+    const project = mapDashboardRowToProject({
+      id: 'proj-none',
+      job_number: 'J301',
+      project_name: 'No Scope',
+      retainage_percent: null,
+      award_date: null,
+    });
+    expect(project.retainagePercent).toBeUndefined();
+    expect(project.awardDate).toBeUndefined();
+    expect(project.scopeSummary).toBeUndefined();
+  });
+
   it('builds driveFolderUrl from drive_folder_id', () => {
     const project = mapDashboardRowToProject({
       id: 'proj-2',

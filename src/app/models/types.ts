@@ -70,6 +70,13 @@ export interface Project {
   city?: string;
   state?: string;
   scopeSummary?: string;
+  /** Phase 1B Overview completion (Cloud SQL projects + project_scope). */
+  awardDate?: string;
+  currentPhase?: string;
+  includedWork?: string;
+  exclusions?: string;
+  scheduleAccessNotes?: string;
+  closeoutRequirements?: string;
   requiredDocuments?: string[];
   driveFolderId?: string;
   driveFolderUrl?: string;

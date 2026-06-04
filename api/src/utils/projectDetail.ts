@@ -19,12 +19,29 @@ type ProjectExtraRow = ProjectDashboardRow & {
   target_end_date?: string | Date | null;
   tax_exempt?: number | boolean | null;
   bond_required?: number | boolean | null;
+  project_profile?: string | null;
+  retainage_percent?: number | string | null;
+  award_date?: string | Date | null;
+  current_phase?: string | null;
+  scope_summary?: string | null;
+  included_work?: string | null;
+  exclusions?: string | null;
+  schedule_access_notes?: string | null;
+  closeout_requirements?: string | null;
 };
 
 const EXTRA_SQL = `
-  SELECT address, city, state, zip, county_code, start_date, target_end_date, tax_exempt, bond_required
+  SELECT address, city, state, zip, county_code, start_date, target_end_date,
+         tax_exempt, bond_required, project_profile, retainage_percent, award_date, current_phase
   FROM brighten_pm.projects
   WHERE id = ?
+  LIMIT 1
+`;
+
+const SCOPE_SQL = `
+  SELECT scope_summary, included_work, exclusions, schedule_access_notes, closeout_requirements
+  FROM brighten_pm.project_scope
+  WHERE project_id = ?
   LIMIT 1
 `;
 
@@ -33,13 +50,21 @@ export async function findDashboardProject(key: string): Promise<ProjectDashboar
   return queryOne<ProjectDashboardRow>(ONE_SQL, [key, job, `J${job}`]);
 }
 
-/** Dashboard view plus base-table fields not exposed on v_project_dashboard. */
+/** Dashboard view plus base-table fields and project_scope (1:1, may be absent). */
 export async function fetchMergedProjectDetail(routeKey: string): Promise<ProjectExtraRow | null> {
   const dash = await findDashboardProject(routeKey);
   if (!dash) return null;
 
   const extra = await queryOne<ProjectExtraRow>(EXTRA_SQL, [dash.id]);
-  if (!extra) return dash;
+  const scope = await queryOne<ProjectExtraRow>(SCOPE_SQL, [dash.id]);
 
-  return { ...dash, ...extra };
+  return {
+    ...dash,
+    ...(extra ?? {}),
+    scope_summary: scope?.scope_summary ?? null,
+    included_work: scope?.included_work ?? null,
+    exclusions: scope?.exclusions ?? null,
+    schedule_access_notes: scope?.schedule_access_notes ?? null,
+    closeout_requirements: scope?.closeout_requirements ?? null,
+  } as ProjectExtraRow;
 }

@@ -1,5 +1,5 @@
 import type { RowDataPacket } from 'mysql2';
-import { queryRows } from '../db.js';
+import { queryRows, withTransaction } from '../db.js';
 import type { ProjectDashboardRow } from '../types.js';
 import { normalizeJobNumber } from './projectFilter.js';
 import { uiBillingStatusToSql, uiStatusToSqlStatus } from './projectStatus.js';
@@ -30,7 +30,27 @@ export const ALLOWED_PATCH_KEYS = new Set([
   'driveFolderId',
   'superintendent',
   'foreman',
+  // Phase 1B — Overview completion (projects columns)
+  'projectProfile',
+  'retainagePercent',
+  'awardDate',
+  'currentPhase',
+  // Phase 1B — project_scope (1:1) fields
+  'scopeSummary',
+  'includedWork',
+  'exclusions',
+  'scheduleAccessNotes',
+  'closeoutRequirements',
 ]);
+
+/** UI key → project_scope column. Order defines column list for upsert. */
+export const SCOPE_FIELD_COLUMNS: Record<string, string> = {
+  scopeSummary: 'scope_summary',
+  includedWork: 'included_work',
+  exclusions: 'exclusions',
+  scheduleAccessNotes: 'schedule_access_notes',
+  closeoutRequirements: 'closeout_requirements',
+};
 
 export class PatchValidationError extends Error {
   constructor(
@@ -95,6 +115,19 @@ function asOptionalNumber(value: unknown, field: string): number | null | undefi
   const n = typeof value === 'number' ? value : Number(value);
   if (Number.isNaN(n)) {
     throw new PatchValidationError(`${field} must be a number.`);
+  }
+  return n;
+}
+
+function asOptionalPercent(value: unknown, field: string): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (Number.isNaN(n)) {
+    throw new PatchValidationError(`${field} must be a number.`);
+  }
+  if (n < 0 || n > 100) {
+    throw new PatchValidationError(`${field} must be between 0 and 100.`);
   }
   return n;
 }
@@ -243,11 +276,38 @@ export async function buildProjectPatchUpdates(
     }
   }
 
-  if (updates.length === 0) {
-    throw new PatchValidationError('No valid fields to update after validation.');
+  if (body.projectProfile !== undefined) {
+    const v = asOptionalString(body.projectProfile, 'projectProfile');
+    if (v !== undefined) updates.push({ sql: 'project_profile = ?', params: [v] });
+  }
+
+  if (body.retainagePercent !== undefined) {
+    const v = asOptionalPercent(body.retainagePercent, 'retainagePercent');
+    if (v !== undefined) updates.push({ sql: 'retainage_percent = ?', params: [v] });
+  }
+
+  if (body.awardDate !== undefined) {
+    const v = asOptionalDate(body.awardDate, 'awardDate');
+    if (v !== undefined) updates.push({ sql: 'award_date = ?', params: [v] });
+  }
+
+  if (body.currentPhase !== undefined) {
+    const v = asOptionalString(body.currentPhase, 'currentPhase');
+    if (v !== undefined) updates.push({ sql: 'current_phase = ?', params: [v] });
   }
 
   return updates;
+}
+
+/** Build project_scope column → value map from whitelisted scope keys. */
+export function buildScopeValues(body: Record<string, unknown>): Record<string, string | null> {
+  const values: Record<string, string | null> = {};
+  for (const [key, column] of Object.entries(SCOPE_FIELD_COLUMNS)) {
+    if (body[key] === undefined) continue;
+    const v = asOptionalString(body[key], key);
+    if (v !== undefined) values[column] = v;
+  }
+  return values;
 }
 
 export async function applyProjectPatch(
@@ -259,16 +319,38 @@ export async function applyProjectPatch(
     throw new PatchValidationError('Project not found', 404);
   }
 
-  const updates = await buildProjectPatchUpdates(body);
-  updates.push({ sql: 'updated_at = CURRENT_TIMESTAMP', params: [] });
+  const columnUpdates = await buildProjectPatchUpdates(body);
+  const scopeValues = buildScopeValues(body);
 
-  const setClause = updates.map((u) => u.sql).join(', ');
-  const params = updates.flatMap((u) => u.params);
+  if (columnUpdates.length === 0 && Object.keys(scopeValues).length === 0) {
+    throw new PatchValidationError('No valid fields to update after validation.');
+  }
 
-  await queryRows(
-    `UPDATE brighten_pm.projects SET ${setClause} WHERE id = ?`,
-    [...params, existing.id],
-  );
+  await withTransaction(async (conn) => {
+    if (columnUpdates.length > 0) {
+      const updates = [...columnUpdates, { sql: 'updated_at = CURRENT_TIMESTAMP', params: [] }];
+      const setClause = updates.map((u) => u.sql).join(', ');
+      const params = updates.flatMap((u) => u.params);
+      await conn.query(
+        `UPDATE brighten_pm.projects SET ${setClause} WHERE id = ?`,
+        [...params, existing.id],
+      );
+    }
+
+    const scopeColumns = Object.keys(scopeValues);
+    if (scopeColumns.length > 0) {
+      const insertCols = ['project_id', ...scopeColumns];
+      const placeholders = insertCols.map(() => '?').join(', ');
+      const updateClause = scopeColumns.map((c) => `${c} = VALUES(${c})`).join(', ');
+      const insertParams = [existing.id, ...scopeColumns.map((c) => scopeValues[c])];
+      await conn.query(
+        `INSERT INTO brighten_pm.project_scope (${insertCols.join(', ')})
+         VALUES (${placeholders})
+         ON DUPLICATE KEY UPDATE ${updateClause}`,
+        insertParams,
+      );
+    }
+  });
 
   const refreshed = await fetchMergedProjectDetail(existing.id);
   if (!refreshed) {

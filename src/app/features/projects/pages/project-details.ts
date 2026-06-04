@@ -10,6 +10,7 @@ import { AuthService } from '@core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Project, PROJECT_STATUSES } from '@app/models/types';
+import { PROJECT_PROFILE_OPTIONS, PROJECT_PROFILE_LABELS } from '@app/models/project-requirements.types';
 import { DriveService, DriveFile, parseDriveFolderId } from '@core/services/drive.service';
 import { DriveFolderDiscoveryService } from '@features/subcontractors/services/drive-folder-discovery.service';
 import { getProjectFinancialSummary } from '@shared/utils/financial';
@@ -227,7 +228,53 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
               </div>
               <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Retainage %</label>
-                <input type="number" [(ngModel)]="editDraft.retainagePercent" name="editRet" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                <input type="number" min="0" max="100" step="0.01" [(ngModel)]="editDraft.retainagePercent" name="editRet" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Project Profile</label>
+                <select [(ngModel)]="editDraft.projectProfile" name="editProfile" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+                  <option [ngValue]="undefined">—</option>
+                  @for (opt of projectProfileOptions; track opt) {
+                    <option [value]="opt">{{ projectProfileLabels[opt] }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Current Phase</label>
+                <input type="text" [(ngModel)]="editDraft.currentPhase" name="editPhase" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Award Date</label>
+                <input type="date" [(ngModel)]="editDraft.awardDate" name="editAward" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="pt-2 border-t border-slate-200">
+              <p class="text-[11px] font-bold text-slate-500 uppercase mb-2">Project Scope</p>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Scope Summary</label>
+                  <textarea [(ngModel)]="editDraft.scopeSummary" name="editScopeSummary" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Included Work</label>
+                  <textarea [(ngModel)]="editDraft.includedWork" name="editIncluded" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Exclusions / By Others</label>
+                  <textarea [(ngModel)]="editDraft.exclusions" name="editExclusions" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Schedule / Access Notes</label>
+                  <textarea [(ngModel)]="editDraft.scheduleAccessNotes" name="editSchedule" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Closeout / Special Requirements</label>
+                  <textarea [(ngModel)]="editDraft.closeoutRequirements" name="editCloseout" rows="2" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm"></textarea>
+                </div>
               </div>
             </div>
             @if (saveEditError()) {
@@ -479,6 +526,8 @@ export class ProjectDetails implements OnInit {
   saveEditError = signal<string | null>(null);
   editDraft: Partial<Project> = {};
   projectStatuses = PROJECT_STATUSES;
+  projectProfileOptions = PROJECT_PROFILE_OPTIONS;
+  projectProfileLabels = PROJECT_PROFILE_LABELS;
 
   masterSheetLinked = computed(() => {
     const p = this.project();
