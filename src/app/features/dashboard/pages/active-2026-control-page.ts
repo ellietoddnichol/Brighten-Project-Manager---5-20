@@ -32,6 +32,7 @@ import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '@app/components/ui/detail-drawer';
 
 const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
   'activeJobs',
