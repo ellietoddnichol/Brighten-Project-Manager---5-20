@@ -396,5 +396,16 @@ service cloud.firestore {
       allow update: if isSignedIn() && isValidId(mappingId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
       allow delete: if isSignedIn() && isValidId(mappingId) && existing().ownerId == request.auth.uid;
     }
+
+    // Drive push notification channel metadata.
+    // Stores channel IDs, resource IDs, expiry times, and page tokens
+    // so channels can be renewed before they expire.
+    match /drive-watch-channels/{channelId} {
+      allow get: if isSignedIn() && isValidId(channelId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(channelId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(channelId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(channelId) && existing().ownerId == request.auth.uid;
+    }
   }
 }
