@@ -567,6 +567,12 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     return null;
   });
 
+  sqlBudgetConfirmed = computed(() => {
+    const budget = this.projectApi.budgetSummary();
+    if (!budget || this.projectApi.budgetActiveSource() !== 'api') return false;
+    return this.matchesProjectKey(budget.projectId, budget.jobNumber) && budget.lineCount > 0;
+  });
+
   sqlPayApps = computed(() => {
     const payApps = this.projectApi.payApps();
     if (this.projectApi.payAppsActiveSource() !== 'api') return [];
@@ -624,7 +630,12 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
 
   moneyPrompts = computed(() => {
     const fin = this.financial();
-    return missingMoneyPrompts(this.project, fin, this.approvedUnbilledCount() > 0);
+    return missingMoneyPrompts(
+      this.project,
+      fin,
+      this.approvedUnbilledCount() > 0,
+      this.sqlBudgetConfirmed(),
+    );
   });
 
   overviewCards = computed(() => moneyOverviewCards(this.financial(), this.project));
@@ -646,11 +657,17 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
       subComplianceGap: false,
       qbReviewNeeded: lifecycle.seedGaps.some(g => g.field.startsWith('qbo')),
       isCloseout: ['Closeout', 'Closed'].includes(this.project.status ?? ''),
+      sqlBudgetConfirmed: this.sqlBudgetConfirmed(),
     });
   });
 
   compactStrip = computed(() =>
-    moneyCompactStats(this.financial(), this.nextAction().label, this.approvedUnbilledCount()),
+    moneyCompactStats(
+      this.financial(),
+      this.nextAction().label,
+      this.approvedUnbilledCount(),
+      this.sqlBudgetConfirmed(),
+    ),
   );
 
   primarySegments = computed(() =>
@@ -678,9 +695,13 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'summary') {
       void this.projectApi.loadProjectFinancials(this.project.id);
+      void this.projectApi.loadProjectBudget(this.project.projectNumber || this.project.id);
     }
     if (changes['project']) {
       this.selectedSqlPayAppId.set(null);
+    }
+    if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'budget') {
+      void this.projectApi.loadProjectBudget(this.project.projectNumber || this.project.id);
     }
     if ((changes['project'] || changes['activeView']) && this.project && this.activeView === 'billing') {
       void this.projectApi.loadProjectPayApps(this.payAppProjectKey());
@@ -852,6 +873,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   }
 
   budgetBasisLabel(): string {
+    if (this.sqlBudgetConfirmed()) return '80% confirmed (SQL)';
     const fin = this.financial();
     if (fin.budgetIsEstimated) return '80% estimate (20% target)';
     if (fin.budgetBasis === 'Imported' || fin.budgetBasis === 'Workbook') return 'Imported workbook';

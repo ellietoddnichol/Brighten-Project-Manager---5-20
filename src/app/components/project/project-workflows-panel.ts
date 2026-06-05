@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { Project } from '@app/models/types';
 import { ProjectEnabledModules } from '@app/models/project-needs.types';
@@ -13,6 +14,12 @@ import { FieldIssuesTabComponent } from '@features/projects/pages/field-issues-t
 import { CertifiedPayrollTabComponent } from '@features/projects/pages/certified-payroll-tab';
 import { DataService } from '@core/services/data.service';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
+import { LaborDataService } from '@features/labor/services/labor-data.service';
+import {
+  buildEmployeeHoursRows,
+  currentLaborMonthKey,
+  filterEntriesForProject,
+} from '@features/labor/utils/labor-hours-summary.compute';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { normalizeWorkflowView } from './project-navigation';
 import { EmptyStateComponent } from '../ui/empty-state';
@@ -33,7 +40,7 @@ import {
   selector: 'app-project-workflows-panel',
   standalone: true,
   imports: [
-    CommonModule, MatIconModule,
+    CommonModule, MatIconModule, RouterLink,
     TasksTabComponent, ChangesTabComponent, RfisTabComponent, SubmittalsTabComponent,
     DailyLogsTabComponent, FieldIssuesTabComponent, CertifiedPayrollTabComponent,
     EmptyStateComponent, ListRowComponent,
@@ -83,6 +90,40 @@ import {
             <p class="text-sm font-semibold text-amber-900">{{ prompt.label }}</p>
             <button type="button" (click)="selectView(prompt.view)"
                     class="text-xs font-bold text-indigo-700 underline">{{ prompt.actionLabel }}</button>
+          </div>
+        }
+
+        @if (projectLaborHours().length) {
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+            <div class="px-3 py-2 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-sm font-bold text-slate-900">Field Labor Hours</p>
+                <p class="text-xs text-slate-500">Approved timekeeper · {{ laborMonthLabel() }}</p>
+              </div>
+              <a routerLink="/labor" class="text-xs font-bold text-indigo-700 underline">Open Labor</a>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-100 text-sm">
+                <thead class="bg-white text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                  <tr>
+                    <th class="px-4 py-2.5">Employee</th>
+                    <th class="px-4 py-2.5 text-right">Regular</th>
+                    <th class="px-4 py-2.5 text-right">OT/DT</th>
+                    <th class="px-4 py-2.5 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (row of projectLaborHours(); track row.employeeName) {
+                    <tr>
+                      <td class="px-4 py-2.5 font-semibold text-slate-900">{{ row.employeeName }}</td>
+                      <td class="px-4 py-2.5 text-right font-mono">{{ fmtHours(row.regularHours) }}</td>
+                      <td class="px-4 py-2.5 text-right font-mono">{{ fmtHours(row.overtimeHours) }}</td>
+                      <td class="px-4 py-2.5 text-right font-mono font-bold">{{ fmtHours(row.totalHours) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
         }
 
@@ -229,6 +270,7 @@ export class ProjectWorkflowsPanelComponent {
 
   private data = inject(DataService);
   private cprData = inject(CertifiedPayrollDataService);
+  private laborData = inject(LaborDataService);
 
   moreOpen = signal(false);
   selectedWork = signal<WorkListItem | null>(null);
@@ -328,10 +370,32 @@ export class ProjectWorkflowsPanelComponent {
     this.moreSegments().reduce((s, seg) => s + (seg.badge ?? 0), 0),
   );
 
+  laborMonthLabel = computed(() => {
+    const key = currentLaborMonthKey();
+    const [year, month] = key.split('-').map(Number);
+    if (!year || !month) return key;
+    return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' })
+      .format(new Date(year, month - 1, 1));
+  });
+
+  projectLaborHours = computed(() =>
+    buildEmployeeHoursRows(
+      filterEntriesForProject(
+        this.laborData.normalizedEntries(),
+        this.project,
+        currentLaborMonthKey(),
+      ),
+    ).slice(0, 12),
+  );
+
   workRowDisplay = (row: WorkListItem) => workItemToListRow(row);
 
   fmt(n: number): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+  }
+
+  fmtHours(value: number): string {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
   }
 
   openWorkDrawer(row: WorkListItem): void {

@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject, signal } from '@angular/core';
+import { Component, Input, computed, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
@@ -13,7 +13,9 @@ import { ImportDataService } from '@core/services/import-data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
 import { ProjectApiService } from '@core/services/api/project-api.service';
+import { ProjectSqlBudgetLine } from '@core/services/api/project-budget-api.mapper';
 import { BudgetSegment } from '@features/projects/utils/project-money.compute';
+import { BudgetRollup } from '@features/projects/utils/budget-line.compute';
 
 type BudgetInnerTab = 'lines' | 'labor-bonus';
 
@@ -47,7 +49,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
       @if (!simplified && activeInnerTab() === 'labor-bonus') {
         <app-project-foreman-bonus-tab [project]="project" />
       } @else {
-      @if (rollup().budgetIsEstimated) {
+      @if (showEstimatedBanner()) {
         <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 flex flex-wrap items-center justify-between gap-2">
           <div>
             <strong>Budget Basis = Estimated from 20% target.</strong>
@@ -60,6 +62,11 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
               {{ budgetConfirming() ? 'Saving…' : 'Approve 80% Budget' }}
             </button>
           }
+        </div>
+      } @else if (sqlBudgetConfirmed()) {
+        <div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2">
+          <strong>Budget Basis = 80% target confirmed in Cloud SQL.</strong>
+          {{ sqlBudget()?.lineCount }} budget line(s) on file — import a workbook when the real budget is ready.
         </div>
       } @else if (financial().budgetBasis === 'Imported') {
         <div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 flex flex-wrap items-center justify-between gap-2">
@@ -85,21 +92,21 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
       <div class="grid gap-2.5" [ngClass]="simplified ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-6'">
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Budget</p>
-          <p class="text-lg font-bold">{{ rollup().budgetAmount | currency }}</p>
+          <p class="text-lg font-bold">{{ displayRollup().budgetAmount | currency }}</p>
         </div>
         @if (!simplified) {
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Committed</p>
-          <p class="text-lg font-bold text-indigo-800">{{ rollup().committedAmount | currency }}</p>
+          <p class="text-lg font-bold text-indigo-800">{{ displayRollup().committedAmount | currency }}</p>
         </div>
         }
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Actual Cost</p>
-          <p class="text-lg font-bold text-slate-900">{{ rollup().costToDate | currency }}</p>
+          <p class="text-lg font-bold text-slate-900">{{ displayRollup().costToDate | currency }}</p>
         </div>
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Projected Final</p>
-          <p class="text-lg font-bold">{{ rollup().estimatedFinalCost | currency }}</p>
+          <p class="text-lg font-bold">{{ displayRollup().estimatedFinalCost | currency }}</p>
         </div>
         @if (segment === 'variance' || !simplified) {
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm"
@@ -111,7 +118,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
         @if (!simplified) {
         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Cost to Complete</p>
-          <p class="text-lg font-bold">{{ rollup().costToComplete | currency }}</p>
+          <p class="text-lg font-bold">{{ displayRollup().costToComplete | currency }}</p>
         </div>
         }
       </div>
@@ -170,9 +177,11 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 class="text-base font-bold text-slate-900">Budget Lines</h3>
+          @if (!sqlBudgetConfirmed()) {
           <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
             <mat-icon class="!text-[16px]">add</mat-icon> Add Line
           </button>
+          }
         </div>
 
         <div class="overflow-x-auto">
@@ -190,8 +199,8 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-sm">
-              @for (line of computedLines(); track line.id) {
-                <tr class="hover:bg-slate-50 cursor-pointer" (click)="editLine(line)">
+              @for (line of displayLines(); track line.id) {
+                <tr class="hover:bg-slate-50" [class.cursor-pointer]="!sqlBudgetConfirmed()" (click)="!sqlBudgetConfirmed() && editLine(line)">
                   <td class="px-4 py-2.5">
                     <p class="text-slate-900 font-bold">{{ line.costCode || '—' }}</p>
                     <p class="text-[10px] text-slate-500 uppercase">{{ line.category }}</p>
@@ -339,7 +348,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
     </div>
   `,
 })
-export class BudgetTabComponent {
+export class BudgetTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
   @Input({ required: true }) summary!: ProjectFinancialSummary;
   @Input() segment: BudgetSegment = 'budget';
@@ -378,20 +387,91 @@ export class BudgetTabComponent {
   readonly defaultCategories = DEFAULT_BUDGET_CATEGORIES;
 
   rollup = computed(() => this.budgetSvc.rollupForProject(this.project));
-  computedLines = computed(() => this.rollup().lines);
+
+  sqlBudget = computed(() => {
+    const budget = this.projectApi.budgetSummary();
+    if (!budget || this.projectApi.budgetActiveSource() !== 'api') return null;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    const apiKeys = [budget.projectId, budget.jobNumber].filter(Boolean);
+    return apiKeys.some(apiKey => keys.some(key => key === apiKey || key.replace(/^J/i, '') === apiKey.replace(/^J/i, '')))
+      ? budget
+      : null;
+  });
+
+  sqlBudgetConfirmed = computed(() => (this.sqlBudget()?.lineCount ?? 0) > 0);
+
+  showEstimatedBanner = computed(() => this.rollup().budgetIsEstimated && !this.sqlBudgetConfirmed());
+
+  displayRollup = computed((): BudgetRollup => {
+    const sql = this.sqlBudget();
+    const base = this.rollup();
+    if (!sql?.lineCount) return base;
+    const laborBudget = sql.lines.filter(l => l.category === 'Labor').reduce((s, l) => s + l.budgetAmount, 0);
+    const subBudget = sql.lines.filter(l => l.category === 'Subcontractors').reduce((s, l) => s + l.budgetAmount, 0);
+    const matBudget = sql.lines.filter(l => l.category === 'Materials').reduce((s, l) => s + l.budgetAmount, 0);
+    const otherBudget = sql.lines.filter(l => !['Labor', 'Subcontractors', 'Materials'].includes(l.category))
+      .reduce((s, l) => s + l.budgetAmount, 0);
+    return {
+      ...base,
+      budgetAmount: sql.totalBudget,
+      budgetIsEstimated: false,
+      budgetBasis: 'Manual',
+      selfPerformedBudget: laborBudget,
+      subcontractorBudget: subBudget,
+      materialBudget: matBudget,
+      otherBudget,
+      equipmentBudget: 0,
+      lines: this.mapSqlBudgetLines(sql.lines),
+    };
+  });
+
+  computedLines = computed(() => this.displayRollup().lines);
 
   totalVariance = computed(() =>
     this.computedLines().reduce((s, l) => s + l.variance, 0),
   );
 
+  displayLines = computed(() => this.computedLines());
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project && this.projectApi.isEnabled()) {
+      void this.projectApi.loadProjectBudget(this.project.projectNumber || this.project.id);
+    }
+  }
+
+  private mapSqlBudgetLines(lines: ProjectSqlBudgetLine[]): ComputedBudgetLine[] {
+    return lines.map(line => ({
+      id: line.id,
+      projectId: this.project.id,
+      costCode: line.costCode,
+      category: line.category as ProjectBudgetLine['category'],
+      description: line.description,
+      budgetAmount: line.budgetAmount,
+      originalBudget: line.budgetAmount,
+      approvedCOBudget: 0,
+      revisedBudget: line.budgetAmount,
+      actualCost: line.actualCost,
+      committedAmount: line.committedAmount,
+      projectedCost: line.projectedFinalCost,
+      projectedFinalCost: line.projectedFinalCost,
+      costToComplete: Math.max(0, line.projectedFinalCost - line.actualCost),
+      variance: line.budgetAmount - line.projectedFinalCost,
+      source: line.sourceType.includes('estimated') ? 'Calculated' : 'Manual',
+      status: 'Active',
+      isEstimated: line.sourceType.includes('estimated'),
+    }));
+  }
+
   categoryCards = computed(() => {
+    const rollup = this.displayRollup();
     const fin = this.financialSvc.computeForProject(this.project);
-    const otherBudget = fin.equipmentBudget + fin.otherBudget;
+    const useSql = this.sqlBudgetConfirmed();
+    const otherBudget = useSql ? rollup.otherBudget : fin.equipmentBudget + fin.otherBudget;
     const otherActual = fin.equipmentCostToDate + fin.otherCostToDate;
     return [
-      { label: 'Labor', budget: fin.selfPerformedBudget, actual: fin.selfPerformedCostToDate, variance: fin.selfPerformedBudget - fin.selfPerformedCostToDate },
-      { label: 'Materials', budget: fin.materialBudget, actual: fin.materialCostToDate, variance: fin.materialBudget - fin.materialCostToDate },
-      { label: 'Subcontractors', budget: fin.subcontractorBudget, actual: fin.subcontractorCostToDate, variance: fin.subcontractorBudget - fin.subcontractorCostToDate },
+      { label: 'Labor', budget: useSql ? rollup.selfPerformedBudget : fin.selfPerformedBudget, actual: fin.selfPerformedCostToDate, variance: (useSql ? rollup.selfPerformedBudget : fin.selfPerformedBudget) - fin.selfPerformedCostToDate },
+      { label: 'Materials', budget: useSql ? rollup.materialBudget : fin.materialBudget, actual: fin.materialCostToDate, variance: (useSql ? rollup.materialBudget : fin.materialBudget) - fin.materialCostToDate },
+      { label: 'Subcontractors', budget: useSql ? rollup.subcontractorBudget : fin.subcontractorBudget, actual: fin.subcontractorCostToDate, variance: (useSql ? rollup.subcontractorBudget : fin.subcontractorBudget) - fin.subcontractorCostToDate },
       { label: 'Other / Equipment Rental', budget: otherBudget, actual: otherActual, variance: otherBudget - otherActual },
     ];
   });

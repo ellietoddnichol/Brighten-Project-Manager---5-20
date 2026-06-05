@@ -17,6 +17,7 @@ import { DriveFolderSeedService } from '@features/subcontractors/services/drive-
 import { ImportSeedService } from '@core/services/import-seed.service';
 import { environment } from '@app/config/environment';
 import { SettingsFeatureSetupComponent } from './settings-feature-setup';
+import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
 
 @Component({
   selector: 'app-settings-advanced-tools',
@@ -78,6 +79,28 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
       </article>
 
       <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
+        <h3 class="text-sm font-bold text-slate-900">Webhook integration</h3>
+        <p class="text-xs text-slate-500">
+          Must match <code class="font-mono">DRIVE_WEBHOOK_CHANNEL_TOKEN</code> on the Cloud Run API.
+          Used when registering the QB export spreadsheet Drive watch.
+        </p>
+        <label class="block text-xs font-semibold text-slate-700">Drive Webhook Token</label>
+        <input type="password" [(ngModel)]="driveWebhookToken" placeholder="Same secret as API env var"
+               class="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-mono" />
+        <div class="flex flex-wrap gap-2">
+          <button type="button" (click)="saveDriveWebhookToken()"
+                  class="text-xs font-semibold bg-slate-900 text-white px-3 py-2 rounded-lg">Save token</button>
+          <button type="button" (click)="registerDriveWatch()" [disabled]="driveWatchBusy()"
+                  class="text-xs font-semibold border px-3 py-2 rounded-lg disabled:opacity-50">
+            {{ driveWatchBusy() ? 'Registering…' : 'Register QB spreadsheet watch' }}
+          </button>
+        </div>
+        @if (webhookMessage()) {
+          <p class="text-sm text-emerald-700">{{ webhookMessage() }}</p>
+        }
+      </article>
+
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-900">Optional financial workbook</h3>
         <input type="text" [(ngModel)]="workbookId" placeholder="Google Sheet ID (optional)"
                class="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-mono" />
@@ -130,11 +153,15 @@ export class SettingsAdvancedToolsComponent {
   projectData = inject(ProjectDataService);
   seedService = inject(SeedService);
   dedupeService = inject(ProjectDedupeService);
+  driveWebhooks = inject(DriveWebhooksService);
 
   workbookId = environment.optionalFinancialWorkbookId;
+  driveWebhookToken = this.driveWebhooks.getChannelToken();
   baselineMessage = signal<string | null>(null);
   devMessage = signal<string | null>(null);
   devOk = signal(true);
+  webhookMessage = signal<string | null>(null);
+  driveWatchBusy = signal(false);
 
   busy(): boolean {
     return this.wipSetup.running() || this.billingSov.running() || this.importSeed.running();
@@ -200,4 +227,23 @@ export class SettingsAdvancedToolsComponent {
 
   async syncLegacyQbo(): Promise<void> { await this.qboSync.syncFromQboReports(); }
   async syncCosts(): Promise<void> { await this.projectCosts.syncFromProjectCosts(); }
+
+  saveDriveWebhookToken(): void {
+    this.driveWebhooks.setChannelToken(this.driveWebhookToken);
+    this.webhookMessage.set('Drive webhook token saved locally.');
+  }
+
+  async registerDriveWatch(): Promise<void> {
+    this.driveWatchBusy.set(true);
+    this.webhookMessage.set(null);
+    try {
+      this.driveWebhooks.setChannelToken(this.driveWebhookToken);
+      await this.driveWebhooks.registerQBSpreadsheetWatch(true);
+      this.webhookMessage.set('QB spreadsheet Drive watch registered (check Firestore drive-watch-channels).');
+    } catch (err) {
+      this.webhookMessage.set(err instanceof Error ? err.message : 'Drive watch registration failed');
+    } finally {
+      this.driveWatchBusy.set(false);
+    }
+  }
 }

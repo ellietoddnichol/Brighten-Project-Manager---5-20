@@ -11,6 +11,7 @@ import { SubcontractorSeedService } from '@features/subcontractors/services/subc
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import { CertifiedPayrollService } from '@features/labor/services/certified-payroll.service';
+import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
 
 @Component({
   selector: 'app-root',
@@ -32,6 +33,7 @@ export class App {
   private qbSync = inject(QuickBooksSyncSheetsService);
   private laborData = inject(LaborDataService);
   private certifiedPayroll = inject(CertifiedPayrollService);
+  private driveWebhooks = inject(DriveWebhooksService);
   private startupCleanupDone = false;
   user = this.authService.user;
   authLoaded = this.authService.authLoaded;
@@ -58,6 +60,10 @@ export class App {
             this.poSheetSync.startAutoSync();
             this.timeDataSheetSync.startAutoSync();
             this.qbSync.startAutoSync();
+            this.driveWebhooks.start();
+            void this.driveWebhooks.registerQBSpreadsheetWatch().catch(err => {
+              console.warn('QB spreadsheet watch registration failed:', err);
+            });
           });
         } else {
           this.projectData.startAutoRefresh();
@@ -65,6 +71,7 @@ export class App {
           this.poSheetSync.startAutoSync();
           this.timeDataSheetSync.startAutoSync();
           this.qbSync.startAutoSync();
+          this.driveWebhooks.start();
         }
       } else {
         this.startupCleanupDone = false;
@@ -74,6 +81,7 @@ export class App {
         this.poSheetSync.stopAutoSync();
         this.timeDataSheetSync.stopAutoSync();
         this.qbSync.stopAutoSync();
+        this.driveWebhooks.stop();
       }
     });
   }

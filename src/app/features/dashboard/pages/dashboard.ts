@@ -7,6 +7,13 @@ import { SyncHealthService } from '@core/services/sync-health.service';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ApiClientService } from '@core/services/api/api-client.service';
+import { DataService } from '@core/services/data.service';
+import { LaborDataService } from '@features/labor/services/labor-data.service';
+import {
+  buildProjectHoursRows,
+  currentLaborMonthKey,
+} from '@features/labor/utils/labor-hours-summary.compute';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ProjectPayAppsApiResponse } from '@core/services/api/project-api.types';
 import { mapPayAppsResponse, ProjectSqlPayApp } from '@core/services/api/project-pay-app-api.mapper';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
@@ -284,6 +291,44 @@ interface DashboardFinancialMetric {
         </div>
       </section>
 
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900">Field Labor Hours</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
+          </div>
+          <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
+        </div>
+        @if (laborHoursRows().length) {
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+              <thead class="bg-slate-50 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Job</th>
+                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3 text-right">Hours</th>
+                  <th class="px-4 py-3 text-right">Crew</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (row of laborHoursRows(); track row.projectNumber) {
+                  <tr class="hover:bg-slate-50/80">
+                    <td class="px-4 py-3 font-bold text-slate-900">{{ row.projectNumber }}</td>
+                    <td class="px-4 py-3 text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
+                    <td class="px-4 py-3 text-right font-mono font-semibold">{{ fmtHours(row.totalHours) }}</td>
+                    <td class="px-4 py-3 text-right text-slate-600">{{ row.employeeCount }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="px-5 py-10 text-center text-slate-400 text-sm italic">
+            No approved timekeeper hours loaded for this month.
+          </div>
+        }
+      </section>
+
       <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         @for (action of quickActions(); track action.label) {
           <a [routerLink]="action.route"
@@ -330,6 +375,10 @@ export class Dashboard {
   private qbSyncData = inject(QuickBooksSyncDataService);
   private api = inject(ApiClientService);
   private currency = inject(CurrencyPipe);
+  private data = inject(DataService);
+  private laborData = inject(LaborDataService);
+
+  projects = toSignal(this.data.getProjects(), { initialValue: [] });
 
   readonly homeSourceHealthRoute = homeSourceHealthRoute;
   readonly homeSourceHealthFragment = homeSourceHealthFragment;
@@ -428,6 +477,22 @@ export class Dashboard {
     ].filter(slice => slice.value > 0);
   });
 
+  laborMonthLabel = computed(() => {
+    const key = currentLaborMonthKey();
+    const [year, month] = key.split('-').map(Number);
+    if (!year || !month) return key;
+    return new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' })
+      .format(new Date(year, month - 1, 1));
+  });
+
+  laborHoursRows = computed(() =>
+    buildProjectHoursRows(
+      this.laborData.normalizedEntries(),
+      this.projects() ?? [],
+      currentLaborMonthKey(),
+    ).slice(0, 8),
+  );
+
   quickActions = computed(() => [
     { label: 'Open Projects', subtext: 'Search, filter, and open active jobs', route: '/projects', icon: 'folder_open' },
     { label: 'Review Billing', subtext: 'Pay Apps, A/R, and retainage', route: '/billing', icon: 'request_quote' },
@@ -505,6 +570,10 @@ export class Dashboard {
 
   fmt(value: number): string {
     return this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
+  }
+
+  fmtHours(value: number): string {
+    return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
   }
 
   currencyOrPending(value: number | null): string {

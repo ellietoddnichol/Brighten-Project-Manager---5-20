@@ -237,4 +237,60 @@ export class DriveService {
 
     return response.json();
   }
+
+  /** Register a push notification channel for a Drive file (spreadsheet/folder). */
+  async watchFile(
+    fileId: string,
+    channelId: string,
+    webhookUrl: string,
+    token: string,
+    expirationMs = 6 * 24 * 60 * 60 * 1000,
+    allowRetry = true,
+  ): Promise<{ resourceId: string; expiration: string }> {
+    const expiration = Date.now() + expirationMs;
+    const body = {
+      id: channelId,
+      type: 'web_hook',
+      address: webhookUrl,
+      token,
+      expiration: String(expiration),
+    };
+
+    const response = await this.authorizedFetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/watch?supportsAllDrives=true`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      allowRetry,
+    );
+
+    if (!response.ok) {
+      const detail = await readDriveApiError(response);
+      throw new Error(`Drive watch error: ${detail}`);
+    }
+
+    const data = await response.json() as { resourceId?: string; expiration?: string };
+    return {
+      resourceId: data.resourceId ?? '',
+      expiration: data.expiration ?? String(expiration),
+    };
+  }
+
+  async stopWatch(channelId: string, resourceId: string, allowRetry = true): Promise<void> {
+    const response = await this.authorizedFetch(
+      'https://www.googleapis.com/drive/v3/channels/stop',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: channelId, resourceId }),
+      },
+      allowRetry,
+    );
+    if (!response.ok && response.status !== 404) {
+      const detail = await readDriveApiError(response);
+      throw new Error(`Drive stop watch error: ${detail}`);
+    }
+  }
 }

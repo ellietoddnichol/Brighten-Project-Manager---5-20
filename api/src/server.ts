@@ -5,6 +5,9 @@ import path from 'node:path';
 import { healthRouter } from './routes/health.routes.js';
 import { projectsRouter } from './routes/projects.routes.js';
 import { actionCenterRouter } from './routes/action-center.routes.js';
+import { webhooksRouter } from './routes/webhooks.routes.js';
+import { webhookEventsRouter } from './routes/webhook-events.routes.js';
+import { ensureWebhookEventsTable } from './utils/webhookEvents.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -17,11 +20,14 @@ app.use(cors({
   origin: corsOrigins.length > 1 ? corsOrigins : corsOrigins[0] ?? corsOrigin,
   credentials: true,
 }));
+
+app.use('/webhooks', webhooksRouter);
 app.use(express.json());
 
 app.use('/api', healthRouter);
 app.use('/api', projectsRouter);
 app.use('/api', actionCenterRouter);
+app.use('/api', webhookEventsRouter);
 
 if (staticDir) {
   app.use(express.static(staticDir));
@@ -40,4 +46,7 @@ app.use(errorHandler);
 app.listen(port, () => {
   console.log(`Brighten PM API listening on http://localhost:${port}`);
   console.log(`CORS origin: ${corsOrigin}`);
+  void ensureWebhookEventsTable().catch(err => {
+    console.error('[webhook] Failed to ensure webhook_events table:', err);
+  });
 });

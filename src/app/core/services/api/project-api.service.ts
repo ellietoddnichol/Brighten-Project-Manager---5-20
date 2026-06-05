@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { ApiClientService } from './api-client.service';
 import { mapDashboardRowsToProjects, mapDashboardRowToProject } from './project-api.mapper';
 import { mapFinancialSummaryResponse, ProjectSqlFinancialSummary } from './project-financial-api.mapper';
+import { mapBudgetResponse, ProjectSqlBudget } from './project-budget-api.mapper';
 import {
   mapPayAppDetailResponse,
   mapPayAppsResponse,
@@ -15,6 +16,7 @@ import {
   ProjectApiUpdateBody,
   ProjectDashboardApiRow,
   ProjectFinancialSummaryApiResponse,
+  ProjectBudgetApiResponse,
   ProjectPayAppDetailApiResponse,
   ProjectPayAppsApiResponse,
 } from './project-api.types';
@@ -43,6 +45,12 @@ export class ProjectApiService {
   financialActiveSource = signal<ApiDataSource>('firestore');
   financialSummary = signal<ProjectSqlFinancialSummary | null>(null);
   financialProjectId = signal<string | null>(null);
+
+  budgetLoading = signal(false);
+  budgetError = signal<string | null>(null);
+  budgetActiveSource = signal<ApiDataSource>('firestore');
+  budgetSummary = signal<ProjectSqlBudget | null>(null);
+  budgetProjectId = signal<string | null>(null);
 
   payAppsLoading = signal(false);
   payAppsError = signal<string | null>(null);
@@ -267,13 +275,51 @@ export class ProjectApiService {
     }
   }
 
+  /** Load SQL-backed budget lines. Falls back silently on failure. */
+  async loadProjectBudget(idOrJob: string): Promise<ProjectSqlBudget | null> {
+    this.budgetProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.budgetActiveSource.set('firestore');
+      this.budgetError.set(null);
+      this.budgetSummary.set(null);
+      return null;
+    }
+
+    this.budgetLoading.set(true);
+    this.budgetError.set(null);
+    this.budgetActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ProjectBudgetApiResponse>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/budget`,
+      );
+      const mapped = mapBudgetResponse(resp);
+      this.budgetSummary.set(mapped);
+      this.budgetActiveSource.set('api');
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project budget from API';
+      this.budgetError.set(message);
+      this.budgetSummary.set(null);
+      this.budgetActiveSource.set('firestore');
+      console.warn('[ProjectApiService] budget', message);
+      return null;
+    } finally {
+      this.budgetLoading.set(false);
+    }
+  }
+
   /** Create 80% target budget lines in SQL when none exist yet. */
   async confirmEstimatedBudget(idOrJob: string): Promise<{ inserted: number; totalBudget: number }> {
     const resp = await this.api.post<{ ok: boolean; inserted: number; totalBudget: number }>(
       `/api/projects/${encodeURIComponent(idOrJob)}/budget/confirm-estimate`,
       {},
     );
-    await this.loadProjectFinancials(idOrJob);
+    await Promise.all([
+      this.loadProjectFinancials(idOrJob),
+      this.loadProjectBudget(idOrJob),
+    ]);
     return { inserted: resp.inserted, totalBudget: resp.totalBudget };
   }
 }

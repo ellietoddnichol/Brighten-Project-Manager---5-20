@@ -68,6 +68,7 @@ export function missingMoneyPrompts(
   project: Project,
   financial: ProjectFinancial,
   hasApprovedCoNotBilled: boolean,
+  sqlBudgetConfirmed = false,
 ): MoneyMissingPrompt[] {
   const prompts: MoneyMissingPrompt[] = [];
   if (project.contractPending) {
@@ -93,7 +94,7 @@ export function missingMoneyPrompts(
       view: 'budget',
     });
   }
-  if (financial.budgetIsEstimated && financial.currentContractAmount > 0) {
+  if (financial.budgetIsEstimated && financial.currentContractAmount > 0 && !sqlBudgetConfirmed) {
     prompts.push({
       id: 'confirm-estimate',
       label: 'Budget is an 80% estimate — confirm or import a workbook',
@@ -116,6 +117,7 @@ export function deriveMoneyNextAction(input: {
   subComplianceGap: boolean;
   qbReviewNeeded: boolean;
   isCloseout: boolean;
+  sqlBudgetConfirmed?: boolean;
 }): MoneyNextAction {
   const pid = input.projectId;
   const fin = input.financial;
@@ -126,7 +128,7 @@ export function deriveMoneyNextAction(input: {
   if (input.missingRealBudget) {
     return { ...openFinancial(pid, 'budget'), label: 'Import budget', view: 'budget' };
   }
-  if (fin.budgetIsEstimated && fin.currentContractAmount > 0) {
+  if (fin.budgetIsEstimated && fin.currentContractAmount > 0 && !input.sqlBudgetConfirmed) {
     return { ...openFinancial(pid, 'budget'), label: 'Confirm 80% budget estimate', view: 'budget' };
   }
   if (input.costOverBudget) {
@@ -171,12 +173,14 @@ export function moneyCompactStats(
   financial: ProjectFinancial,
   nextActionLabel: string,
   approvedUnbilledCoCount: number,
+  sqlBudgetConfirmed = false,
 ): MoneyCompactStat[] {
   const fmt = (n: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
 
   let budgetBasis = 'Missing';
-  if (financial.budgetIsEstimated) budgetBasis = '80% estimate';
+  if (sqlBudgetConfirmed) budgetBasis = '80% confirmed (SQL)';
+  else if (financial.budgetIsEstimated) budgetBasis = '80% estimate';
   else if (financial.budgetBasis === 'Imported' || financial.budgetBasis === 'Workbook') budgetBasis = 'Imported';
   else if (financial.budgetBasis === 'Manual') budgetBasis = 'Manual';
 

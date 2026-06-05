@@ -171,6 +171,13 @@ export interface ProjectSovLineApiItem {
   createdAt: string | null;
 }
 
+export interface ProjectBudgetApiResponse {
+  ok: boolean;
+  summary: Record<string, string | number | null> | null;
+  lines: Array<Record<string, string | number | null>>;
+  lineCount: number;
+}
+
 export interface ApiHealthResponse {
   ok: boolean;
   database: string;
