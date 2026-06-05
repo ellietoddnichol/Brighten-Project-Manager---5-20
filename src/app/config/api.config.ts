@@ -3,16 +3,18 @@ const API_BASE_URL_KEY = 'brighten.apiBaseUrl';
 const USE_API_BACKEND_KEY = 'brighten.useApiBackend';
 
 const LOCAL_API_BASE_URL = 'http://localhost:8080';
+const LOCAL_API_PORT = '8080';
 
 function isLocalHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
+/** Dev API always listens on :8080 — never the Angular dev-server port. */
 function defaultApiBaseUrl(): string {
-  if (typeof window !== 'undefined' && window.location?.origin && !isLocalHost(window.location.hostname)) {
-    return window.location.origin;
-  }
-  return LOCAL_API_BASE_URL;
+  if (typeof window === 'undefined') return LOCAL_API_BASE_URL;
+  const { hostname, protocol } = window.location;
+  if (isLocalHost(hostname)) return LOCAL_API_BASE_URL;
+  return `${protocol}//${hostname}:${LOCAL_API_PORT}`;
 }
 
 function isLocalApiUrl(url: string): boolean {

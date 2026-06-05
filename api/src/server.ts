@@ -10,9 +10,13 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 const app = express();
 const port = Number(process.env.API_PORT ?? 8080);
 const corsOrigin = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
+const corsOrigins = corsOrigin.split(',').map(origin => origin.trim()).filter(Boolean);
 const staticDir = process.env.APP_STATIC_DIR;
 
-app.use(cors({ origin: corsOrigin, credentials: true }));
+app.use(cors({
+  origin: corsOrigins.length > 1 ? corsOrigins : corsOrigins[0] ?? corsOrigin,
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api', healthRouter);

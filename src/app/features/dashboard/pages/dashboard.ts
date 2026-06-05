@@ -592,7 +592,7 @@ export class Dashboard {
     try {
       const results = await Promise.allSettled(
         scopedRows.map(async row => {
-          const response = await this.api.get<ProjectPayAppsApiResponse>(`/projects/${encodeURIComponent(row.projectId)}/pay-apps`);
+          const response = await this.api.get<ProjectPayAppsApiResponse>(`/api/projects/${encodeURIComponent(row.projectId)}/pay-apps`);
           return mapPayAppsResponse(response).map(record => ({
             ...record,
             projectName: row.projectName,
