@@ -396,5 +396,14 @@ service cloud.firestore {
       allow update: if isSignedIn() && isValidId(mappingId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
       allow delete: if isSignedIn() && isValidId(mappingId) && existing().ownerId == request.auth.uid;
     }
+
+    // Google Drive push notification channels (QB export spreadsheet watch)
+    match /drive-watch-channels/{channelDocId} {
+      allow get: if isSignedIn() && isValidId(channelDocId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(channelDocId) && incoming().ownerId == request.auth.uid;
+      allow update: if isSignedIn() && isValidId(channelDocId) && existing().ownerId == request.auth.uid && incoming().ownerId == existing().ownerId;
+      allow delete: if isSignedIn() && isValidId(channelDocId) && existing().ownerId == request.auth.uid;
+    }
   }
 }

@@ -9,6 +9,7 @@ import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-shee
 
 export const DRIVE_WEBHOOK_TOKEN_KEY = 'brighten.driveWebhookToken';
 const DRIVE_WATCH_COLLECTION = 'drive-watch-channels';
+const DRIVE_WATCH_CACHE_KEY = 'brighten.driveWatchChannel.qb-spreadsheet';
 const POLL_INTERVAL_MS = 30_000;
 const WATCH_RENEW_BEFORE_MS = 24 * 60 * 60 * 1000;
 
@@ -133,11 +134,19 @@ export class DriveWebhooksService {
         updatedAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, DRIVE_WATCH_COLLECTION, record.id), record);
+      await this.saveQBWatchChannel(record);
       console.info('[DriveWebhooksService] Registered QB spreadsheet Drive watch', {
         channelId,
         expiration: record.expiration,
       });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/insufficient permissions/i.test(message)) {
+        throw new Error(
+          'Firestore blocked Drive watch channel storage. Deploy updated firestore.rules, refresh, and try again.',
+        );
+      }
+      throw err;
     } finally {
       this.watchRegistrationStarted = false;
     }
@@ -145,15 +154,56 @@ export class DriveWebhooksService {
 
   private async loadQBWatchChannel(): Promise<DriveWatchChannelRecord | null> {
     if (!auth.currentUser) return null;
-    const snap = await getDocs(
-      query(
-        collection(db, DRIVE_WATCH_COLLECTION),
-        where('ownerId', '==', auth.currentUser.uid),
-        where('purpose', '==', 'qb-spreadsheet'),
-      ),
-    );
-    const row = snap.docs[0]?.data() as DriveWatchChannelRecord | undefined;
-    return row ?? null;
+    try {
+      const snap = await getDocs(
+        query(
+          collection(db, DRIVE_WATCH_COLLECTION),
+          where('ownerId', '==', auth.currentUser.uid),
+          where('purpose', '==', 'qb-spreadsheet'),
+        ),
+      );
+      const row = snap.docs[0]?.data() as DriveWatchChannelRecord | undefined;
+      if (row) return row;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!/insufficient permissions/i.test(message)) {
+        throw err;
+      }
+      console.warn('[DriveWebhooksService] Firestore read blocked — using local watch cache');
+    }
+    return this.loadCachedWatchChannel();
+  }
+
+  private async saveQBWatchChannel(record: DriveWatchChannelRecord): Promise<void> {
+    this.cacheWatchChannel(record);
+    try {
+      await setDoc(doc(db, DRIVE_WATCH_COLLECTION, record.id), record);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/insufficient permissions/i.test(message)) {
+        console.warn('[DriveWebhooksService] Firestore write blocked — watch metadata kept in local cache only');
+        return;
+      }
+      throw err;
+    }
+  }
+
+  private cacheWatchChannel(record: DriveWatchChannelRecord): void {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(DRIVE_WATCH_CACHE_KEY, JSON.stringify(record));
+  }
+
+  private loadCachedWatchChannel(): DriveWatchChannelRecord | null {
+    if (typeof localStorage === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(DRIVE_WATCH_CACHE_KEY);
+      if (!raw) return null;
+      const record = JSON.parse(raw) as DriveWatchChannelRecord;
+      if (record.ownerId !== auth.currentUser?.uid) return null;
+      return record;
+    } catch {
+      return null;
+    }
   }
 
   private async pollPending(): Promise<void> {
