@@ -50,7 +50,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
   },
   {
     id: 'jobs',
-    label: 'Jobs',
+    label: 'Projects',
     route: '/projects',
     icon: 'folder',
     group: 'operations',
@@ -61,7 +61,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
   },
   {
     id: 'money',
-    label: 'Money',
+    label: 'Financials',
     route: '/financials',
     icon: 'payments',
     group: 'money',
@@ -75,7 +75,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
   },
   {
     id: 'field',
-    label: 'Field',
+    label: 'Tasks',
     route: '/tasks',
     icon: 'assignment',
     group: 'field',
@@ -100,33 +100,23 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
   },
   {
     id: 'people',
-    label: 'People & Subs',
+    label: 'Directory & Compliance',
     route: '/directory',
     icon: 'contacts',
     group: 'people',
-    badgeSources: ['subcontractors', 'sub-invoices'],
+    badgeSources: ['subcontractors', 'sub-invoices', 'certified-payroll', 'labor', 'labor-actuals'],
     isActive: path =>
       pathMatches(path, '/directory')
-      || pathMatches(path, '/subcontractors'),
-  },
-  {
-    id: 'payroll',
-    label: 'Payroll',
-    route: '/certified-payroll',
-    icon: 'badge',
-    group: 'people',
-    badgeSources: ['certified-payroll', 'labor', 'labor-actuals', 'foreman-bonuses'],
-    isActive: path =>
-      pathMatches(path, '/certified-payroll')
+      || pathMatches(path, '/subcontractors')
+      || pathMatches(path, '/certified-payroll')
       || pathMatches(path, '/labor-actuals')
-      || pathMatches(path, '/labor')
-      || pathMatches(path, '/foreman-bonuses'),
+      || pathMatches(path, '/labor'),
   },
 ];
 
 export const GLOBAL_SETTINGS_NAV: GlobalNavItemConfig = {
   id: 'settings',
-  label: 'Settings',
+  label: 'Admin',
   route: '/settings',
   icon: 'settings',
   group: 'admin',
@@ -136,9 +126,9 @@ export const GLOBAL_SETTINGS_NAV: GlobalNavItemConfig = {
 export const GLOBAL_NAV_GROUPS: GlobalNavGroupConfig[] = [
   { id: 'command', label: 'Command' },
   { id: 'operations', label: 'Operations' },
-  { id: 'money', label: 'Money' },
-  { id: 'field', label: 'Field' },
-  { id: 'people', label: 'People' },
+  { id: 'money', label: 'Financials' },
+  { id: 'field', label: 'Field Ops' },
+  { id: 'people', label: 'Directory & Compliance' },
 ];
 
 export interface HubLink {

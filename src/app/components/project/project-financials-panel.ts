@@ -449,16 +449,16 @@ interface PayAppSummaryCard {
       }
       @if (activeView === 'import-source') {
           <div class="bg-white rounded-xl border p-4 space-y-2 text-sm">
-          <p class="font-semibold text-slate-900">Import &amp; source detail</p>
-          <p class="text-slate-600">Review QuickBooks sync, budget imports, and setup fields for this job.</p>
+          <p class="font-semibold text-slate-900">Import / Review Notes</p>
+          <p class="text-slate-600">Review billing backup, budget imports, and project setup items for this job.</p>
           <div class="flex flex-wrap gap-3">
-            <a routerLink="/settings" fragment="import-review" class="text-indigo-700 font-semibold underline">Source Review</a>
-            <a routerLink="/settings" fragment="setup-completeness" class="text-indigo-700 font-semibold underline">Setup Completeness</a>
+            <a routerLink="/settings" fragment="import-review" class="text-indigo-700 font-semibold underline">Import Review</a>
+            <a routerLink="/settings" fragment="setup-completeness" class="text-indigo-700 font-semibold underline">Project Setup</a>
           </div>
           @if (qbCostCount() > 0) {
             <app-budget-tab [project]="project" [summary]="summary" segment="sources" [simplified]="true" />
           } @else {
-            <app-empty-state title="No QuickBooks detail costs for this job." message="Source detail appears when QB cost transactions are synced." />
+            <app-empty-state title="No cost detail rows for this job." message="Import / Review Notes appear when cost transactions are available." />
           }
         </div>
       }
@@ -523,11 +523,11 @@ interface PayAppSummaryCard {
             </app-drawer-section>
           }
           @case ('source') {
-            <app-drawer-section title="Sources">
+            <app-drawer-section title="Review Notes">
               <app-drawer-field label="Budget Basis" [value]="budgetBasisLabel()" />
-              <app-drawer-field label="QB Detail Rows" [value]="qbCostCount() + ''" />
+              <app-drawer-field label="Cost Detail Rows" [value]="qbCostCount() + ''" />
               <button type="button" (click)="viewChange.emit('import-source'); drawerType.set(null)"
-                      class="text-sm font-semibold text-indigo-700 underline mt-2">Import / source detail</button>
+                      class="text-sm font-semibold text-indigo-700 underline mt-2">Import / Review Notes</button>
             </app-drawer-section>
           }
         }
@@ -584,7 +584,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
       {
         label: 'Needs Review',
         value: payApps.filter(payApp => this.recordNeedsReview(payApp)).length.toString(),
-        subtext: 'Import / source notes',
+        subtext: 'Import / review notes',
         emphasis: payApps.some(payApp => this.recordNeedsReview(payApp)),
       },
     ];
@@ -867,7 +867,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
       case 'billing': return 'Billing Detail';
       case 'ar': return 'AR Detail';
       case 'sub-cost': return 'Subcontractor Costs';
-      case 'source': return 'Source Detail';
+      case 'source': return 'Review Notes';
       default: return 'Detail';
     }
   }

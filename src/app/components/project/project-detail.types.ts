@@ -158,11 +158,11 @@ export const SECTION_LABELS: Record<ProjectPrimarySection, string> = {
 
   overview: 'Overview',
 
-  workflows: 'Work',
+  workflows: 'Field Ops',
 
-  financials: 'Money',
+  financials: 'Financials',
 
-  documents: 'Files',
+  documents: 'Docs & Photos',
 
 };
 
@@ -200,17 +200,17 @@ export const WORKFLOW_VIEW_LABELS: Partial<Record<WorkflowView, string>> = {
 
 export const FINANCIAL_VIEW_LABELS: Partial<Record<FinancialView, string>> = {
 
-  summary: 'Money Overview',
+  summary: 'Financial Summary',
 
   budget: 'Budget & Costs',
 
-  billing: 'Billing',
+  billing: 'Progress Billings / Pay Apps',
 
   pos: 'Purchase Orders',
 
   wip: 'WIP Detail',
 
-  ar: 'AR Detail',
+  ar: 'A/R Detail',
 
   'labor-bonus': 'Foreman Bonus',
 
@@ -218,7 +218,7 @@ export const FINANCIAL_VIEW_LABELS: Partial<Record<FinancialView, string>> = {
 
   'cost-transactions': 'Cost Transactions',
 
-  'import-source': 'Import / Source Detail',
+  'import-source': 'Import / Review Notes',
 
 };
 

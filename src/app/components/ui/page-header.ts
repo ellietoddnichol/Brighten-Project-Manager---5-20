@@ -6,11 +6,11 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <header class="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ title }}</h1>
+        <h1 class="text-[1.35rem] leading-7 font-bold text-slate-900 tracking-tight">{{ title }}</h1>
         @if (subtitle) {
-          <p class="text-slate-500 text-sm mt-1">{{ subtitle }}</p>
+          <p class="text-slate-500 text-sm mt-0.5">{{ subtitle }}</p>
         }
       </div>
       <div class="flex flex-wrap items-center gap-2">

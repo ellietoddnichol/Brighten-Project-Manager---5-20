@@ -9,12 +9,11 @@ describe('global-nav.config', () => {
   it('defines construction-style sidebar sections', () => {
     expect(GLOBAL_MAIN_NAV.map(n => n.label)).toEqual([
       'Home',
-      'Jobs',
-      'Money',
-      'Field',
+      'Projects',
+      'Financials',
+      'Tasks',
       'Documents',
-      'People & Subs',
-      'Payroll',
+      'Directory & Compliance',
     ]);
   });
 
@@ -25,7 +24,7 @@ describe('global-nav.config', () => {
     expect(home.isActive('/projects')).toBe(false);
   });
 
-  it('highlights Money for child financial routes', () => {
+  it('highlights Financials for child financial routes', () => {
     const money = GLOBAL_MAIN_NAV.find(n => n.id === 'money')!;
     expect(money.isActive('/financials')).toBe(true);
     expect(money.isActive('/wip')).toBe(true);
@@ -33,11 +32,13 @@ describe('global-nav.config', () => {
     expect(money.isActive('/foreman-bonuses')).toBe(false);
   });
 
-  it('highlights Payroll for payroll and labor routes', () => {
-    const payroll = GLOBAL_MAIN_NAV.find(n => n.id === 'payroll')!;
-    expect(payroll.isActive('/certified-payroll')).toBe(true);
-    expect(payroll.isActive('/labor-actuals')).toBe(true);
-    expect(payroll.isActive('/foreman-bonuses')).toBe(true);
+  it('highlights Directory & Compliance for directory and subcontractor routes', () => {
+    const people = GLOBAL_MAIN_NAV.find(n => n.id === 'people')!;
+    expect(people.isActive('/directory')).toBe(true);
+    expect(people.isActive('/subcontractors')).toBe(true);
+    expect(people.isActive('/certified-payroll')).toBe(true);
+    expect(people.isActive('/labor-actuals')).toBe(true);
+    expect(people.isActive('/projects')).toBe(false);
   });
 
   it('shows no badge when counts are zero', () => {
