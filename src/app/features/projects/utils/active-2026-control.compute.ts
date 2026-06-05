@@ -656,6 +656,10 @@ export const CONTROL_FILTER_OPTIONS: { id: ControlFilterId; label: string }[] = 
 
 export function matchesControlSegment(row: Active2026ControlRow, segment: ControlSegmentId): boolean {
   switch (segment) {
+    case 'activeJobs':
+      return row.lifecycleGroup === 'Active'
+        && row.status !== 'Closed'
+        && row.status !== 'Complete';
     case 'all':
       return true;
     case 'criticalRisk':

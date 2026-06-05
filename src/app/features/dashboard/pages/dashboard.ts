@@ -11,6 +11,8 @@ import { ProjectPayAppsApiResponse } from '@core/services/api/project-api.types'
 import { mapPayAppsResponse, ProjectSqlPayApp } from '@core/services/api/project-pay-app-api.mapper';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { ChartCardComponent } from '@app/components/ui/chart-card';
+import { DonutChartComponent, DonutSlice } from '@app/components/charts/donut-chart';
 import {
   buildHomePriorities,
   homeSourceHealthFragment,
@@ -48,6 +50,8 @@ interface DashboardFinancialMetric {
     RouterLink,
     PageHeaderComponent,
     StatusChipComponent,
+    ChartCardComponent,
+    DonutChartComponent,
   ],
   providers: [CurrencyPipe],
   template: `
@@ -109,7 +113,10 @@ interface DashboardFinancialMetric {
         @if (priorities().length) {
           <div class="divide-y divide-slate-100">
             @for (item of priorities(); track item.id) {
-              <div class="px-4 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+              <a [routerLink]="item.route"
+                 [queryParams]="item.queryParams"
+                 [fragment]="item.fragment"
+                 class="px-4 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80 transition-colors">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     @if (item.jobNumber) {
@@ -129,13 +136,10 @@ interface DashboardFinancialMetric {
                     <p class="text-sm text-slate-600 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
                   }
                 </div>
-                <a [routerLink]="item.route"
-                   [queryParams]="item.queryParams"
-                   [fragment]="item.fragment"
-                   class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                <span class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
                   {{ priorityActionLabel(item.nextActionLabel) }}
-                </a>
-              </div>
+                </span>
+              </a>
             }
           </div>
         } @else {
@@ -262,14 +266,21 @@ interface DashboardFinancialMetric {
           </div>
           <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y divide-slate-100">
-          @for (item of financialSnapshot(); track item.label) {
-            <div class="p-4 min-w-0">
-              <div class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ item.label }}</div>
-              <div class="text-lg font-bold text-slate-950 mt-1 truncate">{{ item.value }}</div>
-              <div class="text-xs text-slate-500 mt-1 truncate">{{ item.subtext }}</div>
-            </div>
-          }
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_280px] gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y divide-slate-100">
+            @for (item of financialSnapshot(); track item.label) {
+              <div class="p-4 min-w-0">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ item.label }}</div>
+                <div class="text-lg font-bold text-slate-950 mt-1 truncate">{{ item.value }}</div>
+                <div class="text-xs text-slate-500 mt-1 truncate">{{ item.subtext }}</div>
+              </div>
+            }
+          </div>
+          <div class="p-4">
+            <app-chart-card title="Portfolio Mix" subtitle="Billed vs balance across active jobs">
+              <app-donut-chart [slices]="portfolioDonut()" />
+            </app-chart-card>
+          </div>
         </div>
       </section>
 
@@ -404,6 +415,18 @@ export class Dashboard {
       .sort((a, b) => this.billingRecordTime(b) - this.billingRecordTime(a))
       .slice(0, 6),
   );
+
+  portfolioDonut = computed<DonutSlice[]>(() => {
+    const rows = this.globalNeeds.active2026Rows();
+    const billed = rows.reduce((sum, row) => sum + row.billedToDate, 0);
+    const balance = rows.reduce((sum, row) => sum + row.leftToBill, 0);
+    const ar = rows.reduce((sum, row) => sum + row.arBalance, 0);
+    return [
+      { label: 'Billed', value: billed, color: '#059669' },
+      { label: 'Balance to Bill', value: balance, color: '#2563eb' },
+      { label: 'Open A/R', value: ar, color: '#d97706' },
+    ].filter(slice => slice.value > 0);
+  });
 
   quickActions = computed(() => [
     { label: 'Open Projects', subtext: 'Search, filter, and open active jobs', route: '/projects', icon: 'folder_open' },

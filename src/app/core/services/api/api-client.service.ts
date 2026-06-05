@@ -20,6 +20,15 @@ export class ApiClientService {
     }
   }
 
+  async post<T>(path: string, body: unknown = {}): Promise<T> {
+    const url = `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+    try {
+      return await firstValueFrom(this.http.post<T>(url, body));
+    } catch (err) {
+      throw this.wrapError(err, url);
+    }
+  }
+
   async patch<T>(path: string, body: unknown): Promise<T> {
     const url = `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
     try {

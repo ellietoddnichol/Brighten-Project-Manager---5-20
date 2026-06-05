@@ -134,4 +134,4 @@ export interface Active2026ControlSummary {
   jobsMissingCprSetup: number;
 }
 
-export type ControlSegmentId = 'all' | 'criticalRisk' | 'setupNeeded' | 'reviewNeeded' | 'billing' | 'cpr' | 'subs';
+export type ControlSegmentId = 'activeJobs' | 'all' | 'criticalRisk' | 'setupNeeded' | 'reviewNeeded' | 'billing' | 'cpr' | 'subs';

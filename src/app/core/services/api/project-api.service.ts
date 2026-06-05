@@ -266,4 +266,14 @@ export class ProjectApiService {
       this.payAppDetailLoading.set(false);
     }
   }
+
+  /** Create 80% target budget lines in SQL when none exist yet. */
+  async confirmEstimatedBudget(idOrJob: string): Promise<{ inserted: number; totalBudget: number }> {
+    const resp = await this.api.post<{ ok: boolean; inserted: number; totalBudget: number }>(
+      `/api/projects/${encodeURIComponent(idOrJob)}/budget/confirm-estimate`,
+      {},
+    );
+    await this.loadProjectFinancials(idOrJob);
+    return { inserted: resp.inserted, totalBudget: resp.totalBudget };
+  }
 }

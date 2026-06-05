@@ -12,6 +12,7 @@ import { DataService } from '@core/services/data.service';
 import { ImportDataService } from '@core/services/import-data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { BudgetSegment } from '@features/projects/utils/project-money.compute';
 
 type BudgetInnerTab = 'lines' | 'labor-bonus';
@@ -47,9 +48,18 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
         <app-project-foreman-bonus-tab [project]="project" />
       } @else {
       @if (rollup().budgetIsEstimated) {
-        <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
-          <strong>Budget Basis = Estimated from 20% target.</strong>
-          Target cost budget is 80% of current contract until a real budget workbook is imported.
+        <div class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <strong>Budget Basis = Estimated from 20% target.</strong>
+            Target cost budget is 80% of current contract until a real budget workbook is imported.
+          </div>
+          @if (projectApi.isEnabled()) {
+            <button type="button" (click)="approveEstimatedBudget()"
+                    [disabled]="budgetConfirming()"
+                    class="shrink-0 bg-amber-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50">
+              {{ budgetConfirming() ? 'Saving…' : 'Approve 80% Budget' }}
+            </button>
+          }
         </div>
       } @else if (financial().budgetBasis === 'Imported') {
         <div class="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 flex flex-wrap items-center justify-between gap-2">
@@ -342,6 +352,9 @@ export class BudgetTabComponent {
   private importData = inject(ImportDataService);
   private qbSyncData = inject(QuickBooksSyncDataService);
   private data = inject(DataService);
+  projectApi = inject(ProjectApiService);
+  budgetConfirming = signal(false);
+  budgetConfirmMessage = signal<string | null>(null);
 
   financial = computed(() => this.financialSvc.computeForProject(this.project));
   importSnapshots = computed(() => this.importData.snapshotsForJob(this.project.projectNumber));
@@ -422,5 +435,21 @@ export class BudgetTabComponent {
     this.lineDraft.originalBudget = this.lineBudgetAmount;
     await this.budgetSvc.saveLine(this.project, this.lineDraft, this.editingLineId());
     this.closeDrawer();
+  }
+
+  async approveEstimatedBudget(): Promise<void> {
+    if (this.budgetConfirming() || !this.projectApi.isEnabled()) return;
+    this.budgetConfirming.set(true);
+    this.budgetConfirmMessage.set(null);
+    try {
+      const result = await this.projectApi.confirmEstimatedBudget(this.project.id);
+      this.budgetConfirmMessage.set(
+        `Approved ${result.inserted} budget lines totaling ${result.totalBudget.toLocaleString('en-US', { style: 'currency', currency: 'USD' })} in Cloud SQL.`,
+      );
+    } catch (err) {
+      this.budgetConfirmMessage.set(err instanceof Error ? err.message : 'Budget approve failed');
+    } finally {
+      this.budgetConfirming.set(false);
+    }
   }
 }

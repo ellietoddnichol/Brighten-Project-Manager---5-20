@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { queryOne, queryRows } from '../db.js';
+import { queryOne, queryRows, withTransaction } from '../db.js';
+import { confirmEstimatedBudgetForProject } from '../utils/budgetConfirm.js';
 import type { GenericViewRow, ProjectDashboardRow } from '../types.js';
 import { normalizeJobNumber, projectFilterParams } from '../utils/projectFilter.js';
 import { applyProjectPatch, PatchValidationError } from '../utils/projectPatch.js';
@@ -440,6 +441,30 @@ projectsRouter.get('/projects/:id/pay-apps/:payAppId', async (req, res, next) =>
     });
   } catch (err) {
     next(err);
+  }
+});
+
+projectsRouter.post('/projects/:id/budget/confirm-estimate', async (req, res, next) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const params = [req.params.id, job, `J${job}`];
+    const project = await queryOne<GenericViewRow>(
+      `SELECT id FROM brighten_pm.v_project_dashboard
+       WHERE id = ? OR job_number = ? OR job_number = ?
+       LIMIT 1`,
+      params,
+    );
+    if (!project?.id) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const result = await withTransaction(conn =>
+      confirmEstimatedBudgetForProject(conn, String(project.id)),
+    );
+    res.json({ ok: true, source: 'sql', projectId: project.id, ...result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Budget confirm failed';
+    res.status(400).json({ ok: false, error: message });
   }
 });
 

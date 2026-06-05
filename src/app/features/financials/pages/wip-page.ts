@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,6 +30,7 @@ import { WIPRecord } from '@app/models/financial.types';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     MatIconModule,
     PageHeaderComponent,
@@ -90,6 +92,16 @@ import { WIPRecord } from '@app/models/financial.types';
       }
 
       <app-segmented-control [options]="segmentOptions" [value]="segment()" (select)="setSegment($event)" />
+
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <div class="relative flex-1 min-w-[220px] max-w-md">
+          <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
+          <input type="text" [ngModel]="jobSearch()" (ngModelChange)="jobSearch.set($event)"
+                 placeholder="Filter in-progress jobs by # or name…"
+                 class="w-full pl-10 pr-4 py-2.5 bg-white rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-300 outline-none">
+        </div>
+        <span class="text-xs text-slate-500">{{ filteredRows().length }} job(s) shown</span>
+      </div>
 
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
@@ -154,6 +166,7 @@ export class WipPage {
   readonly confidenceLabel = wipConfidenceLabel;
 
   segment = signal<WipPageSegmentId>('activeWip');
+  jobSearch = signal('');
   hubMessage = signal<string | null>(null);
   recalculating = signal(false);
 
@@ -172,7 +185,12 @@ export class WipPage {
 
   filteredRows = computed(() => {
     const seg = this.segment();
-    return this.allRecords().filter(r => this.matchesSegment(r, seg));
+    const q = this.jobSearch().trim().toLowerCase();
+    return this.allRecords().filter(r => {
+      if (!this.matchesSegment(r, seg)) return false;
+      if (!q) return true;
+      return (r.jobNumber ?? '').toLowerCase().includes(q) || (r.projectName ?? '').toLowerCase().includes(q);
+    });
   });
 
   compactStats = computed(() => {

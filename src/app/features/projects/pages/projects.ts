@@ -77,6 +77,7 @@ import {
   ProjectsAdvancedFilters,
 
   ProjectListRow,
+  ProjectListWarning,
 
   summarizeProjectsHub,
 
@@ -304,6 +305,66 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         @if (listRows().length) {
 
+          @if (tableLayout()) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm min-w-[1120px]">
+              <thead>
+                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                  <th class="px-4 py-3">Job #</th>
+                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3">Customer</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Billing</th>
+                  <th class="px-4 py-3 text-right">Contract</th>
+                  <th class="px-4 py-3 text-right">Billed</th>
+                  <th class="px-4 py-3 text-right">Balance</th>
+                  <th class="px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (row of listRows(); track row.project.id) {
+                  <tr class="hover:bg-slate-50" [class.opacity-70]="row.quietRow">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
+                        {{ row.project.projectName }}
+                      </a>
+                      @if (row.warnings.length) {
+                        <div class="flex flex-wrap gap-1 mt-1">
+                          @for (chip of row.warnings; track chip.id) {
+                            <a [routerLink]="warningRoute(row, chip)"
+                               class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full hover:underline"
+                               [class.bg-rose-100]="chip.kind === 'critical'"
+                               [class.text-rose-800]="chip.kind === 'critical'"
+                               [class.bg-amber-100]="chip.kind === 'setup'"
+                               [class.text-amber-800]="chip.kind === 'setup'">
+                              {{ chip.label }}
+                            </a>
+                          }
+                        </div>
+                      }
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600">{{ row.project.billingStatus || 'Pending' }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.financial.currentContractAmount) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.moneySecondaryValue) }}</td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="row.nextActionRoute"
+                         class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
+                        {{ row.nextActionLabel }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          } @else {
+
           <div class="divide-y divide-slate-100">
 
             @for (row of listRows(); track row.project.id) {
@@ -443,6 +504,8 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             }
 
           </div>
+
+          }
 
         } @else {
 
@@ -1049,6 +1112,10 @@ export class Projects implements OnInit {
 
   emptyState = computed(() => projectsEmptyMessage(this.viewMode(), !!this.searchQuery().trim()));
 
+  tableLayout = computed(
+    () => this.projectApi.activeSource() === 'api' && (this.viewMode() === 'default' || this.viewMode() === 'all'),
+  );
+
   quickViewSubtitle = computed(() => this.quickViewRow()?.project.customer || '');
 
 
@@ -1168,6 +1235,12 @@ export class Projects implements OnInit {
 
     return this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
 
+  }
+
+  warningRoute(row: ProjectListRow, chip: ProjectListWarning): string[] {
+    const pid = row.project.id;
+    if (chip.id === 'source-review') return ['/settings'];
+    return ['/projects', pid];
   }
 
 

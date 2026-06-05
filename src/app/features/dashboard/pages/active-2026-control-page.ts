@@ -30,11 +30,11 @@ import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
-import { ListRowComponent } from '@app/components/ui/list-row';
-import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '@app/components/ui/detail-drawer';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 
 const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
+  'activeJobs',
   'all',
   'criticalRisk',
   'setupNeeded',
@@ -50,15 +50,15 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
   imports: [
     CommonModule, FormsModule, RouterLink, MatIconModule,
     PageHeaderComponent, StatCardComponent, CompactStatStripComponent,
-    SegmentedControlComponent, ListRowComponent,
+    SegmentedControlComponent,
     DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent,
-    EmptyStateComponent,
+    EmptyStateComponent, StatusChipComponent,
   ],
   template: `
     <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       <app-page-header
-        title="Active 2026 Control"
-        [subtitle]="'Owner view · ' + summary().activeJobs + ' active jobs · 20% profit target'">
+        title="Active Jobs"
+        [subtitle]="'Office view · ' + summary().activeJobs + ' in-progress jobs · 20% profit target'">
         <div class="flex flex-wrap items-center gap-2">
           <button type="button" (click)="filterDrawerOpen.set(true)"
                   class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
@@ -104,17 +104,56 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
         }
       </div>
 
-      <div class="bg-white rounded-xl border shadow-sm overflow-hidden">
-        @for (row of displayRows(); track row.projectId) {
-          <app-list-row
-            [title]="row.jobNumber + ' · ' + row.projectName"
-            [subtitle]="(row.customer || 'No customer') + ' · ' + row.status + ' · ' + row.lifecycleGroup"
-            [health]="row.healthStatus"
-            [metrics]="rowMetrics(row)"
-            [chips]="rowWarningChips(row)"
-            [nextAction]="row.nextAction.label"
-            (rowClick)="openDrawer(row)" />
-        } @empty {
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        @if (displayRows().length) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm min-w-[1120px]">
+              <thead>
+                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                  <th class="px-4 py-3">Job #</th>
+                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3">Customer</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Billing</th>
+                  <th class="px-4 py-3 text-right">Contract</th>
+                  <th class="px-4 py-3 text-right">Billed</th>
+                  <th class="px-4 py-3 text-right">Balance</th>
+                  <th class="px-4 py-3">Foreman / PM</th>
+                  <th class="px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (row of displayRows(); track row.projectId) {
+                  <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
+                        {{ row.projectName }}
+                      </a>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.customer || 'Not available' }}</td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip [tone]="row.healthStatus === 'Red' ? 'red' : row.healthStatus === 'Yellow' ? 'amber' : 'green'">{{ row.status }}</app-status-chip>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[140px]">{{ row.billingStatus || 'Pending' }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.currentContract) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmtCurrency(row.leftToBill) }}</td>
+                    <td class="px-4 py-2.5 text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="row.nextAction.route"
+                         [queryParams]="row.nextAction.queryParams"
+                         [fragment]="row.nextAction.fragment"
+                         class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
+                        {{ row.nextAction.label }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
           <app-empty-state
             title="No jobs match the current filters."
             message="Try a different segment or clear advanced filters." />
@@ -228,7 +267,7 @@ export class Active2026ControlPage {
 
   sortKey: ControlSortKey = 'jobNumber';
   activeFilters = signal<Set<ControlFilterId>>(new Set());
-  activeSegment = signal<ControlSegmentId>('all');
+  activeSegment = signal<ControlSegmentId>('activeJobs');
   selectedRow = signal<Active2026ControlRow | null>(null);
   filterDrawerOpen = signal(false);
 
@@ -299,11 +338,17 @@ export class Active2026ControlPage {
     const count = (seg: ControlSegmentId) =>
       seg === 'all' ? rows.length : rows.filter(r => matchesControlSegment(r, seg)).length;
     return [
+      { id: 'activeJobs' as ControlSegmentId, label: 'In Progress', badge: count('activeJobs') || undefined },
       { id: 'all' as ControlSegmentId, label: 'All', badge: count('all') || undefined },
       { id: 'criticalRisk' as ControlSegmentId, label: 'Review', badge: count('criticalRisk') || undefined },
       { id: 'billing' as ControlSegmentId, label: 'Billing', badge: count('billing') || undefined },
     ];
   });
+
+  foremanPmLabel(row: Active2026ControlRow): string {
+    const people = [row.foreman, row.pm].filter(value => !!value && value !== 'TBD');
+    return people.length ? people.join(' / ') : 'Not assigned';
+  }
 
   compactStats = computed(() => {
     const s = this.summary();
