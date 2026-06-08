@@ -3,6 +3,7 @@ import { ApiClientService } from './api-client.service';
 import { mapDashboardRowsToProjects, mapDashboardRowToProject } from './project-api.mapper';
 import { mapFinancialSummaryResponse, ProjectSqlFinancialSummary } from './project-financial-api.mapper';
 import { mapBudgetResponse, ProjectSqlBudget } from './project-budget-api.mapper';
+import { mapLaborResponse, ProjectSqlLabor } from './project-labor-api.mapper';
 import {
   mapPayAppDetailResponse,
   mapPayAppsResponse,
@@ -60,6 +61,12 @@ export class ProjectApiService {
   payAppDetailLoading = signal(false);
   payAppDetailError = signal<string | null>(null);
   payAppDetail = signal<ProjectSqlPayAppDetail | null>(null);
+
+  laborLoading = signal(false);
+  laborError = signal<string | null>(null);
+  laborActiveSource = signal<ApiDataSource>('firestore');
+  labor = signal<ProjectSqlLabor | null>(null);
+  laborProjectId = signal<string | null>(null);
 
   isEnabled(): boolean {
     return apiConfig.useApiBackend;
@@ -350,6 +357,81 @@ export class ProjectApiService {
     await this.api.delete(`/api/projects/${encodeURIComponent(idOrJob)}/budget/lines/${encodeURIComponent(lineId)}`);
     await this.loadProjectBudget(idOrJob);
   }
+
+  /** Load SQL-backed labor entries. Falls back silently on failure. */
+  async loadProjectLabor(idOrJob: string): Promise<ProjectSqlLabor | null> {
+    this.laborProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.laborActiveSource.set('firestore');
+      this.laborError.set(null);
+      this.labor.set(null);
+      return null;
+    }
+
+    this.laborLoading.set(true);
+    this.laborError.set(null);
+    this.laborActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<{ ok: boolean; projectId: string; summary?: Record<string, unknown> | null; entries?: Array<Record<string, unknown>>; entryCount?: number }>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/labor`,
+      );
+      const mapped = mapLaborResponse(resp);
+      this.labor.set(mapped);
+      this.laborActiveSource.set('api');
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project labor from API';
+      this.laborError.set(message);
+      this.labor.set(null);
+      this.laborActiveSource.set('firestore');
+      console.warn('[ProjectApiService] labor', message);
+      return null;
+    } finally {
+      this.laborLoading.set(false);
+    }
+  }
+
+  /** Create a single labor entry in SQL. */
+  async createLaborEntry(idOrJob: string, entry: LaborEntryWriteInput): Promise<void> {
+    await this.api.post(`/api/projects/${encodeURIComponent(idOrJob)}/labor`, entry);
+    await this.loadProjectLabor(idOrJob);
+  }
+
+  /** Bulk-import labor entries (e.g. from a pasted spreadsheet/CSV) in SQL. */
+  async importLaborEntries(idOrJob: string, entries: LaborEntryWriteInput[]): Promise<{ imported: number }> {
+    const resp = await this.api.post<{ ok: boolean; imported: number }>(
+      `/api/projects/${encodeURIComponent(idOrJob)}/labor/import`,
+      { entries },
+    );
+    await this.loadProjectLabor(idOrJob);
+    return { imported: resp.imported };
+  }
+
+  /** Update an existing SQL labor entry. */
+  async updateLaborEntry(idOrJob: string, entryId: string, entry: LaborEntryWriteInput): Promise<void> {
+    await this.api.patch(`/api/projects/${encodeURIComponent(idOrJob)}/labor/${encodeURIComponent(entryId)}`, entry);
+    await this.loadProjectLabor(idOrJob);
+  }
+
+  /** Delete a SQL labor entry. */
+  async deleteLaborEntry(idOrJob: string, entryId: string): Promise<void> {
+    await this.api.delete(`/api/projects/${encodeURIComponent(idOrJob)}/labor/${encodeURIComponent(entryId)}`);
+    await this.loadProjectLabor(idOrJob);
+  }
+}
+
+export interface LaborEntryWriteInput {
+  workDate: string;
+  employeeName: string;
+  classification?: string | null;
+  regularHours: number;
+  overtimeHours: number;
+  doubleTimeHours: number;
+  hourlyRate?: number | null;
+  laborCost?: number | null;
+  notes?: string | null;
 }
 
 export interface BudgetLineWriteInput {

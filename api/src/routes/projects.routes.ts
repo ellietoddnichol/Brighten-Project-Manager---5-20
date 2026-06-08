@@ -9,6 +9,13 @@ import {
   resolveProjectId,
   updateBudgetLine,
 } from '../utils/budgetLines.js';
+import {
+  LaborEntryValidationError,
+  deleteLaborEntry,
+  insertLaborEntry,
+  parseLaborEntryInput,
+  updateLaborEntry,
+} from '../utils/laborEntries.js';
 import type { GenericViewRow, ProjectDashboardRow } from '../types.js';
 import { normalizeJobNumber, projectFilterParams } from '../utils/projectFilter.js';
 import { applyProjectPatch, PatchValidationError } from '../utils/projectPatch.js';
@@ -614,6 +621,139 @@ projectsRouter.delete('/projects/:id/budget/lines/:lineId', async (req, res) => 
     res.json({ ok: true, projectId, lineId: req.params.lineId });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to delete budget line';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.get('/projects/:id/labor', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const summary = await queryOne<GenericViewRow>(
+      `SELECT * FROM brighten_pm.v_project_labor_summary WHERE project_id = ? LIMIT 1`,
+      [projectId],
+    );
+    const entries = await queryRows<GenericViewRow>(
+      `SELECT * FROM brighten_pm.labor_entries WHERE project_id = ? ORDER BY work_date DESC, id DESC`,
+      [projectId],
+    );
+    res.json({ ok: true, projectId, summary, entries, entryCount: entries.length });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to load labor entries';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.post('/projects/:id/labor', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const input = parseLaborEntryInput(req.body);
+    const entryId = await withTransaction(conn => insertLaborEntry(conn, projectId, input));
+    res.status(201).json({ ok: true, projectId, entryId });
+  } catch (err) {
+    if (err instanceof LaborEntryValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to create labor entry';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.post('/projects/:id/labor/import', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const rawEntries = (req.body as { entries?: unknown[] })?.entries;
+    if (!Array.isArray(rawEntries) || rawEntries.length === 0) {
+      res.status(400).json({ ok: false, error: 'Request body must include a non-empty "entries" array.' });
+      return;
+    }
+
+    const inputs = rawEntries.map((entry, index) => {
+      try {
+        return parseLaborEntryInput(entry);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Invalid entry';
+        throw new LaborEntryValidationError(`Row ${index + 1}: ${message}`);
+      }
+    });
+
+    const entryIds = await withTransaction(async conn => {
+      const ids: string[] = [];
+      for (const input of inputs) {
+        ids.push(await insertLaborEntry(conn, projectId, input));
+      }
+      return ids;
+    });
+
+    res.status(201).json({ ok: true, projectId, imported: entryIds.length, entryIds });
+  } catch (err) {
+    if (err instanceof LaborEntryValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to import labor entries';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.patch('/projects/:id/labor/:entryId', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const input = parseLaborEntryInput(req.body);
+    const updated = await withTransaction(conn =>
+      updateLaborEntry(conn, projectId, req.params.entryId, input),
+    );
+    if (!updated) {
+      res.status(404).json({ ok: false, error: 'Labor entry not found' });
+      return;
+    }
+    res.json({ ok: true, projectId, entryId: req.params.entryId });
+  } catch (err) {
+    if (err instanceof LaborEntryValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to update labor entry';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.delete('/projects/:id/labor/:entryId', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const deleted = await withTransaction(conn => deleteLaborEntry(conn, projectId, req.params.entryId));
+    if (!deleted) {
+      res.status(404).json({ ok: false, error: 'Labor entry not found' });
+      return;
+    }
+    res.json({ ok: true, projectId, entryId: req.params.entryId });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete labor entry';
     res.status(400).json({ ok: false, error: message });
   }
 });
