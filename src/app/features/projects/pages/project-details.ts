@@ -929,15 +929,18 @@ export class ProjectDetails implements OnInit {
     if (!this.projectId) return;
     const folderId = parseDriveFolderId(folderIdRaw);
     const driveFolderUrl = this.driveService.folderUrl(folderId);
-    this.dataService.updateProject(this.projectId, { driveFolderId: folderId, driveFolderUrl }).subscribe(async () => {
-      const p = this.project();
-      if (p) {
-        await this.folderDiscovery.initializeFolderLinks(this.projectId!, folderId);
-        const token = await this.authService.getAccessToken();
-        if (token) {
-          await this.folderDiscovery.discoverProjectFolders({ ...p, driveFolderId: folderId, driveFolderUrl });
+    this.dataService.updateProject(this.projectId, { driveFolderId: folderId, driveFolderUrl }).subscribe({
+      next: async () => {
+        const p = this.project();
+        if (p) {
+          await this.folderDiscovery.initializeFolderLinks(this.projectId!, folderId);
+          const token = await this.authService.getAccessToken();
+          if (token) {
+            await this.folderDiscovery.discoverProjectFolders({ ...p, driveFolderId: folderId, driveFolderUrl });
+          }
         }
-      }
+      },
+      error: () => alert('Failed to save the Drive folder link. Please try again.'),
     });
   }
 
@@ -946,7 +949,9 @@ export class ProjectDetails implements OnInit {
     this.dataService.updateProject(this.projectId, {
       googleSheetId: sheetId,
       googleSheetUrl: sheetId ? `https://docs.google.com/spreadsheets/d/${sheetId}/edit` : undefined,
-    }).subscribe();
+    }).subscribe({
+      error: () => alert('Failed to save the Google Sheet link. Please try again.'),
+    });
   }
 
   async loadDriveFiles(): Promise<void> {

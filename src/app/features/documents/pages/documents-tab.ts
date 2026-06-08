@@ -382,10 +382,11 @@ export class DocumentsTabComponent {
   saveReq(): void {
     if (!this.newReq.documentType) return;
     this.newReq.projectId = this.project.id;
+    const onError = () => alert('Failed to save the required document. Please try again.');
     if (this.editingReqId) {
-      this.dataService.updateRequiredDocument(this.editingReqId, this.newReq).subscribe(() => this.cancelReq());
+      this.dataService.updateRequiredDocument(this.editingReqId, this.newReq).subscribe({ next: () => this.cancelReq(), error: onError });
     } else {
-      this.dataService.createRequiredDocument(this.newReq).subscribe(() => this.cancelReq());
+      this.dataService.createRequiredDocument(this.newReq).subscribe({ next: () => this.cancelReq(), error: onError });
     }
   }
 
@@ -412,19 +413,26 @@ export class DocumentsTabComponent {
       status: 'Open',
       relatedRecordType: 'ProjectFile',
       relatedRecordId: file.id,
-    }).subscribe(() => alert('Issue created. View in Work → Field Issues.'));
+    }).subscribe({
+      next: () => alert('Issue created. View in Work → Field Issues.'),
+      error: () => alert('Failed to create the issue. Please try again.'),
+    });
   }
 
   archiveFile(file: ProjectFile): void {
     if (!confirm(`Archive "${file.fileName}"? It stays in Firestore but is hidden from the default list.`)) return;
     const reason = prompt('Optional reason (leave blank to skip):');
     if (reason === null) return;
-    this.projectFiles.archive(file.id, reason.trim() || undefined).subscribe();
+    this.projectFiles.archive(file.id, reason.trim() || undefined).subscribe({
+      error: () => alert('Failed to archive the file. Please try again.'),
+    });
   }
 
   restoreFile(file: ProjectFile): void {
     if (!confirm('Restore this file to the active list?')) return;
-    this.projectFiles.restore(file.id).subscribe();
+    this.projectFiles.restore(file.id).subscribe({
+      error: () => alert('Failed to restore the file. Please try again.'),
+    });
   }
 
   saveFile(): void {
@@ -447,10 +455,11 @@ export class DocumentsTabComponent {
         }
       : { ...this.newFile, projectId: this.project.id };
 
+    const onError = () => alert('Failed to save the file. Please try again.');
     if (this.editingFileId) {
-      this.projectFiles.update(this.editingFileId, base, this.project).subscribe(() => this.cancelFile());
+      this.projectFiles.update(this.editingFileId, base, this.project).subscribe({ next: () => this.cancelFile(), error: onError });
     } else {
-      this.projectFiles.create(base, this.project).subscribe(() => this.cancelFile());
+      this.projectFiles.create(base, this.project).subscribe({ next: () => this.cancelFile(), error: onError });
     }
   }
 }

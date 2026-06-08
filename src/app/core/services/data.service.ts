@@ -530,9 +530,14 @@ export class DataService {
 
   updateTask(id: string, updates: Partial<Task>): Observable<Task> {
     return from((async () => {
-      await updateDoc(doc(db, 'tasks', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.tasksSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as Task;
+      try {
+        await updateDoc(doc(db, 'tasks', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.tasksSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as Task;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `tasks/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -562,9 +567,14 @@ export class DataService {
 
   updatePO(id: string, updates: Partial<PO>): Observable<PO> {
     return from((async () => {
-      await updateDoc(doc(db, 'pos', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.posSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as PO;
+      try {
+        await updateDoc(doc(db, 'pos', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.posSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as PO;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `pos/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -594,9 +604,14 @@ export class DataService {
 
   updateChangeOrder(id: string, updates: Partial<ChangeOrder>): Observable<ChangeOrder> {
     return from((async () => {
-      await updateDoc(doc(db, 'change-orders', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.changeOrdersSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as ChangeOrder;
+      try {
+        await updateDoc(doc(db, 'change-orders', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.changeOrdersSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as ChangeOrder;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `change-orders/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -604,16 +619,26 @@ export class DataService {
   createBilling(b: Partial<Billing>): Observable<Billing> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...b, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'billings', id), forFirestore(newDoc));
-      return newDoc as unknown as Billing;
+      try {
+        const newDoc = { ...b, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'billings', id), forFirestore(newDoc));
+        return newDoc as unknown as Billing;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `billings/${id}`);
+        throw error;
+      }
     })());
   }
   updateBilling(id: string, updates: Partial<Billing>): Observable<Billing> {
     return from((async () => {
-      await updateDoc(doc(db, 'billings', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.billingsSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as Billing;
+      try {
+        await updateDoc(doc(db, 'billings', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.billingsSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as Billing;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `billings/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -621,16 +646,26 @@ export class DataService {
   createMilestone(m: Partial<ScheduleMilestone>): Observable<ScheduleMilestone> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...m, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'milestones', id), forFirestore(newDoc));
-      return newDoc as unknown as ScheduleMilestone;
+      try {
+        const newDoc = { ...m, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'milestones', id), forFirestore(newDoc));
+        return newDoc as unknown as ScheduleMilestone;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `milestones/${id}`);
+        throw error;
+      }
     })());
   }
   updateMilestone(id: string, updates: Partial<ScheduleMilestone>): Observable<ScheduleMilestone> {
     return from((async () => {
-      await updateDoc(doc(db, 'milestones', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.milestonesSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as ScheduleMilestone;
+      try {
+        await updateDoc(doc(db, 'milestones', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.milestonesSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as ScheduleMilestone;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `milestones/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -639,16 +674,26 @@ export class DataService {
   createDocument(d: Partial<Document>): Observable<Document> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...d, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'documents', id), forFirestore(newDoc));
-      return newDoc as unknown as Document;
+      try {
+        const newDoc = { ...d, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'documents', id), forFirestore(newDoc));
+        return newDoc as unknown as Document;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `documents/${id}`);
+        throw error;
+      }
     })());
   }
   updateDocument(id: string, updates: Partial<Document>): Observable<Document> {
     return from((async () => {
-      await updateDoc(doc(db, 'documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.documentsSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as Document;
+      try {
+        await updateDoc(doc(db, 'documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.documentsSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as Document;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `documents/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -656,21 +701,36 @@ export class DataService {
   createBudgetLine(b: Partial<ProjectBudgetLine>): Observable<ProjectBudgetLine> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...b, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'budget-lines', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectBudgetLine;
+      try {
+        const newDoc = { ...b, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'budget-lines', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectBudgetLine;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `budget-lines/${id}`);
+        throw error;
+      }
     })());
   }
   updateBudgetLine(id: string, updates: Partial<ProjectBudgetLine>): Observable<ProjectBudgetLine> {
     return from((async () => {
-      await updateDoc(doc(db, 'budget-lines', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      const current = this.budgetLinesSubject.value.find(x => x.id === id);
-      return { ...current, ...updates } as ProjectBudgetLine;
+      try {
+        await updateDoc(doc(db, 'budget-lines', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        const current = this.budgetLinesSubject.value.find(x => x.id === id);
+        return { ...current, ...updates } as ProjectBudgetLine;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `budget-lines/${id}`);
+        throw error;
+      }
     })());
   }
   deleteBudgetLine(id: string): Observable<void> {
     return from((async () => {
-      await deleteDoc(doc(db, 'budget-lines', id));
+      try {
+        await deleteDoc(doc(db, 'budget-lines', id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `budget-lines/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -678,15 +738,25 @@ export class DataService {
   createProjectFolder(f: Partial<ProjectFolder>): Observable<ProjectFolder> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...f, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'project-folders', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectFolder;
+      try {
+        const newDoc = { ...f, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'project-folders', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectFolder;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-folders/${id}`);
+        throw error;
+      }
     })());
   }
   updateProjectFolder(id: string, updates: Partial<ProjectFolder>): Observable<ProjectFolder> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-folders', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.projectFoldersSubject.value.find(x => x.id === id), ...updates } as ProjectFolder;
+      try {
+        await updateDoc(doc(db, 'project-folders', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.projectFoldersSubject.value.find(x => x.id === id), ...updates } as ProjectFolder;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-folders/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -698,42 +768,57 @@ export class DataService {
   createProjectFile(f: Partial<ProjectFile>): Observable<ProjectFile> {
     return from((async () => {
       const id = uuidv4();
-      const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
-      const newDoc = {
-        ...f,
-        id,
-        ownerId: auth.currentUser?.uid,
-        uploadedAt: serverTimestamp(),
-        lastModifiedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        createdBy: f.createdBy ?? actor,
-        updatedBy: f.updatedBy ?? actor,
-      };
-      await setDoc(doc(db, 'project-files', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectFile;
+      try {
+        const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
+        const newDoc = {
+          ...f,
+          id,
+          ownerId: auth.currentUser?.uid,
+          uploadedAt: serverTimestamp(),
+          lastModifiedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: f.createdBy ?? actor,
+          updatedBy: f.updatedBy ?? actor,
+        };
+        await setDoc(doc(db, 'project-files', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectFile;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-files/${id}`);
+        throw error;
+      }
     })());
   }
   updateProjectFile(id: string, updates: Partial<ProjectFile>): Observable<ProjectFile> {
     return from((async () => {
-      const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
-      const patch = {
-        ...updates,
-        lastModifiedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        updatedBy: updates.updatedBy ?? actor,
-        ...(updates.archived === true && updates.archivedAt == null
-          ? { archivedAt: serverTimestamp() }
-          : {}),
-      };
-      await updateDoc(doc(db, 'project-files', id), forFirestore(patch));
-      return { ...this.projectFilesSubject.value.find(x => x.id === id), ...updates } as ProjectFile;
+      try {
+        const actor = auth.currentUser?.email ?? auth.currentUser?.uid;
+        const patch = {
+          ...updates,
+          lastModifiedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          updatedBy: updates.updatedBy ?? actor,
+          ...(updates.archived === true && updates.archivedAt == null
+            ? { archivedAt: serverTimestamp() }
+            : {}),
+        };
+        await updateDoc(doc(db, 'project-files', id), forFirestore(patch));
+        return { ...this.projectFilesSubject.value.find(x => x.id === id), ...updates } as ProjectFile;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-files/${id}`);
+        throw error;
+      }
     })());
   }
 
   /** Admin-only hard delete — normal UI should use ProjectFilesRepository.archive(). */
   hardDeleteProjectFile(id: string): Observable<void> {
     return from((async () => {
-      await deleteDoc(doc(db, 'project-files', id));
+      try {
+        await deleteDoc(doc(db, 'project-files', id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `project-files/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -741,15 +826,25 @@ export class DataService {
   createRequiredDocument(d: Partial<RequiredDocument>): Observable<RequiredDocument> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...d, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'required-documents', id), forFirestore(newDoc));
-      return newDoc as unknown as RequiredDocument;
+      try {
+        const newDoc = { ...d, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'required-documents', id), forFirestore(newDoc));
+        return newDoc as unknown as RequiredDocument;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `required-documents/${id}`);
+        throw error;
+      }
     })());
   }
   updateRequiredDocument(id: string, updates: Partial<RequiredDocument>): Observable<RequiredDocument> {
     return from((async () => {
-      await updateDoc(doc(db, 'required-documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.requiredDocumentsSubject.value.find(x => x.id === id), ...updates } as RequiredDocument;
+      try {
+        await updateDoc(doc(db, 'required-documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.requiredDocumentsSubject.value.find(x => x.id === id), ...updates } as RequiredDocument;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `required-documents/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -757,15 +852,25 @@ export class DataService {
   createProjectIssue(i: Partial<ProjectIssue>): Observable<ProjectIssue> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...i, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'project-issues', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectIssue;
+      try {
+        const newDoc = { ...i, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'project-issues', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectIssue;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-issues/${id}`);
+        throw error;
+      }
     })());
   }
   updateProjectIssue(id: string, updates: Partial<ProjectIssue>): Observable<ProjectIssue> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-issues', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.projectIssuesSubject.value.find(x => x.id === id), ...updates } as ProjectIssue;
+      try {
+        await updateDoc(doc(db, 'project-issues', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.projectIssuesSubject.value.find(x => x.id === id), ...updates } as ProjectIssue;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-issues/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -773,15 +878,25 @@ export class DataService {
   createProjectTask(t: Partial<ProjectTask>): Observable<ProjectTask> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...t, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'project-tasks', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectTask;
+      try {
+        const newDoc = { ...t, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'project-tasks', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectTask;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-tasks/${id}`);
+        throw error;
+      }
     })());
   }
   updateProjectTask(id: string, updates: Partial<ProjectTask>): Observable<ProjectTask> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-tasks', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.projectTasksSubject.value.find(x => x.id === id), ...updates } as ProjectTask;
+      try {
+        await updateDoc(doc(db, 'project-tasks', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.projectTasksSubject.value.find(x => x.id === id), ...updates } as ProjectTask;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-tasks/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -815,15 +930,25 @@ export class DataService {
   createChangeRequest(cr: Partial<ChangeRequest>): Observable<ChangeRequest> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...cr, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'change-requests', id), forFirestore(newDoc));
-      return newDoc as unknown as ChangeRequest;
+      try {
+        const newDoc = { ...cr, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'change-requests', id), forFirestore(newDoc));
+        return newDoc as unknown as ChangeRequest;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `change-requests/${id}`);
+        throw error;
+      }
     })());
   }
   updateChangeRequest(id: string, updates: Partial<ChangeRequest>): Observable<ChangeRequest> {
     return from((async () => {
-      await updateDoc(doc(db, 'change-requests', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.changeRequestsSubject.value.find(x => x.id === id), ...updates } as ChangeRequest;
+      try {
+        await updateDoc(doc(db, 'change-requests', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.changeRequestsSubject.value.find(x => x.id === id), ...updates } as ChangeRequest;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `change-requests/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -831,15 +956,25 @@ export class DataService {
   createRfi(rfi: Partial<Rfi>): Observable<Rfi> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...rfi, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'rfis', id), forFirestore(newDoc));
-      return newDoc as unknown as Rfi;
+      try {
+        const newDoc = { ...rfi, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'rfis', id), forFirestore(newDoc));
+        return newDoc as unknown as Rfi;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `rfis/${id}`);
+        throw error;
+      }
     })());
   }
   updateRfi(id: string, updates: Partial<Rfi>): Observable<Rfi> {
     return from((async () => {
-      await updateDoc(doc(db, 'rfis', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.rfisSubject.value.find(x => x.id === id), ...updates } as Rfi;
+      try {
+        await updateDoc(doc(db, 'rfis', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.rfisSubject.value.find(x => x.id === id), ...updates } as Rfi;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `rfis/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -847,15 +982,25 @@ export class DataService {
   createSubmittal(s: Partial<Submittal>): Observable<Submittal> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...s, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'submittals', id), forFirestore(newDoc));
-      return newDoc as unknown as Submittal;
+      try {
+        const newDoc = { ...s, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'submittals', id), forFirestore(newDoc));
+        return newDoc as unknown as Submittal;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `submittals/${id}`);
+        throw error;
+      }
     })());
   }
   updateSubmittal(id: string, updates: Partial<Submittal>): Observable<Submittal> {
     return from((async () => {
-      await updateDoc(doc(db, 'submittals', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.submittalsSubject.value.find(x => x.id === id), ...updates } as Submittal;
+      try {
+        await updateDoc(doc(db, 'submittals', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.submittalsSubject.value.find(x => x.id === id), ...updates } as Submittal;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `submittals/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -863,15 +1008,25 @@ export class DataService {
   createDailyLog(log: Partial<DailyLog>): Observable<DailyLog> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...log, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'daily-logs', id), forFirestore(newDoc));
-      return newDoc as unknown as DailyLog;
+      try {
+        const newDoc = { ...log, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'daily-logs', id), forFirestore(newDoc));
+        return newDoc as unknown as DailyLog;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `daily-logs/${id}`);
+        throw error;
+      }
     })());
   }
   updateDailyLog(id: string, updates: Partial<DailyLog>): Observable<DailyLog> {
     return from((async () => {
-      await updateDoc(doc(db, 'daily-logs', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.dailyLogsSubject.value.find(x => x.id === id), ...updates } as DailyLog;
+      try {
+        await updateDoc(doc(db, 'daily-logs', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.dailyLogsSubject.value.find(x => x.id === id), ...updates } as DailyLog;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `daily-logs/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -879,15 +1034,25 @@ export class DataService {
   createFieldIssue(issue: Partial<FieldIssue>): Observable<FieldIssue> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...issue, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'field-issues', id), forFirestore(newDoc));
-      return newDoc as unknown as FieldIssue;
+      try {
+        const newDoc = { ...issue, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'field-issues', id), forFirestore(newDoc));
+        return newDoc as unknown as FieldIssue;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `field-issues/${id}`);
+        throw error;
+      }
     })());
   }
   updateFieldIssue(id: string, updates: Partial<FieldIssue>): Observable<FieldIssue> {
     return from((async () => {
-      await updateDoc(doc(db, 'field-issues', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.fieldIssuesSubject.value.find(x => x.id === id), ...updates } as FieldIssue;
+      try {
+        await updateDoc(doc(db, 'field-issues', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.fieldIssuesSubject.value.find(x => x.id === id), ...updates } as FieldIssue;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `field-issues/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -895,14 +1060,24 @@ export class DataService {
   createPayAppLine(line: Partial<PayAppLine>): Observable<PayAppLine> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...line, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'pay-app-lines', id), forFirestore(newDoc));
-      return newDoc as unknown as PayAppLine;
+      try {
+        const newDoc = { ...line, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'pay-app-lines', id), forFirestore(newDoc));
+        return newDoc as unknown as PayAppLine;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `pay-app-lines/${id}`);
+        throw error;
+      }
     })());
   }
   deletePayAppLine(id: string): Observable<void> {
     return from((async () => {
-      await deleteDoc(doc(db, 'pay-app-lines', id));
+      try {
+        await deleteDoc(doc(db, 'pay-app-lines', id));
+      } catch (error) {
+        handleFirestoreError(error, OperationType.DELETE, `pay-app-lines/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -910,15 +1085,25 @@ export class DataService {
   createArRecord(rec: Partial<ARRecord>): Observable<ARRecord> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = { ...rec, id, ownerId: auth.currentUser?.uid, updatedAt: serverTimestamp() };
-      await setDoc(doc(db, 'ar-records', id), forFirestore(newDoc));
-      return newDoc as unknown as ARRecord;
+      try {
+        const newDoc = { ...rec, id, ownerId: auth.currentUser?.uid, updatedAt: serverTimestamp() };
+        await setDoc(doc(db, 'ar-records', id), forFirestore(newDoc));
+        return newDoc as unknown as ARRecord;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `ar-records/${id}`);
+        throw error;
+      }
     })());
   }
   updateArRecord(id: string, updates: Partial<ARRecord>): Observable<ARRecord> {
     return from((async () => {
-      await updateDoc(doc(db, 'ar-records', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.arRecordsSubject.value.find(x => x.id === id), ...updates } as ARRecord;
+      try {
+        await updateDoc(doc(db, 'ar-records', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.arRecordsSubject.value.find(x => x.id === id), ...updates } as ARRecord;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `ar-records/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -936,15 +1121,20 @@ export class DataService {
 
   upsertProjectLaborActual(actual: ProjectLaborActual): Observable<ProjectLaborActual> {
     return from((async () => {
-      const payload = forFirestore({
-        ...actual,
-        id: actual.id,
-        ownerId: auth.currentUser?.uid,
-        updatedAt: serverTimestamp(),
-        ...(this.projectLaborActualsSubject.value.find(a => a.id === actual.id) ? {} : { createdAt: serverTimestamp() }),
-      });
-      await setDoc(doc(db, 'project-labor-actuals', actual.id), payload, { merge: true });
-      return actual;
+      try {
+        const payload = forFirestore({
+          ...actual,
+          id: actual.id,
+          ownerId: auth.currentUser?.uid,
+          updatedAt: serverTimestamp(),
+          ...(this.projectLaborActualsSubject.value.find(a => a.id === actual.id) ? {} : { createdAt: serverTimestamp() }),
+        });
+        await setDoc(doc(db, 'project-labor-actuals', actual.id), payload, { merge: true });
+        return actual;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-labor-actuals/${actual.id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1028,25 +1218,35 @@ export class DataService {
   createSubcontractor(sub: Partial<Subcontractor>): Observable<Subcontractor> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...sub,
-        id,
-        w9Status: sub.w9Status ?? 'Missing',
-        insuranceStatus: sub.insuranceStatus ?? 'Missing',
-        status: sub.status ?? 'PendingSetup',
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'subcontractors', id), forFirestore(newDoc));
-      return newDoc as unknown as Subcontractor;
+      try {
+        const newDoc = {
+          ...sub,
+          id,
+          w9Status: sub.w9Status ?? 'Missing',
+          insuranceStatus: sub.insuranceStatus ?? 'Missing',
+          status: sub.status ?? 'PendingSetup',
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'subcontractors', id), forFirestore(newDoc));
+        return newDoc as unknown as Subcontractor;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `subcontractors/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateSubcontractor(id: string, updates: Partial<Subcontractor>): Observable<Subcontractor> {
     return from((async () => {
-      await updateDoc(doc(db, 'subcontractors', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.subcontractorsSubject.value.find(x => x.id === id), ...updates } as Subcontractor;
+      try {
+        await updateDoc(doc(db, 'subcontractors', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.subcontractorsSubject.value.find(x => x.id === id), ...updates } as Subcontractor;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `subcontractors/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1057,25 +1257,35 @@ export class DataService {
   createProjectSubcontractor(ps: Partial<ProjectSubcontractor>): Observable<ProjectSubcontractor> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...ps,
-        id,
-        status: ps.status ?? 'Planned',
-        complianceStatus: ps.complianceStatus ?? 'MissingItems',
-        performanceStatus: ps.performanceStatus ?? 'Good',
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'project-subcontractors', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectSubcontractor;
+      try {
+        const newDoc = {
+          ...ps,
+          id,
+          status: ps.status ?? 'Planned',
+          complianceStatus: ps.complianceStatus ?? 'MissingItems',
+          performanceStatus: ps.performanceStatus ?? 'Good',
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'project-subcontractors', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectSubcontractor;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-subcontractors/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateProjectSubcontractor(id: string, updates: Partial<ProjectSubcontractor>): Observable<ProjectSubcontractor> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-subcontractors', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.projectSubcontractorsSubject.value.find(x => x.id === id), ...updates } as ProjectSubcontractor;
+      try {
+        await updateDoc(doc(db, 'project-subcontractors', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.projectSubcontractorsSubject.value.find(x => x.id === id), ...updates } as ProjectSubcontractor;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-subcontractors/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1086,24 +1296,34 @@ export class DataService {
   createSubcontractorDocument(docInput: Partial<SubcontractorDocument>): Observable<SubcontractorDocument> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...docInput,
-        id,
-        status: docInput.status ?? 'Valid',
-        uploadedAt: docInput.uploadedAt ?? new Date().toISOString(),
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'subcontractor-documents', id), forFirestore(newDoc));
-      return newDoc as unknown as SubcontractorDocument;
+      try {
+        const newDoc = {
+          ...docInput,
+          id,
+          status: docInput.status ?? 'Valid',
+          uploadedAt: docInput.uploadedAt ?? new Date().toISOString(),
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'subcontractor-documents', id), forFirestore(newDoc));
+        return newDoc as unknown as SubcontractorDocument;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `subcontractor-documents/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateSubcontractorDocument(id: string, updates: Partial<SubcontractorDocument>): Observable<SubcontractorDocument> {
     return from((async () => {
-      await updateDoc(doc(db, 'subcontractor-documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.subcontractorDocumentsSubject.value.find(x => x.id === id), ...updates } as SubcontractorDocument;
+      try {
+        await updateDoc(doc(db, 'subcontractor-documents', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.subcontractorDocumentsSubject.value.find(x => x.id === id), ...updates } as SubcontractorDocument;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `subcontractor-documents/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1114,22 +1334,32 @@ export class DataService {
   createSubcontractorInvoice(inv: Partial<SubcontractorInvoice>): Observable<SubcontractorInvoice> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...inv,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'subcontractor-invoices', id), forFirestore(newDoc));
-      return newDoc as unknown as SubcontractorInvoice;
+      try {
+        const newDoc = {
+          ...inv,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'subcontractor-invoices', id), forFirestore(newDoc));
+        return newDoc as unknown as SubcontractorInvoice;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `subcontractor-invoices/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateSubcontractorInvoice(id: string, updates: Partial<SubcontractorInvoice>): Observable<SubcontractorInvoice> {
     return from((async () => {
-      await updateDoc(doc(db, 'subcontractor-invoices', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.subcontractorInvoicesSubject.value.find(x => x.id === id), ...updates } as SubcontractorInvoice;
+      try {
+        await updateDoc(doc(db, 'subcontractor-invoices', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.subcontractorInvoicesSubject.value.find(x => x.id === id), ...updates } as SubcontractorInvoice;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `subcontractor-invoices/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1140,15 +1370,20 @@ export class DataService {
   createForemanBonusPolicy(policy: Partial<ForemanBonusPolicy>): Observable<ForemanBonusPolicy> {
     return from((async () => {
       const id = policy.id ?? uuidv4();
-      const newDoc = {
-        ...policy,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'foreman-bonus-policies', id), forFirestore(newDoc));
-      return newDoc as unknown as ForemanBonusPolicy;
+      try {
+        const newDoc = {
+          ...policy,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'foreman-bonus-policies', id), forFirestore(newDoc));
+        return newDoc as unknown as ForemanBonusPolicy;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `foreman-bonus-policies/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1159,22 +1394,32 @@ export class DataService {
   createProjectForemanAssignment(assignment: Partial<ProjectForemanAssignment>): Observable<ProjectForemanAssignment> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...assignment,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'project-foreman-assignments', id), forFirestore(newDoc));
-      return newDoc as unknown as ProjectForemanAssignment;
+      try {
+        const newDoc = {
+          ...assignment,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'project-foreman-assignments', id), forFirestore(newDoc));
+        return newDoc as unknown as ProjectForemanAssignment;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `project-foreman-assignments/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateProjectForemanAssignment(id: string, updates: Partial<ProjectForemanAssignment>): Observable<ProjectForemanAssignment> {
     return from((async () => {
-      await updateDoc(doc(db, 'project-foreman-assignments', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.projectForemanAssignmentsSubject.value.find(x => x.id === id), ...updates } as ProjectForemanAssignment;
+      try {
+        await updateDoc(doc(db, 'project-foreman-assignments', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.projectForemanAssignmentsSubject.value.find(x => x.id === id), ...updates } as ProjectForemanAssignment;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `project-foreman-assignments/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1185,22 +1430,32 @@ export class DataService {
   createForemanBonusRecord(record: Partial<ForemanBonusRecord>): Observable<ForemanBonusRecord> {
     return from((async () => {
       const id = record.id ?? uuidv4();
-      const newDoc = {
-        ...record,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'foreman-bonus-records', id), forFirestore(newDoc));
-      return newDoc as unknown as ForemanBonusRecord;
+      try {
+        const newDoc = {
+          ...record,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'foreman-bonus-records', id), forFirestore(newDoc));
+        return newDoc as unknown as ForemanBonusRecord;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `foreman-bonus-records/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateForemanBonusRecord(id: string, updates: Partial<ForemanBonusRecord>): Observable<ForemanBonusRecord> {
     return from((async () => {
-      await updateDoc(doc(db, 'foreman-bonus-records', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.foremanBonusRecordsSubject.value.find(x => x.id === id), ...updates } as ForemanBonusRecord;
+      try {
+        await updateDoc(doc(db, 'foreman-bonus-records', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.foremanBonusRecordsSubject.value.find(x => x.id === id), ...updates } as ForemanBonusRecord;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `foreman-bonus-records/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1211,22 +1466,32 @@ export class DataService {
   createForemanBonusPayment(payment: Partial<ForemanBonusPayment>): Observable<ForemanBonusPayment> {
     return from((async () => {
       const id = uuidv4();
-      const newDoc = {
-        ...payment,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'foreman-bonus-payments', id), forFirestore(newDoc));
-      return newDoc as unknown as ForemanBonusPayment;
+      try {
+        const newDoc = {
+          ...payment,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'foreman-bonus-payments', id), forFirestore(newDoc));
+        return newDoc as unknown as ForemanBonusPayment;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `foreman-bonus-payments/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateForemanBonusPayment(id: string, updates: Partial<ForemanBonusPayment>): Observable<ForemanBonusPayment> {
     return from((async () => {
-      await updateDoc(doc(db, 'foreman-bonus-payments', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.foremanBonusPaymentsSubject.value.find(x => x.id === id), ...updates } as ForemanBonusPayment;
+      try {
+        await updateDoc(doc(db, 'foreman-bonus-payments', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.foremanBonusPaymentsSubject.value.find(x => x.id === id), ...updates } as ForemanBonusPayment;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `foreman-bonus-payments/${id}`);
+        throw error;
+      }
     })());
   }
 
@@ -1237,22 +1502,32 @@ export class DataService {
   createLaborCodeMapping(mapping: Partial<LaborCodeMapping>): Observable<LaborCodeMapping> {
     return from((async () => {
       const id = mapping.id ?? uuidv4();
-      const newDoc = {
-        ...mapping,
-        id,
-        ownerId: auth.currentUser?.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      await setDoc(doc(db, 'labor-code-mappings', id), forFirestore(newDoc));
-      return newDoc as unknown as LaborCodeMapping;
+      try {
+        const newDoc = {
+          ...mapping,
+          id,
+          ownerId: auth.currentUser?.uid,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+        await setDoc(doc(db, 'labor-code-mappings', id), forFirestore(newDoc));
+        return newDoc as unknown as LaborCodeMapping;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.CREATE, `labor-code-mappings/${id}`);
+        throw error;
+      }
     })());
   }
 
   updateLaborCodeMapping(id: string, updates: Partial<LaborCodeMapping>): Observable<LaborCodeMapping> {
     return from((async () => {
-      await updateDoc(doc(db, 'labor-code-mappings', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
-      return { ...this.laborCodeMappingsSubject.value.find(x => x.id === id), ...updates } as LaborCodeMapping;
+      try {
+        await updateDoc(doc(db, 'labor-code-mappings', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+        return { ...this.laborCodeMappingsSubject.value.find(x => x.id === id), ...updates } as LaborCodeMapping;
+      } catch (error) {
+        handleFirestoreError(error, OperationType.UPDATE, `labor-code-mappings/${id}`);
+        throw error;
+      }
     })());
   }
 }
