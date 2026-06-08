@@ -60,26 +60,26 @@ export class AuthService {
 
   private persistToken(token: string): void {
     this.accessToken.set(token);
-    sessionStorage.setItem(TOKEN_KEY, token);
-    sessionStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + TOKEN_TTL_MS));
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(TOKEN_EXP_KEY, String(Date.now() + TOKEN_TTL_MS));
   }
 
   private loadPersistedToken(): string | null {
-    const token = sessionStorage.getItem(TOKEN_KEY);
-    const exp = sessionStorage.getItem(TOKEN_EXP_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    const exp = localStorage.getItem(TOKEN_EXP_KEY);
     if (token && exp && Date.now() < Number(exp)) {
       this.accessToken.set(token);
       return token;
     }
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_EXP_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXP_KEY);
     return null;
   }
 
   clearAccessToken(): void {
     this.accessToken.set(null);
-    sessionStorage.removeItem(TOKEN_KEY);
-    sessionStorage.removeItem(TOKEN_EXP_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXP_KEY);
   }
 
   private isPopupBlocked(error: unknown): boolean {
