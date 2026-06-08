@@ -9,6 +9,7 @@ import { DataService } from '@core/services/data.service';
 import { ConstructionOperationsService } from '@features/projects/services/construction-operations.service';
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
 import { RelatedRecordsSectionComponent } from '@app/components/related-records-section';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import {
   computeConstructionOpsMetrics,
   isRfiOpen,
@@ -20,7 +21,7 @@ type RfiFilter = 'all' | 'open' | 'overdue' | 'closed';
 @Component({
   selector: 'app-rfis-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent, StatusChipComponent],
   template: `
     <div class="space-y-6">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -101,7 +102,7 @@ type RfiFilter = 'all' | 'open' | 'overdue' | 'closed';
             </div>
             <div class="flex justify-end gap-2">
               <button type="button" (click)="cancel()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button type="button" (click)="save()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-sm">Save RFI</button>
+              <button type="button" (click)="save()" class="bg-slate-900 hover:bg-slate-800 transition-colors text-white px-4 py-2 rounded-lg text-sm font-semibold">Save RFI</button>
             </div>
           </div>
         }
@@ -114,10 +115,10 @@ type RfiFilter = 'all' | 'open' | 'overdue' | 'closed';
             </tr></thead>
             <tbody class="divide-y divide-slate-100">
               @for (rfi of filteredRfis(); track rfi.id) {
-                <tr class="hover:bg-slate-50" [class.bg-amber-50]="isOverdue(rfi)">
+                <tr class="hover:bg-slate-50 transition-colors" [class.bg-amber-50]="isOverdue(rfi)">
                   <td class="px-5 py-3 font-mono font-medium">{{ rfi.rfiNumber || '—' }}</td>
                   <td class="px-5 py-3 max-w-sm truncate">{{ rfi.title || rfi.question || '—' }}</td>
-                  <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-100">{{ rfi.status }}</span></td>
+                  <td class="px-5 py-3"><app-status-chip [tone]="rfiStatusTone(rfi.status)">{{ rfi.status }}</app-status-chip></td>
                   <td class="px-5 py-3">{{ rfi.dueDate || rfi.neededByDate || '—' }}</td>
                   <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1">
                     <button type="button" (click)="edit(rfi)" class="text-xs font-bold text-blue-600 hover:underline">Edit</button>
@@ -201,6 +202,17 @@ export class RfisTabComponent implements OnInit {
   }
 
   isOverdue = isRfiOverdue;
+
+  rfiStatusTone(status: RfiStatus): StatusTone {
+    switch (status) {
+      case 'Draft': return 'slate';
+      case 'Submitted': return 'blue';
+      case 'Answered': return 'green';
+      case 'Closed': return 'slate';
+      case 'Void': return 'red';
+      default: return 'slate';
+    }
+  }
 
   resetDraft(): Partial<Rfi> {
     return { status: 'Draft', priority: 'Normal', submittedDate: new Date().toISOString().slice(0, 10), costImpact: false, scheduleImpact: false };

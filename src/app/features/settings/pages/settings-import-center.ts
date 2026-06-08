@@ -34,7 +34,7 @@ import { SettingsDriveFolders } from './settings-drive-folders';
             </div>
             <p class="text-sm text-slate-600 flex-1">{{ action.description }}</p>
             <button type="button" (click)="run(action.id)" [disabled]="running()"
-                    class="self-start text-xs font-semibold bg-indigo-600 text-white px-4 py-2 rounded-lg disabled:opacity-50">
+                    class="self-start text-xs font-semibold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors disabled:opacity-50">
               {{ action.buttonLabel }}
             </button>
           </article>

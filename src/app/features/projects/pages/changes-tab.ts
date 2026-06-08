@@ -34,13 +34,15 @@ import {
   filterChangeListBySegment,
 } from '@features/projects/utils/project-work.compute';
 import { ListRowComponent } from '@app/components/ui/list-row';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 
 type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval' | 'approved-bill';
 
 @Component({
   selector: 'app-changes-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ListRowComponent],
+  imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ListRowComponent, StatusChipComponent, EmptyStateComponent],
   template: `
     <div class="space-y-6">
       @if (simplified && !showAllTools) {
@@ -59,7 +61,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               [nextAction]="item.nextAction"
               [health]="item.urgency >= 85 ? 'Red' : item.urgency >= 70 ? 'Yellow' : 'Neutral'" />
           } @empty {
-            <div class="px-5 py-10 text-center text-slate-400 italic">No changes match this filter</div>
+            <app-empty-state icon="difference" title="No changes match this filter" />
           }
         </div>
       } @else {
@@ -143,7 +145,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
           <div class="text-right font-bold text-slate-900">Preview total: {{ convertPreviewTotal() | currency }}</div>
           <div class="flex justify-end gap-2">
             <button type="button" (click)="convertingCr.set(null)" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-            <button type="button" (click)="convertCrToCo()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-sm">
+            <button type="button" (click)="convertCrToCo()" class="bg-slate-900 hover:bg-slate-800 transition-colors text-white px-4 py-2 rounded-lg text-sm font-semibold">
               Convert to CO
             </button>
           </div>
@@ -235,7 +237,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               </div>
               <div class="flex justify-end gap-2">
                 <button type="button" (click)="cancelCrForm()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button type="button" (click)="saveCr()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-sm">Save</button>
+                <button type="button" (click)="saveCr()" class="bg-slate-900 hover:bg-slate-800 transition-colors text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
               </div>
             </div>
           }
@@ -243,27 +245,27 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-              <tr class="text-[10px] uppercase text-slate-400 border-b">
-                <th class="px-5 py-3 text-left">CR #</th>
-                <th class="px-5 py-3 text-left">Title</th>
-                <th class="px-5 py-3 text-left">Source</th>
-                <th class="px-5 py-3 text-left">Status</th>
-                <th class="px-5 py-3 text-right">Actions</th>
+              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b">
+                <th class="px-3 py-2 text-left">CR #</th>
+                <th class="px-3 py-2 text-left">Title</th>
+                <th class="px-3 py-2 text-left">Source</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-right">Actions</th>
               </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (cr of projectCrsSorted(); track cr.id) {
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-5 py-3 font-mono font-medium">{{ crNumberFn(cr) || '—' }}</td>
-                    <td class="px-5 py-3 max-w-xs truncate">
+                  <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                    <td class="px-3 py-2.5 font-mono font-bold">{{ crNumberFn(cr) || '—' }}</td>
+                    <td class="px-3 py-2.5 max-w-xs truncate">
                       {{ cr.title || cr.description || '—' }}
                       @if (!isOpenChangeRequest(cr)) {
                         <span class="block text-[10px] uppercase text-slate-400 mt-0.5">Archived</span>
                       }
                     </td>
-                    <td class="px-5 py-3">{{ cr.source || '—' }}</td>
-                    <td class="px-5 py-3">
-                      <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-100 text-slate-600">{{ cr.status }}</span>
+                    <td class="px-3 py-2.5">{{ cr.source || '—' }}</td>
+                    <td class="px-3 py-2.5">
+                      <app-status-chip [tone]="crStatusTone(cr.status)" [label]="cr.status" />
                     </td>
                     <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1">
                       <button type="button" (click)="editCr(cr)" class="text-slate-400 hover:text-slate-800" title="Edit"><mat-icon class="!text-[16px]">edit</mat-icon></button>
@@ -291,7 +293,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                     </tr>
                   }
                 } @empty {
-                  <tr><td colspan="5" class="px-5 py-10 text-center text-slate-400 italic">No change requests</td></tr>
+                  <tr><td colspan="5" class="p-0"><app-empty-state icon="difference" title="No change requests" /></td></tr>
                 }
               </tbody>
             </table>
@@ -392,7 +394,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               <div class="text-right font-mono font-bold text-slate-900">Sell price: {{ draftCo.sellPrice | currency }}</div>
               <div class="flex justify-end gap-2">
                 <button type="button" (click)="cancelCoForm()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button type="button" (click)="saveCo()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-bold text-sm">Save</button>
+                <button type="button" (click)="saveCo()" class="bg-slate-900 hover:bg-slate-800 transition-colors text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
               </div>
             </div>
           }
@@ -400,23 +402,23 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead>
-              <tr class="text-[10px] uppercase text-slate-400 border-b">
-                <th class="px-5 py-3 text-left">CO #</th>
-                <th class="px-5 py-3 text-left">Title</th>
-                <th class="px-5 py-3 text-left">Status</th>
-                <th class="px-5 py-3 text-right">Amount</th>
-                <th class="px-5 py-3 text-right">Actions</th>
+              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b">
+                <th class="px-3 py-2 text-left">CO #</th>
+                <th class="px-3 py-2 text-left">Title</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-right">Amount</th>
+                <th class="px-3 py-2 text-right">Actions</th>
               </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (co of projectCosSorted(); track co.id) {
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-5 py-3 font-mono font-medium">{{ coNumberFn(co) || '—' }}</td>
-                    <td class="px-5 py-3">{{ co.title }}</td>
-                    <td class="px-5 py-3">
-                      <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-slate-100 text-slate-600">{{ normalizeCoStatus(co.status) }}</span>
+                  <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                    <td class="px-3 py-2.5 font-mono font-bold">{{ coNumberFn(co) || '—' }}</td>
+                    <td class="px-3 py-2.5">{{ co.title }}</td>
+                    <td class="px-3 py-2.5">
+                      <app-status-chip [tone]="coStatusTone(co.status)" [label]="normalizeCoStatus(co.status)" />
                     </td>
-                    <td class="px-5 py-3 text-right font-mono">{{ displayCoAmount(co) | currency }}</td>
+                    <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ displayCoAmount(co) | currency }}</td>
                     <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1 items-center">
                       <button type="button" (click)="editCo(co)" class="text-slate-400 hover:text-slate-800"><mat-icon class="!text-[16px]">edit</mat-icon></button>
                       <button type="button" (click)="toggleCoDocs(co.id)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
@@ -448,7 +450,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                     </tr>
                   }
                 } @empty {
-                  <tr><td colspan="5" class="px-5 py-10 text-center text-slate-400 italic">No change orders</td></tr>
+                  <tr><td colspan="5" class="p-0"><app-empty-state icon="difference" title="No change orders" /></td></tr>
                 }
               </tbody>
             </table>
@@ -580,7 +582,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                       <button type="button"
                               [disabled]="!pickDraftPayApp()"
                               (click)="addApprovedCoToPayApp(co)"
-                              class="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+                              class="bg-slate-900 hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:pointer-events-none text-white text-xs font-semibold px-3 py-1.5 rounded-lg">
                         Add to next pay app
                       </button>
                     </td>
@@ -945,5 +947,20 @@ export class ChangesTabComponent {
 
   async addApprovedCoToPayApp(co: ChangeOrder) {
     await this.addCoToDraftPayApp(co);
+  }
+
+  crStatusTone(status: string): StatusTone {
+    if (status === 'Converted' || status === 'Approved') return 'green';
+    if (status === 'Submitted' || status === 'Pricing' || status === 'Needs Backup') return 'amber';
+    if (status === 'Void' || status === 'Rejected') return 'red';
+    return 'slate';
+  }
+
+  coStatusTone(status: string): StatusTone {
+    const normalized = normalizeCoStatus(status);
+    if (normalized === 'Approved' || normalized === 'Billed') return 'green';
+    if (normalized === 'Sent' || normalized === 'Pricing' || normalized === 'Needs Backup') return 'amber';
+    if (normalized === 'Rejected' || normalized === 'Void') return 'red';
+    return 'slate';
   }
 }

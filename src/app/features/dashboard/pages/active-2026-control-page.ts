@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { take } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '@core/services/data.service';
+import { GlobalNeedsService } from '@core/services/global-needs.service';
 import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { ForemanBonusService } from '@features/labor/services/foreman-bonus.service';
@@ -56,29 +58,58 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
     EmptyStateComponent, StatusChipComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-page-header
         title="Active Jobs"
         [subtitle]="'Office view · ' + summary().activeJobs + ' in-progress jobs · 20% profit target'">
         <div class="flex flex-wrap items-center gap-2">
+          <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer bg-white border border-slate-200 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+            <input type="checkbox"
+                   [checked]="globalNeeds.showAllTools()"
+                   (change)="toggleShowAllTools($event)"
+                   class="rounded border-slate-300" />
+            Show all tools
+          </label>
           <button type="button" (click)="filterDrawerOpen.set(true)"
-                  class="px-4 py-2 rounded-lg border border-slate-200 text-sm font-semibold hover:bg-slate-50">
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
             Filter
             @if (activeFilters().size) {
               <span class="ml-1 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full">{{ activeFilters().size }}</span>
             }
           </button>
-          <select [(ngModel)]="sortKey" class="px-3 py-2 border rounded-lg text-sm">
+          <select [(ngModel)]="sortKey" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white hover:bg-slate-50 transition-colors">
             @for (opt of sortOptions; track opt.id) {
               <option [value]="opt.id">{{ opt.label }}</option>
             }
           </select>
           <button type="button" (click)="exportCsv()"
-                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shrink-0">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shrink-0 hover:bg-slate-800 transition-colors">
             Export CSV
           </button>
         </div>
       </app-page-header>
+
+      @if (loadError()) {
+        <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
+          <span>{{ loadError() }}</span>
+          <button type="button" (click)="retryLoad()"
+                  class="ml-auto text-xs font-semibold underline hover:text-amber-900 transition-colors">Retry</button>
+        </div>
+      }
+
+      @if (loading()) {
+        <div class="animate-pulse space-y-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (i of skeletonSlots; track i) {
+              <div class="rounded-xl border border-slate-200 bg-slate-100 h-24"></div>
+            }
+          </div>
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="rounded-xl border border-slate-200 bg-slate-100 h-12"></div>
+          }
+        </div>
+      } @else {
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Active Jobs" [value]="fmtCount(summary().activeJobs)" icon="work" />
@@ -125,7 +156,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of displayRows(); track row.projectId) {
-                  <tr class="hover:bg-slate-50">
+                  <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
@@ -136,7 +167,9 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
                     <td class="px-4 py-2.5">
                       <app-status-chip [tone]="row.healthStatus === 'Red' ? 'red' : row.healthStatus === 'Yellow' ? 'amber' : 'green'">{{ row.status }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[140px]">{{ row.billingStatus || 'Pending' }}</td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip tone="slate">{{ row.billingStatus || 'Pending' }}</app-status-chip>
+                    </td>
                     <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.currentContract) }}</td>
                     <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.billedToDate) }}</td>
                     <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmtCurrency(row.leftToBill) }}</td>
@@ -155,11 +188,14 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
             </table>
           </div>
         } @else {
-          <app-empty-state
-            title="No jobs match the current filters."
-            message="Try a different segment or clear advanced filters." />
+          <div class="p-5">
+            <app-empty-state
+              title="No jobs match the current filters."
+              message="Try a different segment or clear advanced filters." />
+          </div>
         }
       </div>
+      }
     </div>
 
     @if (filterDrawerOpen()) {
@@ -184,9 +220,9 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
         </div>
         <div class="sticky bottom-0 border-t bg-white p-4 flex gap-2">
           <button type="button" (click)="clearFilters()"
-                  class="flex-1 py-2 rounded-lg border text-sm font-semibold">Clear all</button>
+                  class="flex-1 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">Clear all</button>
           <button type="button" (click)="filterDrawerOpen.set(false)"
-                  class="flex-1 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold">Apply</button>
+                  class="flex-1 bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Apply</button>
         </div>
       </aside>
     }
@@ -254,6 +290,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
   `,
 })
 export class Active2026ControlPage {
+  globalNeeds = inject(GlobalNeedsService);
   private data = inject(DataService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
@@ -271,8 +308,22 @@ export class Active2026ControlPage {
   activeSegment = signal<ControlSegmentId>('activeJobs');
   selectedRow = signal<Active2026ControlRow | null>(null);
   filterDrawerOpen = signal(false);
+  loading = signal(true);
+  loadError = signal<string | null>(null);
+  readonly skeletonSlots = [1, 2, 3, 4];
 
   constructor() {
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.loadError.set(null);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.loadError.set(err instanceof Error ? err.message : 'Could not load project data. Check your connection.');
+      },
+    });
+
     this.route.queryParamMap.pipe(takeUntilDestroyed()).subscribe(params => {
       const seg = params.get('segment') as ControlSegmentId | null;
       if (seg && VALID_CONTROL_SEGMENTS.has(seg)) {
@@ -380,6 +431,26 @@ export class Active2026ControlPage {
 
   onSegmentSelect(seg: ControlSegmentId): void {
     this.activeSegment.set(seg);
+  }
+
+  toggleShowAllTools(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.globalNeeds.setShowAllTools(checked);
+  }
+
+  retryLoad(): void {
+    this.loadError.set(null);
+    this.loading.set(true);
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.loadError.set(null);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        this.loadError.set(err instanceof Error ? err.message : 'Could not load project data. Check your connection.');
+      },
+    });
   }
 
   openDrawer(row: Active2026ControlRow): void {

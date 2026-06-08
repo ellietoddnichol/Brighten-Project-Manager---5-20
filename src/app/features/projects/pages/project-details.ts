@@ -8,7 +8,8 @@ import { buildProjectApiUpdatePayload, hasApiUpdateFields } from '@core/services
 import { apiConfig } from '@app/config/api.config';
 import { AuthService } from '@core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { take } from 'rxjs';
 import { Project, PROJECT_STATUSES } from '@app/models/types';
 import { PROJECT_PROFILE_OPTIONS, PROJECT_PROFILE_LABELS } from '@app/models/project-requirements.types';
 import { DriveService, DriveFile, parseDriveFolderId } from '@core/services/drive.service';
@@ -28,8 +29,11 @@ import { BudgetLineService } from '@features/projects/services/budget-line.servi
 import { buildProjectCostDonut, buildBudgetVsActualBars, buildBudgetVsActualFromLines } from '@shared/utils/chart-data';
 import { ProjectDataService } from '@features/projects/services/project-data.service';
 import { normalizedProjectToProject } from '@shared/utils/sheet-normalizers';
-import { ProjectHeaderComponent } from '@app/components/project/project-header';
 import { ProjectPrimaryNavComponent } from '@app/components/project/project-primary-nav';
+import { ProjectMoreMenuComponent } from '@app/components/project/project-more-menu';
+import { PageHeaderComponent } from '@app/components/ui/page-header';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ProjectOverviewPanelComponent } from '@app/components/project/project-overview-panel';
 import { ProjectWorkflowsPanelComponent } from '@app/components/project/project-workflows-panel';
 import { ProjectFinancialsPanelComponent } from '@app/components/project/project-financials-panel';
@@ -55,6 +59,8 @@ import {
   resolveNavFromQuery,
   savePersistedNav,
   persistShowAllToolsKey,
+  loadPersistedLastTab,
+  savePersistedLastTab,
 } from '@app/components/project/project-navigation';
 import { ProjectNeedsService } from '@features/projects/services/project-needs.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
@@ -65,104 +71,171 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
   standalone: true,
   imports: [
     CommonModule, MatIconModule, RouterModule, FormsModule,
-    ProjectHeaderComponent, ProjectPrimaryNavComponent,
+    ProjectPrimaryNavComponent, ProjectMoreMenuComponent,
+    PageHeaderComponent, StatusChipComponent, EmptyStateComponent,
     ProjectOverviewPanelComponent, ProjectWorkflowsPanelComponent,
     ProjectFinancialsPanelComponent, ProjectDocumentsPanelComponent, ProjectUtilityPanelComponent,
   ],
   template: `
-    <div class="project-detail-density h-full flex flex-col bg-slate-50/50">
-      @if (projectApi.detailError()) {
-        <p class="text-sm text-amber-700 px-6 py-2 bg-white border-b border-slate-100">
-          Using Firestore fallback — {{ projectApi.detailError() }}
-        </p>
-      }
-      @if (project(); as p) {
-        <app-project-header
-          [project]="p"
-          (edit)="openEdit()"
-          (newItem)="onNewItem($event)"
-          (moreSelect)="openMore($event)" />
+    <div class="project-detail-density min-h-full overflow-y-auto bg-slate-50/50">
+      <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
 
-        <app-project-primary-nav
-          [active]="nav().section"
-          (sectionChange)="setSection($event)" />
-
-        @if (project(); as p) {
-          @if (nav().section !== 'overview') {
-          <div class="px-6 py-2 bg-white border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs text-slate-500">
-              @if (enabledModules().profile) {
-                Profile: <span class="font-semibold text-slate-700">{{ enabledModules().profile }}</span>
+        @if (projectLoading()) {
+          <div class="animate-pulse space-y-4">
+            <div class="h-4 bg-slate-100 rounded w-32"></div>
+            <div class="h-8 bg-slate-100 rounded w-2/3"></div>
+            <div class="h-4 bg-slate-100 rounded w-1/3"></div>
+            <div class="flex gap-2 pt-2">
+              @for (i of [1, 2, 3, 4]; track i) {
+                <div class="h-9 bg-slate-100 rounded-t-lg w-28"></div>
               }
-            </p>
-            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
-              <input type="checkbox" [checked]="showAllTools()" (change)="toggleShowAllTools($event)">
-              Show all tools
-            </label>
+            </div>
+            <div class="h-64 bg-slate-100 rounded-xl"></div>
           </div>
-          }
-        }
+        } @else if (projectNotFound()) {
+          <app-empty-state
+            icon="search_off"
+            title="Project not found"
+            message="This project may have been archived or the link is incorrect." />
+          <div class="text-center -mt-8">
+            <a routerLink="/projects"
+               class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 rounded-lg transition-colors">
+              Back to Projects
+            </a>
+          </div>
+        } @else if (project(); as p) {
 
-        <div class="flex-1 overflow-y-auto p-4 lg:p-5">
-          @if (nav().utilityView) {
-            <app-project-utility-panel
-              [project]="p"
-              [view]="nav().utilityView!"
-              [driveFiles]="driveFiles()"
-              [loadingFiles]="loadingFiles()"
-              [driveError]="driveError()"
-              (close)="closeUtility()"
-              (editProject)="openEdit()"
-              (saveDrive)="saveDriveIdFromUtility($event)"
-              (saveSheet)="saveSheetIdFromUtility($event)"
-              (openUtility)="openMore($event)"
-              (refreshFiles)="loadDriveFiles()" />
-          } @else {
-            @switch (nav().section) {
-              @case ('overview') {
-                <app-project-overview-panel
-                  [project]="p"
-                  [summary]="financialSummary()!"
-                  [actionItems]="projectExceptions()"
-                  [activityFeed]="activityFeed()"
-                  [latestChangeOrders]="latestChangeOrders()"
-                  [visibleWorkflowChips]="visibleWorkflowChips()"
-                  [lifecycleGroup]="lifecycleSnapshot()?.projectLifecycleGroup ?? ''"
-                  [nextAction]="nextAction()"
-                  (navigateWorkflow)="goWorkflow($event)"
-                  (navigateFinancial)="goFinancial($event)"
-                  (navigateAction)="goActionItem($event)"
-                  (editProject)="openEdit()" />
+          @if (loadError()) {
+            <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
+              <span>Could not load project data. Check your connection.</span>
+              <button type="button" (click)="reload()"
+                      class="ml-auto text-xs font-semibold underline hover:text-amber-900 transition-colors">Retry</button>
+            </div>
+          }
+
+          <nav class="text-xs text-slate-500 mb-1">
+            <a routerLink="/projects" class="hover:text-slate-900 transition-colors">Projects</a>
+            › <span class="text-slate-900">{{ p.projectNumber }}</span>
+          </nav>
+
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div class="min-w-0 flex-1">
+              <app-page-header
+                [title]="p.projectNumber + ' — ' + p.projectName"
+                [subtitle]="p.status || 'Active'" />
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <app-status-chip [tone]="statusTone(p.status)">{{ p.status || 'Active' }}</app-status-chip>
+              @if (p.driveFolderUrl || p.driveFolderId) {
+                <a [href]="p.driveFolderUrl" target="_blank" rel="noopener"
+                   class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
+                  <mat-icon class="!text-[16px]">folder_shared</mat-icon> Drive
+                </a>
               }
-              @case ('workflows') {
-                <app-project-workflows-panel
-                  [project]="p"
-                  [activeView]="nav().workflowView"
-                  [modules]="enabledModules()"
-                  (viewChange)="goWorkflow($event)" />
-              }
-              @case ('financials') {
-                <app-project-financials-panel
-                  [project]="p"
-                  [summary]="financialSummary()!"
-                  [activeView]="nav().financialView"
-                  [modules]="enabledModules()"
-                  (viewChange)="goFinancial($event)" />
-              }
-              @case ('documents') {
-                <app-project-documents-panel
-                  [project]="p"
-                  [activeView]="nav().fileView"
-                  [modules]="enabledModules()"
-                  (utilitySelect)="openMore($event)"
-                  (fileViewChange)="goFileView($event)" />
+              <button type="button" (click)="openEdit()"
+                      class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <mat-icon class="!text-[16px]">edit</mat-icon> Edit
+              </button>
+              <div class="relative">
+                <button type="button" (click)="newMenuOpen.set(!newMenuOpen())"
+                        class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center gap-1.5">
+                  <mat-icon class="!text-[16px]">add</mat-icon> New Item
+                  <mat-icon class="!text-[16px]">{{ newMenuOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </button>
+                @if (newMenuOpen()) {
+                  <div class="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-slate-200 shadow-lg z-30 py-1">
+                    @for (item of newItems; track item.id) {
+                      <button type="button" (click)="selectNewItem(item)"
+                              class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
+                        <mat-icon class="!text-[18px] text-slate-400">{{ item.icon }}</mat-icon>
+                        {{ item.label }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+              <app-project-more-menu (utilitySelect)="openMore($event)" />
+            </div>
+          </div>
+
+          <app-project-primary-nav
+            [active]="nav().section"
+            (sectionChange)="setSection($event)" />
+
+          @if (nav().section !== 'overview') {
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-xs text-slate-500">
+                @if (enabledModules().profile) {
+                  Profile: <span class="font-semibold text-slate-700">{{ enabledModules().profile }}</span>
+                }
+              </p>
+              <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
+                <input type="checkbox" [checked]="showAllTools()" (change)="toggleShowAllTools($event)">
+                Show all tools
+              </label>
+            </div>
+          }
+
+          <div>
+            @if (nav().utilityView) {
+              <app-project-utility-panel
+                [project]="p"
+                [view]="nav().utilityView!"
+                [driveFiles]="driveFiles()"
+                [loadingFiles]="loadingFiles()"
+                [driveError]="driveError()"
+                (close)="closeUtility()"
+                (editProject)="openEdit()"
+                (saveDrive)="saveDriveIdFromUtility($event)"
+                (saveSheet)="saveSheetIdFromUtility($event)"
+                (openUtility)="openMore($event)"
+                (refreshFiles)="loadDriveFiles()" />
+            } @else {
+              @switch (nav().section) {
+                @case ('overview') {
+                  <app-project-overview-panel
+                    [project]="p"
+                    [summary]="financialSummary()!"
+                    [actionItems]="projectExceptions()"
+                    [activityFeed]="activityFeed()"
+                    [latestChangeOrders]="latestChangeOrders()"
+                    [visibleWorkflowChips]="visibleWorkflowChips()"
+                    [lifecycleGroup]="lifecycleSnapshot()?.projectLifecycleGroup ?? ''"
+                    [nextAction]="nextAction()"
+                    (navigateWorkflow)="goWorkflow($event)"
+                    (navigateFinancial)="goFinancial($event)"
+                    (navigateAction)="goActionItem($event)"
+                    (editProject)="openEdit()" />
+                }
+                @case ('workflows') {
+                  <app-project-workflows-panel
+                    [project]="p"
+                    [activeView]="nav().workflowView"
+                    [modules]="enabledModules()"
+                    (viewChange)="goWorkflow($event)" />
+                }
+                @case ('financials') {
+                  <app-project-financials-panel
+                    [project]="p"
+                    [summary]="financialSummary()!"
+                    [activeView]="nav().financialView"
+                    [modules]="enabledModules()"
+                    (viewChange)="goFinancial($event)" />
+                }
+                @case ('documents') {
+                  <app-project-documents-panel
+                    [project]="p"
+                    [activeView]="nav().fileView"
+                    [modules]="enabledModules()"
+                    (utilitySelect)="openMore($event)"
+                    (fileViewChange)="goFileView($event)" />
+                }
               }
             }
-          }
-        </div>
-      } @else {
-        <div class="flex-1 flex items-center justify-center text-slate-400">Loading project...</div>
-      }
+          </div>
+        }
+      </div>
     </div>
 
     @if (showEditModal()) {
@@ -312,6 +385,21 @@ export class ProjectDetails implements OnInit {
 
   projectId: string | null = this.route.snapshot.paramMap.get('id');
 
+  firestoreReady = signal(false);
+  newMenuOpen = signal(false);
+
+  readonly newItems: NewItemAction[] = [
+    { id: 'change-request', label: 'Change Request', icon: 'sync_alt', section: 'workflows', view: 'changes' },
+    { id: 'rfi', label: 'RFI', icon: 'help_outline', section: 'workflows', view: 'rfis' },
+    { id: 'submittal', label: 'Submittal', icon: 'inventory_2', section: 'workflows', view: 'submittals' },
+    { id: 'daily-log', label: 'Daily Log', icon: 'today', section: 'workflows', view: 'daily-logs' },
+    { id: 'field-issue', label: 'Field Issue', icon: 'report_problem', section: 'workflows', view: 'field-issues' },
+    { id: 'pay-app', label: 'Pay App', icon: 'request_quote', section: 'financials', view: 'billing' },
+    { id: 'po', label: 'PO', icon: 'shopping_cart', section: 'financials', view: 'pos' },
+    { id: 'cpr-week', label: 'Certified Payroll Week', icon: 'gavel', section: 'workflows', view: 'certified-payroll' },
+    { id: 'upload-doc', label: 'Upload Document', icon: 'upload_file', section: 'documents' },
+  ];
+
   firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] });
   project = computed(() => {
     const routeId = this.projectId;
@@ -343,6 +431,29 @@ export class ProjectDetails implements OnInit {
     }
 
     return fallbackProject;
+  });
+
+  projectLoading = computed(() => {
+    if (!this.projectId) return false;
+    if (this.project()) return false;
+    if (this.projectApi.isEnabled() && this.projectApi.detailLoading()) return true;
+    return !this.firestoreReady();
+  });
+
+  projectNotFound = computed(() =>
+    !!this.projectId
+    && this.firestoreReady()
+    && !this.projectLoading()
+    && !this.project()
+    && !(this.projectApi.isEnabled() && this.projectApi.detailLoading()),
+  );
+
+  loadError = computed(() => {
+    if (this.project()) return null;
+    if (this.projectApi.isEnabled() && this.projectApi.detailError() && !this.projectApi.detailLoading()) {
+      return this.projectApi.detailError();
+    }
+    return null;
   });
 
   changeOrders = toSignal(this.dataService.getChangeOrders(), { initialValue: [] });
@@ -470,7 +581,7 @@ export class ProjectDetails implements OnInit {
     ];
   });
 
-  showAllTools = signal(false);
+  showAllTools = signal(true);
 
   enabledModules = computed(() => {
     const p = this.project();
@@ -546,15 +657,28 @@ export class ProjectDetails implements OnInit {
   driveError = signal<string | null>(null);
 
   constructor() {
+    this.dataService.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => this.firestoreReady.set(true),
+      error: () => this.firestoreReady.set(true),
+    });
+
     const tab = this.route.snapshot.queryParamMap.get('tab');
     const section = this.route.snapshot.queryParamMap.get('section');
     const view = this.route.snapshot.queryParamMap.get('view');
-    this.nav.set(resolveNavFromQuery(tab, section, view));
+    if (!tab && !section && this.projectId) {
+      const persistedSection = loadPersistedLastTab(this.projectId);
+      this.nav.set(persistedSection
+        ? { ...defaultNavState(), section: persistedSection }
+        : resolveNavFromQuery(tab, section, view));
+    } else {
+      this.nav.set(resolveNavFromQuery(tab, section, view));
+    }
 
     if (this.projectId) {
       try {
         const raw = localStorage.getItem(persistShowAllToolsKey(this.projectId));
-        if (raw === 'true') this.showAllTools.set(true);
+        if (raw === 'false') this.showAllTools.set(false);
+        else if (raw === 'true') this.showAllTools.set(true);
       } catch { /* ignore */ }
     }
 
@@ -592,7 +716,18 @@ export class ProjectDetails implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe(params => {
       this.projectId = params.get('id');
-      if (this.projectId && this.projectApi.isEnabled()) {
+      if (!this.projectId) return;
+
+      const tab = this.route.snapshot.queryParamMap.get('tab');
+      const section = this.route.snapshot.queryParamMap.get('section');
+      if (!tab && !section) {
+        const persistedSection = loadPersistedLastTab(this.projectId);
+        if (persistedSection) {
+          this.nav.set({ ...defaultNavState(), section: persistedSection });
+        }
+      }
+
+      if (this.projectApi.isEnabled()) {
         void this.projectApi.loadProjectDetail(this.projectId);
       }
     });
@@ -616,6 +751,40 @@ export class ProjectDetails implements OnInit {
 
     const sheetProject = this.projectData.getProjectDetail(routeId)?.project ?? null;
     return sheetProject ? normalizedProjectToProject(sheetProject) : undefined;
+  }
+
+  retryDetail(): void {
+    if (this.projectId) void this.projectApi.loadProjectDetail(this.projectId);
+  }
+
+  reload(): void {
+    this.firestoreReady.set(false);
+    this.dataService.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => this.firestoreReady.set(true),
+      error: () => this.firestoreReady.set(true),
+    });
+    this.retryDetail();
+  }
+
+  statusTone(status: string | undefined): StatusTone {
+    switch (status) {
+      case 'Active':
+      case 'In Progress':
+        return 'green';
+      case 'Closeout':
+      case 'Needs Review':
+        return 'amber';
+      case 'Closed':
+      case 'Archived':
+        return 'slate';
+      default:
+        return 'blue';
+    }
+  }
+
+  selectNewItem(item: NewItemAction): void {
+    this.newMenuOpen.set(false);
+    this.onNewItem(item);
   }
 
   setSection(section: ProjectPrimarySection): void {
@@ -673,7 +842,10 @@ export class ProjectDetails implements OnInit {
 
   private applyNav(state: ProjectNavState): void {
     this.nav.set(state);
-    if (this.projectId) savePersistedNav(this.projectId, state);
+    if (this.projectId) {
+      savePersistedNav(this.projectId, state);
+      savePersistedLastTab(this.projectId, state.section);
+    }
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: navQueryParams(state),

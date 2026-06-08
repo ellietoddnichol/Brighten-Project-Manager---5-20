@@ -18,7 +18,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule],
   template: `
-    <section id="labor-codes" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="labor-codes" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
           <h2 class="text-xl font-bold mb-2">Labor Code Discovery</h2>
@@ -28,7 +28,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
         </div>
         <div class="flex flex-wrap gap-2">
           <button type="button" (click)="discoverFromSource()" [disabled]="mappingService.syncing()"
-                  class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 disabled:opacity-50">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">
             {{ mappingService.syncing() ? 'Discovering…' : 'Discover from Master Time Sheet' }}
           </button>
           <button type="button" (click)="openCreate()"
@@ -36,7 +36,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
             Add labor code
           </button>
           <button type="button" (click)="bulkClassify()" [disabled]="!unmappedCodes().length || saving()"
-                  class="bg-amber-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">
             Classify unmapped ({{ unmappedCodes().length }})
           </button>
           <button type="button" (click)="mappingService.exportMappingsCsv()"
@@ -50,7 +50,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
         <p class="text-sm text-emerald-700 mb-4">{{ mappingService.lastMessage() }}</p>
       }
       @if (message()) {
-        <p class="text-sm mb-4" [class.text-emerald-700]="success()" [class.text-red-600]="!success()">{{ message() }}</p>
+        <p class="text-sm mb-4" [class.text-emerald-700]="success()" [class.text-rose-700]="!success()">{{ message() }}</p>
       }
 
       <div class="overflow-x-auto rounded-xl border border-slate-200">
@@ -155,7 +155,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
             <div class="flex justify-end gap-2 mt-6">
               <button type="button" (click)="closeEditor()" class="px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
               <button type="button" (click)="save()" [disabled]="saving() || !draft.laborCode?.trim()"
-                      class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
+                      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
                 {{ saving() ? 'Saving…' : 'Save' }}
               </button>
             </div>
@@ -190,7 +190,7 @@ import { LaborDataService } from '@features/labor/services/labor-data.service';
             <div class="flex justify-end gap-2 mt-6">
               <button type="button" (click)="bulkOpen.set(false)" class="px-4 py-2 text-sm font-semibold text-slate-600">Cancel</button>
               <button type="button" (click)="confirmBulk()" [disabled]="saving()"
-                      class="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
+                      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">
                 Classify all
               </button>
             </div>

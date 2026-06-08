@@ -9,6 +9,7 @@ import { DataService } from '@core/services/data.service';
 import { ConstructionOperationsService } from '@features/projects/services/construction-operations.service';
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
 import { RelatedRecordsSectionComponent } from '@app/components/related-records-section';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import {
   computeConstructionOpsMetrics,
   isSubmittalOpen,
@@ -20,7 +21,7 @@ type SubFilter = 'all' | 'open' | 'overdue' | 'closed';
 @Component({
   selector: 'app-submittals-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent, StatusChipComponent],
   template: `
     <div class="space-y-6">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -81,7 +82,7 @@ type SubFilter = 'all' | 'open' | 'overdue' | 'closed';
             <div class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="draft.scheduleImpact" id="subSched"><label for="subSched">Schedule impact</label></div>
             <div class="col-span-full flex justify-end gap-2">
               <button type="button" (click)="cancel()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button type="button" (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save</button>
             </div>
           </div>
         }
@@ -94,14 +95,16 @@ type SubFilter = 'all' | 'open' | 'overdue' | 'closed';
             </tr></thead>
             <tbody class="divide-y divide-slate-100">
               @for (s of filteredSubs(); track s.id) {
-                <tr class="hover:bg-slate-50" [class.bg-amber-50]="isOverdue(s)">
-                  <td class="px-5 py-3 font-mono">{{ s.submittalNumber || '—' }}</td>
+                <tr class="hover:bg-slate-50 transition-colors" [class.bg-amber-50]="isOverdue(s)">
+                  <td class="px-5 py-3 text-xs font-mono font-bold text-slate-900">{{ s.submittalNumber || '—' }}</td>
                   <td class="px-5 py-3 max-w-sm truncate">{{ s.title || s.description || '—' }}</td>
-                  <td class="px-5 py-3">{{ s.status }}</td>
+                  <td class="px-5 py-3">
+                    <app-status-chip [tone]="submittalTone(s.status)">{{ s.status }}</app-status-chip>
+                  </td>
                   <td class="px-5 py-3">{{ s.dueDate || s.requiredDate || '—' }}</td>
                   <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1">
-                    <button type="button" (click)="edit(s)" class="text-xs font-bold text-blue-600 hover:underline">Edit</button>
-                    <button type="button" (click)="toggleDetail(s.id)" class="text-xs font-bold text-slate-600 hover:underline">Detail</button>
+                    <button type="button" (click)="edit(s)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Edit</button>
+                    <button type="button" (click)="toggleDetail(s.id)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Detail</button>
                     @if (s.status === 'Needed' || s.status === 'Draft') {
                       <button type="button" (click)="markSubmitted(s)" class="text-xs font-bold text-emerald-700 hover:underline">Submit</button>
                     }
@@ -211,4 +214,11 @@ export class SubmittalsTabComponent implements OnInit {
     }, s.id);
   }
   toggleDetail(id: string): void { this.expandedId.set(this.expandedId() === id ? null : id); }
+
+  submittalTone(status: SubmittalStatus | string): StatusTone {
+    if (status === 'Approved' || status === 'Approved as Noted' || status === 'Closed') return 'green';
+    if (status === 'Rejected' || status === 'Void') return 'red';
+    if (status === 'Submitted' || status === 'Revise and Resubmit') return 'amber';
+    return 'slate';
+  }
 }

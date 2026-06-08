@@ -7,18 +7,18 @@ import { CertifiedPayrollService } from '@features/labor/services/certified-payr
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
 import { DataService } from '@core/services/data.service';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { PayrollComplianceType } from '@app/models/certified-payroll.types';
 import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payroll-week';
 
 @Component({
   selector: 'app-certified-payroll-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, WorkflowDocumentsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, EmptyStateComponent, WorkflowDocumentsSectionComponent],
   template: `
     @if (!isCprProject()) {
-      <div class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-8 text-center text-slate-600">
-        Enable <strong>Prevailing Wage</strong> or <strong>Certified Payroll Required</strong> on this project to activate compliance tracking.
-      </div>
+      <app-empty-state icon="lock" title="Certified Payroll not enabled"
+                       message="Enable Prevailing Wage or Certified Payroll Required on this project to activate compliance tracking." />
     } @else {
       <div class="space-y-6">
         @if (cpr.exportBanner()) {
@@ -80,38 +80,58 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
         </div>
 
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-            <h3 class="text-sm font-bold text-slate-900">Weekly Certified Payroll Drafts</h3>
-            <span class="text-xs text-slate-500">{{ openExceptions().length }} open exceptions</span>
+          <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-2">
+            <div>
+              <h3 class="text-sm font-bold text-slate-900">Weekly Certified Payroll Drafts</h3>
+              <span class="text-xs text-slate-500">{{ openExceptions().length }} open exceptions</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              @if (selectedWeekIds().size) {
+                <button type="button" (click)="markSelectedSubmitted()" [disabled]="cpr.loading()"
+                        class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50">
+                  Mark Selected as Submitted
+                </button>
+              }
+              <button type="button" (click)="newCpr()" [disabled]="cpr.loading()"
+                      class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50">
+                New CPR
+              </button>
+            </div>
           </div>
           <table class="w-full text-left text-sm">
             <thead>
-              <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                <th class="px-5 py-3">Week Ending</th>
-                <th class="px-5 py-3 text-right">Hours</th>
-                <th class="px-5 py-3">Entries</th>
-                <th class="px-5 py-3">Exceptions</th>
-                <th class="px-5 py-3">Status</th>
-                <th class="px-5 py-3"></th>
+              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-100">
+                <th class="px-3 py-2 w-10">
+                  <input type="checkbox" [checked]="allWeeksSelected()" (change)="toggleSelectAll($event)" class="rounded border-slate-300" />
+                </th>
+                <th class="px-3 py-2 text-left">Week Ending</th>
+                <th class="px-3 py-2 text-right">Hours</th>
+                <th class="px-3 py-2 text-left">Entries</th>
+                <th class="px-3 py-2 text-left">Exceptions</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-right"></th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (week of weeks(); track week.id) {
-                <tr>
-                  <td class="px-5 py-3 font-medium">{{ week.weekEnding }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-xs">{{ week.totalHours | number:'1.1-1' }}</td>
-                  <td class="px-5 py-3">{{ week.entryCount }}</td>
-                  <td class="px-5 py-3">{{ week.exceptionCount }}</td>
-                  <td class="px-5 py-3"><app-status-chip [tone]="weekTone(week.status)">{{ week.status }}</app-status-chip></td>
-                  <td class="px-5 py-3 text-right space-x-2">
+                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                  <td class="px-3 py-2.5">
+                    <input type="checkbox" [checked]="selectedWeekIds().has(week.id)" (change)="toggleWeek(week.id, $event)" class="rounded border-slate-300" />
+                  </td>
+                  <td class="px-3 py-2.5 font-medium">{{ week.weekEnding }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ week.totalHours | number:'1.1-1' }}</td>
+                  <td class="px-3 py-2.5">{{ week.entryCount }}</td>
+                  <td class="px-3 py-2.5">{{ week.exceptionCount }}</td>
+                  <td class="px-3 py-2.5"><app-status-chip [tone]="weekTone(week.status)" [label]="week.status" /></td>
+                  <td class="px-3 py-2.5 text-right space-x-2">
                     <button type="button" (click)="exportWeek(week.id)" [disabled]="week.status === 'blocked'"
-                            class="text-emerald-700 text-xs font-semibold disabled:opacity-40">Export</button>
+                            class="text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-40">Export</button>
                     <button type="button" (click)="toggleDocs(week.id)"
-                            class="text-slate-600 text-xs font-semibold">Docs</button>
+                            class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">Docs</button>
                   </td>
                 </tr>
                 @if (expandedWeekId() === week.id) {
-                  <tr><td colspan="6" class="px-5 py-4 bg-slate-50">
+                  <tr><td colspan="7" class="px-5 py-4 bg-slate-50">
                     <app-workflow-documents-section
                       [project]="project"
                       workflowType="certified_payroll"
@@ -120,7 +140,10 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
                   </td></tr>
                 }
               } @empty {
-                <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400 italic">No weekly drafts yet — generate from approved time logs.</td></tr>
+                <tr><td colspan="7" class="p-0">
+                  <app-empty-state icon="assignment" title="No weekly CPR drafts"
+                                   message="Generate drafts from approved time logs using New CPR." />
+                </td></tr>
               }
             </tbody>
           </table>
@@ -138,6 +161,7 @@ export class CertifiedPayrollTabComponent implements OnInit {
 
   showEdit = signal(false);
   expandedWeekId = signal<string | null>(null);
+  selectedWeekIds = signal<Set<string>>(new Set());
   saving = signal(false);
   draft: Partial<Project> = {};
 
@@ -163,6 +187,36 @@ export class CertifiedPayrollTabComponent implements OnInit {
 
   generate(): void {
     void this.cpr.generateDrafts(this.project.id);
+  }
+
+  newCpr(): void {
+    void this.cpr.generateDrafts(this.project.id);
+  }
+
+  toggleWeek(weekId: string, event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.selectedWeekIds.update(set => {
+      const next = new Set(set);
+      if (checked) next.add(weekId);
+      else next.delete(weekId);
+      return next;
+    });
+  }
+
+  allWeeksSelected(): boolean {
+    const ids = this.weeks().map(w => w.id);
+    return ids.length > 0 && ids.every(id => this.selectedWeekIds().has(id));
+  }
+
+  toggleSelectAll(event: Event): void {
+    const checked = (event.target as HTMLInputElement).checked;
+    this.selectedWeekIds.set(checked ? new Set(this.weeks().map(w => w.id)) : new Set());
+  }
+
+  markSelectedSubmitted(): void {
+    const ids = [...this.selectedWeekIds()];
+    if (!ids.length) return;
+    void this.cpr.markWeeksSubmitted(ids).then(() => this.selectedWeekIds.set(new Set()));
   }
 
   exportWeek(weekId: string): void {

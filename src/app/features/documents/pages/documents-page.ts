@@ -15,6 +15,7 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import {
   DetailDrawerComponent,
   DrawerSectionComponent,
@@ -55,6 +56,7 @@ import {
     CompactStatStripComponent,
     SegmentedControlComponent,
     StatusChipComponent,
+    EmptyStateComponent,
     DetailDrawerComponent,
     DrawerSectionComponent,
     DrawerFieldComponent,
@@ -126,13 +128,13 @@ import {
         @case ('overview') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
-              <h2 class="text-sm font-bold text-slate-900">Document actions</h2>
+              <h2 class="text-lg font-bold text-slate-900">Document actions</h2>
               <p class="text-xs text-slate-500 mt-0.5">Missing docs, Drive setup, recent files, and source issues</p>
             </div>
             @if (overviewRows().length) {
               <div class="divide-y divide-slate-100">
                 @for (row of overviewRows(); track row.id) {
-                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -154,7 +156,9 @@ import {
                 }
               </div>
             } @else {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No document actions right now</div>
+              <div class="p-5">
+                <app-empty-state title="No document actions right now" message="Uploads and Drive mapping are up to date." />
+              </div>
             }
           </section>
         }
@@ -162,7 +166,7 @@ import {
         @case ('driveLinks') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of driveLinkRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'documents', view: 'drive-mapping' }" class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -182,7 +186,9 @@ import {
                    class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No active jobs need Drive mapping review</div>
+              <div class="p-5">
+                <app-empty-state title="No Drive mapping review needed" message="Active jobs have folder links assigned." />
+              </div>
             }
           </section>
         }
@@ -190,7 +196,7 @@ import {
         @case ('needsReview') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of needsReviewRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -206,7 +212,9 @@ import {
                 }
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No file or source issues need review</div>
+              <div class="p-5">
+                <app-empty-state title="No file issues to review" message="Imports and document sources look clean." />
+              </div>
             }
           </section>
         }
@@ -214,7 +222,7 @@ import {
         @default {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of fileRows(); track row.id) {
-              <div class="px-5 py-3 hover:bg-slate-50/80 flex flex-wrap items-start gap-4"
+              <div class="px-5 py-3 hover:bg-slate-50 flex flex-wrap items-start gap-4"
                    [class.bg-amber-50/50]="row.item.kind === 'missing'">
                 <button type="button" (click)="openFileRow(row)" class="min-w-0 flex-1 text-left">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -241,7 +249,9 @@ import {
                 </div>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">{{ emptyMessage() }}</div>
+              <div class="p-5">
+                <app-empty-state [title]="emptyMessage()" />
+              </div>
             }
           </section>
         }
@@ -281,7 +291,7 @@ import {
             </div>
             <p class="text-xs text-slate-500">Files stay in Google Drive. This saves metadata in Firestore only.</p>
             <div class="flex gap-2 pt-2">
-              <button type="button" (click)="saveUpload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save metadata</button>
+              <button type="button" (click)="saveUpload()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save metadata</button>
               <button type="button" (click)="closeUpload()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
             </div>
           </div>

@@ -32,7 +32,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 
   template: `
 
-    <section id="import-review" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6" [class.p-4]="compactMode()" [class.rounded-xl]="compactMode()" [class.mb-0]="compactMode()">
+    <section id="import-review" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6" [class.p-4]="compactMode()" [class.mb-0]="compactMode()">
       <span id="source-review" class="sr-only"></span>
 
       @if (!compactMode()) {
@@ -55,7 +55,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 
           <button type="button" (click)="runQbSync()" [disabled]="qbSync.syncing()"
 
-                  class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
 
             {{ qbSync.syncing() ? 'Syncing…' : 'Re-sync QuickBooks workbook' }}
 
@@ -71,7 +71,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 
           <button type="button" (click)="runInvoicePacket()" [disabled]="invoicePacket.running()"
 
-                  class="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-slate-800 disabled:opacity-50">
 
             {{ invoicePacket.running() ? 'Importing…' : 'Import QB invoice PDF packet' }}
 
@@ -130,7 +130,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 
       @if (!compactMode() && qbSync.lastSyncError()) {
 
-        <p class="text-sm text-red-600 mb-2">{{ qbSync.lastSyncError() }}</p>
+        <p class="text-sm text-rose-700 mb-2">{{ qbSync.lastSyncError() }}</p>
 
       }
 

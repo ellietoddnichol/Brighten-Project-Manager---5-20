@@ -190,7 +190,7 @@ import { DataService } from '@core/services/data.service';
             <textarea [(ngModel)]="draftForecastNotes" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></textarea></div>
           <div><label class="text-xs font-bold uppercase text-slate-500">Review notes</label>
             <textarea [(ngModel)]="draftNotes" rows="3" class="w-full border rounded-lg px-3 py-2 text-sm mt-1"></textarea></div>
-          <button type="button" (click)="saveAssumptions()" [disabled]="saving()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm disabled:opacity-50">
+          <button type="button" (click)="saveAssumptions()" [disabled]="saving()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors disabled:opacity-50">
             {{ saving() ? 'Saving…' : 'Save assumptions' }}
           </button>
         </aside>

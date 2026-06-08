@@ -9,6 +9,10 @@ import { SubcontractorSeedService } from '@features/subcontractors/services/subc
 import { Subcontractor, SubcontractorStatus, SubcontractorInvoice, VendorClassification } from '@app/models/subcontractor.types';
 import { countActiveProjectsForSub, isCoiExpiringSoon, isDocumentExpired } from '@features/subcontractors/utils/subcontractor-compliance.compute';
 import { isInvoiceOverdue } from '@features/subcontractors/utils/subcontractor-invoice.compute';
+import { PageHeaderComponent } from '@app/components/ui/page-header';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { downloadCsv } from '@shared/utils/csv-export';
 
 type PageView = 'directory' | 'invoices';
 type SubFilter =
@@ -27,36 +31,39 @@ type SubFilter =
 @Component({
   selector: 'app-subcontractors-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageHeaderComponent, StatusChipComponent, EmptyStateComponent],
   template: `
-    <div class="p-8 max-w-[1400px] mx-auto space-y-6">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-bold">Subcontractors</h1>
-          <p class="text-sm text-slate-500">Master directory, compliance status, and AP invoices</p>
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+      <app-page-header
+        title="Subcontractors"
+        subtitle="Master directory, compliance status, and AP invoices"
+        [hasActions]="true">
+        <div class="flex rounded-lg border border-slate-200 overflow-hidden">
+          <button type="button" (click)="pageView.set('directory')"
+                  class="px-3 py-2 text-xs font-semibold transition-colors"
+                  [class.bg-slate-900]="pageView() === 'directory'"
+                  [class.text-white]="pageView() === 'directory'"
+                  [class.text-slate-600]="pageView() !== 'directory'">Directory</button>
+          <button type="button" (click)="pageView.set('invoices')"
+                  class="px-3 py-2 text-xs font-semibold transition-colors"
+                  [class.bg-slate-900]="pageView() === 'invoices'"
+                  [class.text-white]="pageView() === 'invoices'"
+                  [class.text-slate-600]="pageView() !== 'invoices'">Invoices</button>
         </div>
-        <div class="flex gap-2">
-          <div class="flex rounded-lg border overflow-hidden">
-            <button type="button" (click)="pageView.set('directory')"
-                    class="px-3 py-2 text-xs font-semibold"
-                    [class.bg-slate-900]="pageView() === 'directory'"
-                    [class.text-white]="pageView() === 'directory'">Directory</button>
-            <button type="button" (click)="pageView.set('invoices')"
-                    class="px-3 py-2 text-xs font-semibold"
-                    [class.bg-slate-900]="pageView() === 'invoices'"
-                    [class.text-white]="pageView() === 'invoices'">Invoices</button>
-          </div>
-          @if (pageView() === 'directory') {
-            <button type="button" (click)="discoverSubs()" [disabled]="importing()"
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
-              {{ importing() ? 'Discovering…' : 'Discover subcontractors' }}
-            </button>
-            <button type="button" (click)="openNew()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-              New Subcontractor
-            </button>
-          }
-        </div>
-      </div>
+        @if (pageView() === 'directory') {
+          <button type="button" (click)="exportDirectoryCsv()"
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
+            Export CSV
+          </button>
+          <button type="button" (click)="discoverSubs()" [disabled]="importing()"
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
+            {{ importing() ? 'Discovering…' : 'Discover subcontractors' }}
+          </button>
+          <button type="button" (click)="openNew()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">
+            New Subcontractor
+          </button>
+        }
+      </app-page-header>
 
       @if (pageView() === 'directory') {
       <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
@@ -71,15 +78,22 @@ type SubFilter =
       <div class="flex flex-wrap gap-2">
         @for (f of filterOptions; track f.id) {
           <button type="button" (click)="activeFilter.set(f.id)"
-                  class="px-3 py-1.5 rounded-lg border text-xs font-semibold"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors"
                   [class.bg-slate-900]="activeFilter() === f.id"
-                  [class.text-white]="activeFilter() === f.id">
+                  [class.text-white]="activeFilter() === f.id"
+                  [class.text-slate-600]="activeFilter() !== f.id">
             {{ f.label }}
           </button>
         }
       </div>
 
-      <div class="bg-white rounded-xl border overflow-hidden shadow-sm">
+      <div class="relative max-w-md">
+        <input type="text" [ngModel]="searchQuery()" (ngModelChange)="searchQuery.set($event)"
+               placeholder="Search company or contact…"
+               class="w-full px-4 py-2.5 bg-white rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-300 outline-none">
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
           <table class="w-full text-sm min-w-[1200px]">
             <thead>
@@ -89,64 +103,76 @@ type SubFilter =
                 <th class="px-4 py-3 text-left">Contact</th>
                 <th class="px-4 py-3 text-left">W-9</th>
                 <th class="px-4 py-3 text-left">Insurance</th>
+                <th class="px-4 py-3 text-left">Compliance</th>
                 <th class="px-4 py-3 text-left">COI Exp</th>
                 <th class="px-4 py-3 text-left">Classification</th>
                 <th class="px-4 py-3 text-left">Status</th>
                 <th class="px-4 py-3 text-right">Imported Cost</th>
                 <th class="px-4 py-3 text-right">Active Projects</th>
                 <th class="px-4 py-3 text-right">Open Tasks</th>
+                <th class="px-4 py-3 text-right"></th>
               </tr>
             </thead>
             <tbody>
               @for (row of filteredRows(); track row.sub.id) {
-                <tr class="border-b hover:bg-slate-50 cursor-pointer" (click)="selectSub(row.sub)">
-                  <td class="px-4 py-3 font-medium" [class.text-rose-700]="row.sub.status === 'DoNotUse'">
-                    {{ row.sub.companyName }}
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer" (click)="selectSub(row.sub)">
+                  <td class="px-4 py-3">
+                    <div class="font-semibold text-slate-900" [class.text-rose-700]="row.sub.status === 'DoNotUse'">{{ row.sub.companyName }}</div>
+                    @if (row.sub.trade) {
+                      <div class="text-xs text-slate-500">{{ row.sub.trade }}</div>
+                    }
                   </td>
                   <td class="px-4 py-3">{{ row.sub.trade || '—' }}</td>
                   <td class="px-4 py-3">
                     <div>{{ row.sub.contactName || '—' }}</div>
-                    <div class="text-xs text-slate-500">{{ row.sub.email || row.sub.phone || '' }}</div>
+                    <div class="text-xs text-slate-500">
+                      @if (row.sub.phone) { <a [href]="'tel:' + row.sub.phone" (click)="$event.stopPropagation()" class="text-indigo-700 hover:underline">{{ row.sub.phone }}</a> }
+                      @if (row.sub.email) { <a [href]="'mailto:' + row.sub.email" (click)="$event.stopPropagation()" class="text-indigo-700 hover:underline block">{{ row.sub.email }}</a> }
+                    </div>
                   </td>
                   <td class="px-4 py-3">{{ row.sub.w9Status }}</td>
                   <td class="px-4 py-3">{{ row.sub.insuranceStatus }}</td>
+                  <td class="px-4 py-3">
+                    <app-status-chip [tone]="complianceTone(row.sub)" [attr.title]="complianceTooltip(row.sub)">
+                      {{ complianceLabel(row.sub) }}
+                    </app-status-chip>
+                  </td>
                   <td class="px-4 py-3">{{ row.sub.coiExpirationDate || '—' }}</td>
                   <td class="px-4 py-3">
-                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                          [class.bg-amber-100]="(row.sub.vendorClassification ?? 'NeedsReview') === 'NeedsReview'"
-                          [class.text-amber-800]="(row.sub.vendorClassification ?? 'NeedsReview') === 'NeedsReview'"
-                          [class.bg-slate-100]="(row.sub.vendorClassification ?? 'NeedsReview') !== 'NeedsReview'">
-                      {{ row.sub.vendorClassification ?? 'NeedsReview' }}
-                    </span>
+                    <app-status-chip tone="slate">{{ row.sub.vendorClassification ?? 'NeedsReview' }}</app-status-chip>
                   </td>
                   <td class="px-4 py-3">
-                    <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100">{{ row.sub.status }}</span>
+                    <app-status-chip [tone]="subStatusTone(row.sub.status)">{{ row.sub.status }}</app-status-chip>
                     @if (row.sub.source === 'QuickBooksSync' || row.sub.source === 'QuickBooksSeed') {
-                      <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">QB</span>
+                      <app-status-chip tone="blue" label="QB" />
                     }
                     @if (row.sub.source === 'DriveDiscovery' || row.sub.source === 'DriveSeed') {
-                      <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Drive</span>
+                      <app-status-chip tone="green" label="Drive" />
                     }
                   </td>
-                  <td class="px-4 py-3 text-right font-mono">
+                  <td class="px-4 py-3 text-right text-xs font-mono text-slate-700">
                     {{ row.sub.seededTotalCost != null ? (row.sub.seededTotalCost | currency) : '—' }}
                   </td>
                   <td class="px-4 py-3 text-right">{{ row.activeProjects }}</td>
-                  <td class="px-4 py-3 text-right">{{ row.openTasks }}</td>
+                  <td class="px-4 py-3 text-right">
+                    <button type="button" (click)="selectSub(row.sub); $event.stopPropagation()"
+                            class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                      Open
+                    </button>
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="11" class="px-4 py-12 text-center text-slate-400">
+                <tr><td colspan="12">
                   @if (sourceDataAvailable() && subCount() === 0) {
-                    <p class="mb-3">Source data is available from QuickBooks / Drive but no subcontractors have been discovered yet.</p>
-                    <button type="button" (click)="discoverSubs()"
-                            [disabled]="importing()"
-                            class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
-                      {{ importing() ? 'Discovering…' : 'Discover subcontractors from QuickBooks / Drive' }}
-                    </button>
+                    <app-empty-state icon="group_off" title="No subcontractors found"
+                                     message="Discover subcontractors from QuickBooks / Drive to populate the directory."
+                                     actionLabel="Discover subcontractors"
+                                     (actionClick)="discoverSubs()" />
                   } @else if (subCount() === 0) {
-                    <p class="mb-3">Re-sync the QuickBooks workbook in Settings, then discover subcontractors here.</p>
+                    <app-empty-state icon="group_off" title="No subcontractors found"
+                                     message="Re-sync the QuickBooks workbook in Settings, then discover subcontractors here." />
                   } @else {
-                    <span class="italic">No subcontractors match this filter.</span>
+                    <app-empty-state title="No subcontractors match this filter" message="Try a different filter or search term." />
                   }
                 </td></tr>
               }
@@ -275,7 +301,7 @@ type SubFilter =
               <textarea [(ngModel)]="draft.notes" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
             </div>
             <div class="flex flex-wrap gap-2 pt-2">
-              <button type="button" (click)="save()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
               @if (editingId()) {
                 <button type="button" (click)="markApproved()" class="border px-4 py-2 rounded-lg text-sm">Mark Approved</button>
                 <button type="button" (click)="markInactive()" class="border px-4 py-2 rounded-lg text-sm">Mark Inactive</button>
@@ -306,6 +332,7 @@ export class SubcontractorsPage implements OnInit {
 
   pageView = signal<PageView>('directory');
   activeFilter = signal<SubFilter>('all');
+  searchQuery = signal('');
   invoiceFilter = signal<'all' | 'open' | 'due' | 'overdue' | 'missingWaiver' | 'disputed'>('all');
   invoiceSearch = signal('');
   drawerOpen = signal(false);
@@ -349,7 +376,12 @@ export class SubcontractorsPage implements OnInit {
 
   filteredRows = computed(() => {
     const filter = this.activeFilter();
+    const q = this.searchQuery().trim().toLowerCase();
     return this.rows().filter(({ sub }) => {
+      if (q) {
+        const haystack = [sub.companyName, sub.contactName, sub.trade, sub.email, sub.phone].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
       switch (filter) {
         case 'Approved': return sub.status === 'Approved';
         case 'PendingSetup': return sub.status === 'PendingSetup';
@@ -499,5 +531,53 @@ export class SubcontractorsPage implements OnInit {
     } finally {
       this.importing.set(false);
     }
+  }
+
+  exportDirectoryCsv(): void {
+    const rows = this.filteredRows().map(({ sub }) => [
+      sub.companyName,
+      sub.trade ?? '',
+      sub.contactName ?? '',
+      sub.phone ?? '',
+      sub.email ?? '',
+      this.complianceLabel(sub),
+      sub.status,
+    ]);
+    downloadCsv(
+      'subcontractors-directory.csv',
+      ['Company', 'Trade', 'Contact', 'Phone', 'Email', 'Compliance', 'Status'],
+      rows,
+    );
+  }
+
+  complianceTone(sub: Subcontractor): StatusTone {
+    if (sub.w9Status === 'Missing' || sub.insuranceStatus === 'Missing' || sub.insuranceStatus === 'Expired'
+        || isDocumentExpired(sub.coiExpirationDate)) return 'red';
+    if (isCoiExpiringSoon(sub.coiExpirationDate)) return 'amber';
+    if (sub.w9Status === 'OnFile' && sub.insuranceStatus === 'Valid') return 'green';
+    return 'amber';
+  }
+
+  complianceLabel(sub: Subcontractor): string {
+    const tone = this.complianceTone(sub);
+    if (tone === 'green') return 'Compliant';
+    if (tone === 'red') return 'Non-compliant';
+    return 'Expiring';
+  }
+
+  complianceTooltip(sub: Subcontractor): string {
+    const issues: string[] = [];
+    if (sub.w9Status === 'Missing') issues.push('Missing W-9');
+    if (sub.insuranceStatus === 'Missing') issues.push('Missing COI');
+    if (sub.insuranceStatus === 'Expired' || isDocumentExpired(sub.coiExpirationDate)) issues.push('Expired COI');
+    if (isCoiExpiringSoon(sub.coiExpirationDate)) issues.push('COI expiring soon');
+    return issues.length ? issues.join(' · ') : 'All compliance items current';
+  }
+
+  subStatusTone(status: SubcontractorStatus): StatusTone {
+    if (status === 'Approved') return 'green';
+    if (status === 'DoNotUse' || status === 'MissingCompliance') return 'red';
+    if (status === 'Inactive') return 'slate';
+    return 'amber';
   }
 }

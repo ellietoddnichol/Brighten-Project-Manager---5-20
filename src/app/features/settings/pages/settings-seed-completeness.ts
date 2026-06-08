@@ -16,7 +16,7 @@ import { setupStatusLabel } from '@shared/utils/settings-hub.compute';
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-    <section id="setup-completeness" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="setup-completeness" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
       <span id="seed-completeness" class="sr-only"></span>
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>

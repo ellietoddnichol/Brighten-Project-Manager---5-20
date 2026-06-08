@@ -1,21 +1,27 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { ProjectDataService } from '@features/projects/services/project-data.service';
+import { DataService } from '@core/services/data.service';
 import { resolveProjectByReference, resolveProjectLabel } from '@shared/utils/project';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatCardComponent } from '@app/components/ui/stat-card';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { ListRowComponent } from '@app/components/ui/list-row';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { DetailDrawerComponent } from '@app/components/ui/detail-drawer';
 import { isApprovedUnbilledCo } from '@features/projects/utils/change-management';
+import { Billing as BillingRecord } from '@app/models/types';
 
 @Component({
   selector: 'app-billing',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MatIconModule,
     RouterModule,
     PageHeaderComponent,
@@ -23,6 +29,7 @@ import { isApprovedUnbilledCo } from '@features/projects/utils/change-management
     StatusChipComponent,
     ListRowComponent,
     EmptyStateComponent,
+    DetailDrawerComponent,
   ],
   providers: [CurrencyPipe],
   template: `
@@ -31,13 +38,15 @@ import { isApprovedUnbilledCo } from '@features/projects/utils/change-management
         {{ projectData.statusMessage() }}
       </div>
 
-      <app-page-header title="Billing" subtitle="Who needs billed, who owes money, and what's next." [hasActions]="true">
+      <app-page-header title="Billing" subtitle="Who needs billed, who owes money, and what's next." [hasActions]="true"
+                       primaryActionLabel="Create Invoice"
+                       (primaryAction)="openCreateDrawer()">
         <button type="button" (click)="refreshWorkbook()" [disabled]="projectData.loading()"
-                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2">
+                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 flex items-center gap-2">
           <mat-icon class="!text-[18px]">{{ projectData.loading() ? 'hourglass_empty' : 'sync' }}</mat-icon>
           Refresh
         </button>
-        <a routerLink="/reports" class="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+        <a routerLink="/reports" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
           Billing trends & charts <mat-icon class="!text-[16px] w-4 h-4">arrow_forward</mat-icon>
         </a>
       </app-page-header>
@@ -65,6 +74,26 @@ import { isApprovedUnbilledCo } from '@features/projects/utils/change-management
         }
       </div>
 
+      @if (draftInvoices().length) {
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 bg-amber-50 flex items-center gap-2">
+            <h2 class="text-sm font-bold text-slate-900">Draft invoices</h2>
+            <app-status-chip tone="amber" label="Draft" />
+          </div>
+          <div class="divide-y divide-slate-100">
+            @for (row of draftInvoices(); track row.id) {
+              <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
+                <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                   class="text-xs font-mono font-bold text-indigo-700 min-w-[80px]">{{ row.payAppNumber || '—' }}</a>
+                <span class="text-sm font-semibold text-slate-900 flex-1 min-w-0 truncate">{{ row.projectLabel }}</span>
+                <span class="text-xs font-mono text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</span>
+                <app-status-chip [tone]="billingTone(row.status)">{{ row.status }}</app-status-chip>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
       <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
           <h2 class="text-sm font-bold text-slate-900">Invoices / Pay Applications</h2>
@@ -79,36 +108,134 @@ import { isApprovedUnbilledCo } from '@features/projects/utils/change-management
                 <th class="px-5 py-3 text-right">Billed</th>
                 <th class="px-5 py-3 text-right">Paid</th>
                 <th class="px-5 py-3">Status</th>
+                <th class="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              @for (row of invoiceRows(); track row.id) {
-                <tr class="hover:bg-slate-50">
-                  <td class="px-5 py-3 font-medium text-blue-600">
-                    <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }">{{ row.payAppNumber || '—' }}</a>
+              @for (row of openInvoices(); track row.id) {
+                <tr class="hover:bg-slate-50 transition-colors">
+                  <td class="px-5 py-3">
+                    <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                       class="text-xs font-mono font-bold text-indigo-700">{{ row.payAppNumber || '—' }}</a>
                   </td>
                   <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
                   <td class="px-5 py-3 text-slate-500">{{ row.billingPeriod || '—' }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-xs">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-xs">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-3">
                     <app-status-chip [tone]="billingTone(row.status)">{{ row.status }}</app-status-chip>
                   </td>
+                  <td class="px-5 py-3 text-right">
+                    @if (row.status === 'Submitted' || row.status === 'Past Due') {
+                      <button type="button" (click)="resendInvoice(row)"
+                              class="bg-white border border-slate-200 text-slate-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">
+                        Resend
+                      </button>
+                    }
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400 italic">No invoices on sheet</td></tr>
+                <tr><td colspan="7" class="px-5 py-10 text-center text-slate-400 italic">No open invoices on sheet</td></tr>
               }
             </tbody>
           </table>
         </div>
       </div>
+
+      @if (paidInvoices().length) {
+        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <button type="button" (click)="paidExpanded.set(!paidExpanded())"
+                  class="w-full px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between hover:bg-slate-100 transition-colors">
+            <div class="flex items-center gap-2">
+              <h2 class="text-sm font-bold text-slate-900">Paid invoices</h2>
+              <span class="text-xs text-slate-500">({{ paidInvoices().length }})</span>
+            </div>
+            <mat-icon class="!text-[20px] text-slate-500">{{ paidExpanded() ? 'expand_less' : 'expand_more' }}</mat-icon>
+          </button>
+          @if (paidExpanded()) {
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <tbody class="divide-y divide-slate-100">
+                  @for (row of paidInvoices(); track row.id) {
+                    <tr class="hover:bg-slate-50 transition-colors">
+                      <td class="px-5 py-3">
+                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                           class="text-xs font-mono font-bold text-slate-700">{{ row.payAppNumber || '—' }}</a>
+                      </td>
+                      <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
+                      <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
+                      <td class="px-5 py-3">
+                        <app-status-chip tone="green">{{ row.status }}</app-status-chip>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </section>
+      }
     </div>
+
+    <app-detail-drawer [open]="createDrawerOpen()" title="Create Invoice" (close)="closeCreateDrawer()">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Project</label>
+          <select [(ngModel)]="invoiceDraft.projectId" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+            <option value="">Select project…</option>
+            @for (p of projectData.projects(); track p.id) {
+              <option [value]="p.id">{{ p.projectNumber }} · {{ p.projectName }}</option>
+            }
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Invoice #</label>
+          <input [(ngModel)]="invoiceDraft.invoiceNumber" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Date</label>
+          <input type="date" [(ngModel)]="invoiceDraft.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Amount</label>
+          <input type="number" min="0" step="0.01" [(ngModel)]="invoiceDraft.amount"
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+          <textarea [(ngModel)]="invoiceDraft.description" rows="3"
+                    class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm"></textarea>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" (click)="saveInvoice()" [disabled]="saving()"
+                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50">
+            Save
+          </button>
+          <button type="button" (click)="closeCreateDrawer()"
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </app-detail-drawer>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Billing {
   projectData = inject(ProjectDataService);
+  private data = inject(DataService);
   private currency = inject(CurrencyPipe);
+
+  createDrawerOpen = signal(false);
+  paidExpanded = signal(false);
+  saving = signal(false);
+  invoiceDraft = {
+    projectId: '',
+    invoiceNumber: '',
+    date: new Date().toISOString().slice(0, 10),
+    amount: 0,
+    description: '',
+  };
 
   metrics = computed(() => this.projectData.metrics());
 
@@ -131,6 +258,10 @@ export class Billing {
       })
       .sort((a, b) => (b.billingPeriod || '').localeCompare(a.billingPeriod || ''));
   });
+
+  draftInvoices = computed(() => this.invoiceRows().filter(r => r.status === 'Draft'));
+  openInvoices = computed(() => this.invoiceRows().filter(r => r.status !== 'Draft' && r.status !== 'Paid'));
+  paidInvoices = computed(() => this.invoiceRows().filter(r => r.status === 'Paid'));
 
   billingActions = computed(() => {
     const projects = this.projectData.projects();
@@ -195,6 +326,47 @@ export class Billing {
   billingTone(status: string): StatusTone {
     if (status === 'Paid' || status === 'Approved') return 'green';
     if (status === 'Submitted' || status === 'Past Due') return 'amber';
+    if (status === 'Draft') return 'amber';
     return 'slate';
+  }
+
+  openCreateDrawer(): void {
+    this.invoiceDraft = {
+      projectId: '',
+      invoiceNumber: '',
+      date: new Date().toISOString().slice(0, 10),
+      amount: 0,
+      description: '',
+    };
+    this.createDrawerOpen.set(true);
+  }
+
+  closeCreateDrawer(): void {
+    this.createDrawerOpen.set(false);
+  }
+
+  async saveInvoice(): Promise<void> {
+    if (!this.invoiceDraft.projectId || !this.invoiceDraft.amount) return;
+    this.saving.set(true);
+    try {
+      await firstValueFrom(this.data.createBilling({
+        projectId: this.invoiceDraft.projectId,
+        payAppNumber: this.invoiceDraft.invoiceNumber || `INV-${Date.now()}`,
+        billingPeriod: this.invoiceDraft.date,
+        status: 'Draft',
+        totalBilledToDate: this.invoiceDraft.amount,
+        currentApplication: this.invoiceDraft.amount,
+        billingNotes: this.invoiceDraft.description,
+      }));
+      this.closeCreateDrawer();
+      await this.projectData.refreshOptionalWorkbook();
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  resendInvoice(row: BillingRecord & { projectLabel: string }): void {
+    void row;
+    alert('Resend queued — invoice notification stub.');
   }
 }

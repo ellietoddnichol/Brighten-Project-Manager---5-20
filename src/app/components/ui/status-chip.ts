@@ -8,15 +8,20 @@ export type StatusTone = 'blue' | 'green' | 'amber' | 'red' | 'slate' | 'violet'
   standalone: true,
   imports: [CommonModule],
   template: `
-    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border"
+    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border"
           [ngClass]="toneClass()">
-      <ng-content />
+      @if (label) {
+        {{ label }}
+      } @else {
+        <ng-content />
+      }
     </span>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatusChipComponent {
   @Input({ required: true }) tone: StatusTone = 'slate';
+  @Input() label?: string;
 
   toneClass(): Record<string, boolean> {
     const map: Record<StatusTone, string> = {

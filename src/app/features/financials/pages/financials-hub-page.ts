@@ -34,6 +34,8 @@ import { SegmentedControlComponent } from '@app/components/ui/segmented-control'
 
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
+
 import { downloadCsv } from '@shared/utils/csv-export';
 
 import {
@@ -77,8 +79,9 @@ import {
 } from '@features/financials/utils/financials-hub.compute';
 import { wipGroupLabel } from '@features/financials/utils/wip.compute';
 import { WipGroup } from '@app/models/financial.types';
+import { Billing } from '@app/models/types';
 
-
+type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
 @Component({
 
@@ -103,6 +106,8 @@ import { WipGroup } from '@app/models/financial.types';
     SegmentedControlComponent,
 
     StatusChipComponent,
+
+    EmptyStateComponent,
 
   ],
 
@@ -157,6 +162,32 @@ import { WipGroup } from '@app/models/financial.types';
         <p class="text-sm text-emerald-700 -mt-2">{{ syncMessage() }}</p>
 
       }
+
+
+
+      <div class="flex flex-wrap gap-2">
+
+        @for (opt of dateRangeOptions; track opt.id) {
+
+          <button type="button" (click)="dateRange.set(opt.id)"
+
+                  class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors"
+
+                  [class.bg-slate-900]="dateRange() === opt.id"
+
+                  [class.text-white]="dateRange() === opt.id"
+
+                  [class.text-slate-600]="dateRange() !== opt.id"
+
+                  [class.hover:bg-slate-100]="dateRange() !== opt.id">
+
+            {{ opt.label }}
+
+          </button>
+
+        }
+
+      </div>
 
 
 
@@ -234,7 +265,7 @@ import { WipGroup } from '@app/models/financial.types';
 
               <div>
 
-                <h2 class="text-sm font-bold text-slate-900">Money actions</h2>
+                <h2 class="text-lg font-bold text-slate-900">Money actions</h2>
 
                 <p class="text-xs text-slate-500 mt-0.5">Margin, collections, billing, and source trust issues</p>
 
@@ -248,7 +279,7 @@ import { WipGroup } from '@app/models/financial.types';
 
                 @for (row of overviewRows(); track row.id) {
 
-                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
                     <div class="min-w-0 flex-1">
 
@@ -292,7 +323,9 @@ import { WipGroup } from '@app/models/financial.types';
 
             } @else {
 
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No urgent money actions right now</div>
+              <div class="p-5">
+                <app-empty-state title="No urgent money actions" message="You're caught up on billing and AR follow-up." />
+              </div>
 
             }
 
@@ -318,7 +351,7 @@ import { WipGroup } from '@app/models/financial.types';
 
               @for (row of filteredWipRows(); track row.record.projectId) {
 
-                <div class="px-5 py-4 hover:bg-slate-50/80">
+                <div class="px-5 py-4 hover:bg-slate-50">
 
                   <div class="flex flex-wrap items-start gap-4">
 
@@ -378,7 +411,9 @@ import { WipGroup } from '@app/models/financial.types';
 
               } @empty {
 
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No WIP jobs match this filter</div>
+                <div class="p-5">
+                  <app-empty-state title="No WIP jobs match this filter" message="Try a different segment or refresh WIP data." />
+                </div>
 
               }
 
@@ -416,7 +451,7 @@ import { WipGroup } from '@app/models/financial.types';
 
               @for (row of arJobRows(); track row.projectId) {
 
-                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
                   <a [routerLink]="['/projects', row.projectId]" class="min-w-0 flex-1">
 
@@ -456,7 +491,9 @@ import { WipGroup } from '@app/models/financial.types';
 
               } @empty {
 
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No open AR balances</div>
+                <div class="p-5">
+                  <app-empty-state title="No open AR balances" message="Outstanding receivables will appear when AR data loads." />
+                </div>
 
               }
 
@@ -494,7 +531,7 @@ import { WipGroup } from '@app/models/financial.types';
 
               @for (row of billingRows(); track row.id) {
 
-                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
                   <a [routerLink]="['/projects', row.projectId]" class="min-w-0 flex-1">
 
@@ -518,7 +555,9 @@ import { WipGroup } from '@app/models/financial.types';
 
               } @empty {
 
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No billing actions right now</div>
+                <div class="p-5">
+                  <app-empty-state title="No billing actions right now" message="Pay apps and retainage follow-up are clear." />
+                </div>
 
               }
 
@@ -546,7 +585,7 @@ import { WipGroup } from '@app/models/financial.types';
 
               @for (row of filteredCommitmentRows(); track row.id) {
 
-                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
                   <div class="min-w-0 flex-1">
 
@@ -570,7 +609,9 @@ import { WipGroup } from '@app/models/financial.types';
 
               } @empty {
 
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No purchase orders match this filter</div>
+                <div class="p-5">
+                  <app-empty-state title="No purchase orders match this filter" message="Adjust filters or sync commitment data." />
+                </div>
 
               }
 
@@ -598,7 +639,7 @@ import { WipGroup } from '@app/models/financial.types';
 
                 @for (row of bonusRows(); track row.record.id) {
 
-                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
                     <a [routerLink]="['/projects', row.record.projectId]" class="min-w-0 flex-1">
 
@@ -640,7 +681,9 @@ import { WipGroup } from '@app/models/financial.types';
 
             } @else {
 
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic bg-white rounded-xl border">No foreman bonus records yet</div>
+              <div class="p-5">
+                <app-empty-state title="No foreman bonus records yet" message="Bonus rows will appear after labor sync." />
+              </div>
 
             }
 
@@ -656,7 +699,7 @@ import { WipGroup } from '@app/models/financial.types';
 
             @for (row of sourceRows(); track row.id) {
 
-              <div class="px-5 py-4 flex flex-wrap items-start gap-3 hover:bg-slate-50/80">
+              <div class="px-5 py-4 flex flex-wrap items-start gap-3 hover:bg-slate-50">
 
                 <div class="min-w-0 flex-1">
 
@@ -678,7 +721,9 @@ import { WipGroup } from '@app/models/financial.types';
 
             } @empty {
 
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">All financial sources look healthy</div>
+              <div class="p-5">
+                <app-empty-state title="All financial sources look healthy" message="No import or sync issues need review." />
+              </div>
 
             }
 
@@ -728,9 +773,23 @@ export class FinancialsHubPage {
 
   commitmentFilter = signal<CommitmentFilterId>('all');
 
+  dateRange = signal<FinancialsDateRange>('thisYear');
+
   qbSyncing = signal(false);
 
   syncMessage = signal<string | null>(null);
+
+  readonly dateRangeOptions: { id: FinancialsDateRange; label: string }[] = [
+
+    { id: 'thisMonth', label: 'This month' },
+
+    { id: 'last3Months', label: 'Last 3 months' },
+
+    { id: 'thisYear', label: 'This year' },
+
+    { id: 'allTime', label: 'All time' },
+
+  ];
 
 
 
@@ -818,7 +877,7 @@ export class FinancialsHubPage {
 
     changeOrders: this.changeOrders() ?? [],
 
-    billings: this.billings() ?? [],
+    billings: this.billingsForDateRange(),
 
     projects: this.projects() ?? [],
 
@@ -997,6 +1056,52 @@ export class FinancialsHubPage {
   fmt(value: number): string {
 
     return this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
+
+  }
+
+  private billingsForDateRange(): Billing[] {
+
+    const range = this.dateRange();
+
+    const billings = this.billings() ?? [];
+
+    if (range === 'allTime') return billings;
+
+    const start = this.dateRangeStart(range);
+
+    const end = new Date();
+
+    return billings.filter(b => {
+
+      const raw = b.billingPeriodEnd ?? b.billingPeriodStart ?? b.paymentDate ?? '';
+
+      if (!raw) return true;
+
+      const dt = new Date(raw);
+
+      return !Number.isNaN(dt.getTime()) && dt >= start && dt <= end;
+
+    });
+
+  }
+
+  private dateRangeStart(range: FinancialsDateRange): Date {
+
+    const now = new Date();
+
+    if (range === 'thisMonth') return new Date(now.getFullYear(), now.getMonth(), 1);
+
+    if (range === 'last3Months') {
+
+      const d = new Date(now);
+
+      d.setMonth(d.getMonth() - 3);
+
+      return d;
+
+    }
+
+    return new Date(now.getFullYear(), 0, 1);
 
   }
 

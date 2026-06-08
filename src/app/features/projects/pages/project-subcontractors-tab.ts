@@ -258,7 +258,7 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                 <p class="text-sm text-rose-700">{{ saveError() }}</p>
               }
 
-              <button type="button" (click)="save()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
             </div>
           } @else {
             <div class="p-5 space-y-4">
@@ -275,7 +275,7 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Scope of Work</label>
                 <textarea [(ngModel)]="assignScope" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
               </div>
-              <button type="button" (click)="assign()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Assign to Project</button>
+              <button type="button" (click)="assign()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Assign to Project</button>
             </div>
           }
         </aside>

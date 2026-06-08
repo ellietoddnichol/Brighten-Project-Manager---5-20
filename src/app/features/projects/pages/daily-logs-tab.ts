@@ -9,6 +9,7 @@ import { DataService } from '@core/services/data.service';
 import { ConstructionOperationsService } from '@features/projects/services/construction-operations.service';
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
 import { RelatedRecordsSectionComponent } from '@app/components/related-records-section';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { computeConstructionOpsMetrics } from '@shared/utils/construction-operations';
 
 type LogFilter = 'all' | 'draft' | 'submitted' | 'void';
@@ -16,7 +17,7 @@ type LogFilter = 'all' | 'draft' | 'submitted' | 'void';
 @Component({
   selector: 'app-daily-logs-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent, StatusChipComponent],
   template: `
     <div class="space-y-6">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -88,7 +89,7 @@ type LogFilter = 'all' | 'draft' | 'submitted' | 'void';
             }
             <div class="col-span-full flex justify-end gap-2">
               <button type="button" (click)="cancel()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button type="button" (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Save Log</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save Log</button>
             </div>
           </div>
         }
@@ -101,14 +102,16 @@ type LogFilter = 'all' | 'draft' | 'submitted' | 'void';
             </tr></thead>
             <tbody class="divide-y divide-slate-100">
               @for (log of filteredLogs(); track log.id) {
-                <tr class="hover:bg-slate-50">
-                  <td class="px-5 py-3 font-medium">{{ log.logDate }}</td>
+                <tr class="hover:bg-slate-50 transition-colors">
+                  <td class="px-5 py-3 text-xs font-mono font-bold text-slate-900">{{ log.logDate }}</td>
                   <td class="px-5 py-3">{{ log.foreman || log.submittedBy || '—' }}</td>
                   <td class="px-5 py-3 max-w-md truncate">{{ log.workPerformed || '—' }}</td>
-                  <td class="px-5 py-3">{{ log.status || 'Draft' }}</td>
+                  <td class="px-5 py-3">
+                    <app-status-chip [tone]="logTone(log.status)">{{ log.status || 'Draft' }}</app-status-chip>
+                  </td>
                   <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1">
-                    <button type="button" (click)="edit(log)" class="text-xs font-bold text-blue-600 hover:underline">Edit</button>
-                    <button type="button" (click)="toggleDetail(log.id)" class="text-xs font-bold text-slate-600 hover:underline">Detail</button>
+                    <button type="button" (click)="edit(log)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Edit</button>
+                    <button type="button" (click)="toggleDetail(log.id)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Detail</button>
                     @if (log.status !== 'Submitted' && log.status !== 'Void') {
                       <button type="button" (click)="submit(log)" class="text-xs font-bold text-emerald-700 hover:underline">Submit</button>
                     }
@@ -219,4 +222,10 @@ export class DailyLogsTabComponent implements OnInit {
   async createCr(log: DailyLog): Promise<void> { await this.ops.createChangeRequestFromDailyLog(log); }
   async voidLog(log: DailyLog): Promise<void> { await this.ops.voidDailyLog(log); }
   toggleDetail(id: string): void { this.expandedId.set(this.expandedId() === id ? null : id); }
+
+  logTone(status?: DailyLogStatus | string): StatusTone {
+    if (status === 'Submitted' || status === 'Approved') return 'green';
+    if (status === 'Void') return 'red';
+    return 'amber';
+  }
 }

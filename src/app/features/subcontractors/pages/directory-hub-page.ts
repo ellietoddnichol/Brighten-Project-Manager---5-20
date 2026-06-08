@@ -16,6 +16,7 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { downloadCsv } from '@shared/utils/csv-export';
 import { Subcontractor, VendorClassification } from '@app/models/subcontractor.types';
 import { Project } from '@app/models/types';
@@ -51,6 +52,7 @@ import {
     CompactStatStripComponent,
     SegmentedControlComponent,
     StatusChipComponent,
+    EmptyStateComponent,
   ],
   providers: [CurrencyPipe],
   template: `
@@ -112,7 +114,7 @@ import {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
               <div>
-                <h2 class="text-sm font-bold text-slate-900">Directory actions</h2>
+                <h2 class="text-lg font-bold text-slate-900">Directory actions</h2>
                 <p class="text-xs text-slate-500 mt-0.5">Classification, compliance, active subs, and source issues</p>
               </div>
               <a routerLink="/subcontractors" class="text-xs font-bold text-indigo-700 hover:underline">Open full subcontractors view</a>
@@ -120,7 +122,7 @@ import {
             @if (overviewRows().length) {
               <div class="divide-y divide-slate-100">
                 @for (row of overviewRows(); track row.id) {
-                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="text-sm font-semibold text-slate-900">{{ row.name }}</span>
@@ -144,7 +146,9 @@ import {
                 }
               </div>
             } @else {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No directory actions right now</div>
+              <div class="p-5">
+                <app-empty-state title="No directory actions right now" message="Subcontractors, vendors, and contacts are up to date." />
+              </div>
             }
           </section>
         }
@@ -157,7 +161,7 @@ import {
             </div>
             <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
               @for (row of filteredSubRows(); track row.id) {
-                <div class="px-5 py-4 hover:bg-slate-50/80">
+                <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
                   <div class="flex flex-wrap items-start gap-4">
                     <button type="button" (click)="selectSub(row.sub)" class="min-w-0 flex-1 text-left">
                       <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -190,7 +194,9 @@ import {
                   </div>
                 </div>
               } @empty {
-                <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No subcontractors match this filter</div>
+                <div class="p-5">
+                  <app-empty-state title="No subcontractors match this filter" message="Try a different filter or add subs to the directory." />
+                </div>
               }
             </section>
           </div>
@@ -199,7 +205,7 @@ import {
         @case ('vendors') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of vendorRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <button type="button" (click)="selectSub(row.sub)" class="min-w-0 flex-1 text-left">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-slate-900">{{ row.vendorName }}</span>
@@ -214,7 +220,9 @@ import {
                 <button type="button" (click)="selectSub(row.sub)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</button>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No vendors in this directory yet</div>
+              <div class="p-5">
+                <app-empty-state title="No vendors in this directory yet" message="Vendor records sync from QuickBooks and imports." />
+              </div>
             }
           </section>
         }
@@ -222,7 +230,7 @@ import {
         @case ('customers') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of customerRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="row.route" class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-slate-900">{{ row.customerName }}</span>
@@ -240,7 +248,9 @@ import {
                 <a [routerLink]="row.route" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No customers found on active projects</div>
+              <div class="p-5">
+                <app-empty-state title="No customers on active projects" message="Customer names appear when jobs are loaded." />
+              </div>
             }
           </section>
         }
@@ -248,7 +258,7 @@ import {
         @case ('employees') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of contactRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="row.route" class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-slate-900">{{ row.name }}</span>
@@ -264,7 +274,9 @@ import {
                 <a [routerLink]="row.route" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No employees or contacts on file</div>
+              <div class="p-5">
+                <app-empty-state title="No employees or contacts on file" message="Add contacts or sync directory data." />
+              </div>
             }
           </section>
         }
@@ -272,7 +284,7 @@ import {
         @case ('needsReview') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of needsReviewRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-slate-900">{{ row.name }}</span>
@@ -288,7 +300,9 @@ import {
                 }
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">Nothing needs review in the directory</div>
+              <div class="p-5">
+                <app-empty-state title="Nothing needs review" message="Directory imports and classifications look clean." />
+              </div>
             }
           </section>
         }
@@ -350,7 +364,7 @@ import {
               </select>
             </div>
             <div class="flex flex-wrap gap-2 pt-2">
-              <button type="button" (click)="save()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
               <a routerLink="/subcontractors" class="border px-4 py-2 rounded-lg text-sm">Open full view</a>
             </div>
           </div>

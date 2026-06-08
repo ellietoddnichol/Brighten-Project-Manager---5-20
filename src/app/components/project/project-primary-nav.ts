@@ -15,23 +15,22 @@ interface PrimaryNavItem {
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <nav class="px-5 bg-white border-b border-slate-200 shadow-sm">
-      <div class="flex flex-wrap gap-1">
-        @for (item of items; track item.id) {
-          <button type="button"
-                  (click)="sectionChange.emit(item.id)"
-                  [class.text-slate-950]="active === item.id"
-                  [class.border-slate-950]="active === item.id"
-                  [class.text-slate-500]="active !== item.id"
-                  [class.border-transparent]="active !== item.id"
-                  class="text-left border-b-2 px-3 py-2 transition-colors hover:text-slate-950">
-            <div class="flex items-center gap-1.5">
-              <mat-icon class="!text-[16px]">{{ item.icon }}</mat-icon>
-              <span class="font-bold text-xs">{{ item.label }}</span>
-            </div>
-          </button>
-        }
-      </div>
+    <nav class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1">
+      @for (item of items; track item.id) {
+        <button type="button"
+                (click)="sectionChange.emit(item.id)"
+                class="px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors shrink-0"
+                [class.bg-slate-900]="active === item.id"
+                [class.text-white]="active === item.id"
+                [class.text-slate-500]="active !== item.id"
+                [class.hover:text-slate-900]="active !== item.id"
+                [class.hover:bg-slate-50]="active !== item.id">
+          <span class="flex items-center gap-1.5">
+            <mat-icon class="!text-[16px]">{{ item.icon }}</mat-icon>
+            {{ item.label }}
+          </span>
+        </button>
+      }
     </nav>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

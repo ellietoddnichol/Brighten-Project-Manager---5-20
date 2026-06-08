@@ -38,6 +38,7 @@ import {
   moneyOverviewCards,
   moneyMoreVisible,
 } from '@features/projects/utils/project-money.compute';
+import { exportToCsv } from '@shared/utils/export';
 
 type PayAppChipTone = 'slate' | 'amber' | 'emerald' | 'indigo';
 
@@ -65,22 +66,26 @@ interface PayAppSummaryCard {
   ],
   template: `
     <div class="space-y-4">
-      <div class="flex flex-wrap items-center gap-1.5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1 flex-1 min-w-0">
         @for (seg of primarySegments(); track seg.id) {
           <button type="button" (click)="viewChange.emit(seg.id)"
+                  class="px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-colors shrink-0"
                   [class.bg-slate-900]="activeView === seg.id"
                   [class.text-white]="activeView === seg.id"
-                  class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold transition-colors hover:bg-slate-50 flex items-center gap-1.5">
+                  [class.text-slate-500]="activeView !== seg.id"
+                  [class.hover:text-slate-900]="activeView !== seg.id"
+                  [class.hover:bg-slate-50]="activeView !== seg.id">
             {{ seg.label }}
             @if (seg.badge) {
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">{{ seg.badge }}</span>
+              <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500 text-white">{{ seg.badge }}</span>
             }
           </button>
         }
         @if (moreSegments().length) {
-          <div class="relative">
+          <div class="relative shrink-0">
             <button type="button" (click)="moreOpen.set(!moreOpen())"
-                    class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white hover:bg-slate-50">
+                    class="border-b-2 border-transparent px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-950 transition-colors">
               More
             </button>
             @if (moreOpen()) {
@@ -93,9 +98,28 @@ interface PayAppSummaryCard {
             }
           </div>
         }
+        </div>
+        <button type="button" (click)="exportActiveTab()"
+                class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors shrink-0">
+          Export CSV
+        </button>
       </div>
 
-      @if (activeView === 'summary') {
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <app-stat-card label="Original Contract" [value]="fmtMoney(topStats().original)" icon="description" />
+        <app-stat-card label="Approved Changes" [value]="fmtMoney(topStats().approvedCos)" icon="difference" />
+        <app-stat-card label="Revised Contract" [value]="fmtMoney(topStats().revised)" icon="payments" />
+        <app-stat-card label="% Billed" [value]="topStats().pctBilled" icon="percent" />
+      </div>
+
+      @if (financialLoading()) {
+        <div class="space-y-2 p-4">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="animate-pulse h-8 bg-slate-100 rounded mx-3"></div>
+          }
+        </div>
+      }
+      @if (!financialLoading() && activeView === 'summary') {
         @if (projectApi.financialError()) {
           <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             Financial summary is using the existing computed view because the SQL summary could not load.
@@ -142,11 +166,11 @@ interface PayAppSummaryCard {
                       </thead>
                       <tbody class="divide-y divide-slate-100">
                         @for (row of sql.costBreakdown.categories; track row.category) {
-                          <tr>
-                            <td class="px-4 py-3 font-semibold text-slate-900">{{ row.category }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ fmtNullable(row.budget) }}</td>
-                            <td class="px-4 py-3 text-slate-900 font-semibold">{{ fmtNullable(row.actual) }}</td>
-                            <td class="px-4 py-3 text-slate-700">{{ fmtNullable(row.remaining) }}</td>
+                          <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                            <td class="px-3 py-2.5 font-semibold text-slate-900">{{ row.category }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.budget) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.actual) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.remaining) }}</td>
                           </tr>
                         }
                       </tbody>
@@ -281,8 +305,8 @@ interface PayAppSummaryCard {
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   @for (payApp of sqlPayApps(); track payApp.id) {
-                    <tr [class.bg-indigo-50]="selectedSqlPayAppId() === payApp.id">
-                      <td class="px-3 py-2 align-top">
+                    <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700" [class.bg-indigo-50]="selectedSqlPayAppId() === payApp.id">
+                      <td class="px-3 py-2.5 align-top">
                         <p class="font-semibold text-slate-900">{{ payApp.payAppNumber || 'Pending' }}</p>
                         <p class="text-[11px] text-slate-500">{{ dateLabel(payApp.applicationDate) }}</p>
                       </td>
@@ -296,10 +320,10 @@ interface PayAppSummaryCard {
                           }
                         </div>
                       </td>
-                      <td class="px-3 py-2 align-top text-right font-mono">{{ moneyNullable(payApp.totalCompletedStoredToDate) }}</td>
-                      <td class="px-3 py-2 align-top text-right font-mono font-semibold text-slate-900">{{ moneyNullable(payApp.currentPaymentDue) }}</td>
-                      <td class="px-3 py-2 align-top text-right font-mono">{{ moneyNullable(payApp.retainageAmount) }}</td>
-                      <td class="px-3 py-2 align-top text-right font-mono">{{ moneyNullable(payApp.balanceToFinish) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.totalCompletedStoredToDate) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700 font-semibold">{{ moneyNullable(payApp.currentPaymentDue) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.retainageAmount) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.balanceToFinish) }}</td>
                       <td class="px-3 py-2 align-top text-right font-semibold text-slate-700">{{ payApp.sovLineCount }}</td>
                       <td class="px-3 py-2 align-top">
                         <span class="rounded-full px-2 py-0.5 text-[11px] font-bold" [ngClass]="reviewIndicatorClass(payApp)">
@@ -407,18 +431,18 @@ interface PayAppSummaryCard {
                       </thead>
                       <tbody class="divide-y divide-slate-100">
                         @for (line of detail.lines; track line.id) {
-                          <tr>
-                            <td class="px-3 py-2">{{ line.lineNumber || '' }}</td>
-                            <td class="px-3 py-2">{{ line.costCode || '' }}</td>
-                            <td class="px-3 py-2 font-medium text-slate-900">{{ line.description || '' }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.scheduledValue) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.workCompletedPrevious) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.workCompletedThisPeriod) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.materialsPresentlyStored) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.totalCompletedAndStored) }}</td>
-                            <td class="px-3 py-2 text-right">{{ percentCompleteLabel(line.percentComplete) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.balanceToFinish) }}</td>
-                            <td class="px-3 py-2 text-right font-mono">{{ moneyNullable(line.retainage) }}</td>
+                          <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                            <td class="px-3 py-2.5 font-mono font-bold">{{ line.lineNumber || '' }}</td>
+                            <td class="px-3 py-2.5">{{ line.costCode || '' }}</td>
+                            <td class="px-3 py-2.5 font-medium text-slate-900">{{ line.description || '' }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.scheduledValue) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.workCompletedPrevious) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.workCompletedThisPeriod) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.materialsPresentlyStored) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.totalCompletedAndStored) }}</td>
+                            <td class="px-3 py-2.5 text-right">{{ percentCompleteLabel(line.percentComplete) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.balanceToFinish) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.retainage) }}</td>
                           </tr>
                         }
                       </tbody>
@@ -621,6 +645,21 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   ];
 
   financial = computed(() => this.financialSvc.computeForProject(this.project));
+
+  financialLoading = computed(() =>
+    this.projectApi.financialLoading() || this.projectApi.payAppsLoading() || this.projectApi.budgetLoading(),
+  );
+
+  topStats = computed(() => {
+    const sql = this.sqlFinancial();
+    const fin = this.financial();
+    const original = sql?.contract.originalContractAmount ?? fin.originalContractAmount ?? this.summary.originalContract;
+    const revised = sql?.contract.revisedContractAmount ?? fin.currentContractAmount ?? this.summary.revisedContract;
+    const approvedCos = (original && revised) ? Math.max(0, revised - original) : (fin.approvedChangeOrderAmount ?? this.summary.approvedCOs);
+    const billed = sql?.billing.billedToDate ?? fin.billedToDate ?? this.summary.billedToDate;
+    const pct = revised > 0 ? `${((billed / revised) * 100).toFixed(1)}%` : '—';
+    return { original, approvedCos, revised, pctBilled: pct };
+  });
 
   approvedUnbilledCount = computed(() =>
     this.changeOrders().filter(c => c.projectId === this.project.id && isApprovedUnbilledCo(c)).length,
@@ -911,6 +950,35 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     } else {
       this.viewChange.emit(view);
     }
+  }
+
+  fmtMoney(value: number | null | undefined): string {
+    if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
+  }
+
+  exportActiveTab(): void {
+    const rows: Record<string, unknown>[] = [];
+    if (this.activeView === 'billing') {
+      for (const payApp of this.sqlPayApps()) {
+        rows.push({
+          payAppNumber: payApp.payAppNumber,
+          status: payApp.status,
+          currentDue: payApp.currentPaymentDue,
+          retainage: payApp.retainageAmount,
+        });
+      }
+    } else {
+      const stats = this.topStats();
+      rows.push({
+        tab: this.activeView,
+        originalContract: stats.original,
+        approvedChanges: stats.approvedCos,
+        revisedContract: stats.revised,
+        pctBilled: stats.pctBilled,
+      });
+    }
+    exportToCsv(rows, `${this.project.projectNumber}-${this.activeView}`);
   }
 
   goAction(action: { route: string; queryParams?: Record<string, string>; fragment?: string; view?: FinancialView }): void {

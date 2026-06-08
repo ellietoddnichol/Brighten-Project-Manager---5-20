@@ -15,9 +15,12 @@ import { ArAgingImportService } from '@features/financials/services/ar-aging-imp
 import { WipForecastImportService } from '@features/financials/services/wip-forecast-import.service';
 import { DriveFolderSeedService } from '@features/subcontractors/services/drive-folder-seed.service';
 import { ImportSeedService } from '@core/services/import-seed.service';
+import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
+import { GlobalNeedsService } from '@core/services/global-needs.service';
+import { apiConfig } from '@app/config/api.config';
+import { setWorkCompAuditEnabled } from '@app/config/feature-setup.config';
 import { environment } from '@app/config/environment';
 import { SettingsFeatureSetupComponent } from './settings-feature-setup';
-import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
 
 @Component({
   selector: 'app-settings-advanced-tools',
@@ -105,14 +108,14 @@ import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
         <input type="text" [(ngModel)]="workbookId" placeholder="Google Sheet ID (optional)"
                class="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-mono" />
         <div class="flex flex-wrap gap-2">
-          <button type="button" (click)="saveWorkbook()" class="text-xs font-semibold bg-blue-600 text-white px-3 py-2 rounded-lg">Save</button>
+          <button type="button" (click)="saveWorkbook()" class="text-xs font-semibold bg-slate-900 text-white px-3 py-2 rounded-lg">Save</button>
           <button type="button" (click)="refreshWorkbook()" [disabled]="projectData.loading()"
                   class="text-xs font-semibold border px-3 py-2 rounded-lg disabled:opacity-50">Refresh</button>
         </div>
       </article>
 
-      <article class="bg-white rounded-xl border border-rose-200 bg-rose-50/30 p-5 space-y-3">
-        <h3 class="text-sm font-bold text-rose-950">Developer / dangerous</h3>
+      <article class="bg-white rounded-xl border border-rose-200 shadow-sm p-5 space-y-3">
+        <h3 class="text-sm font-bold text-rose-950">Developer tools</h3>
         <div class="flex flex-wrap gap-2">
           <button type="button" (click)="loadDemo()" [disabled]="seedService.seeding()"
                   class="text-xs font-semibold bg-orange-500 text-white px-3 py-2 rounded-lg disabled:opacity-50">Load demo data</button>
@@ -128,12 +131,27 @@ import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
         }
       </article>
 
-      <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
-        <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Feature rollout matrix</summary>
-        <div class="px-2 pb-4">
-          <app-settings-feature-setup />
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <app-settings-feature-setup />
+      </article>
+
+      <article class="bg-white rounded-xl border border-rose-200 shadow-sm p-5 space-y-3">
+        <h3 class="text-sm font-bold text-rose-950">Danger zone</h3>
+        <p class="text-xs text-slate-500">These actions affect local preferences and cached data only — not Firestore project records.</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" (click)="confirmClearCache()"
+                  class="text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-100 transition-colors">
+            Clear All Cache
+          </button>
+          <button type="button" (click)="confirmResetDefaults()"
+                  class="text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-100 transition-colors">
+            Reset to defaults
+          </button>
         </div>
-      </details>
+        @if (dangerMessage()) {
+          <p class="text-sm text-emerald-700">{{ dangerMessage() }}</p>
+        }
+      </article>
     </section>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -154,6 +172,7 @@ export class SettingsAdvancedToolsComponent {
   seedService = inject(SeedService);
   dedupeService = inject(ProjectDedupeService);
   driveWebhooks = inject(DriveWebhooksService);
+  private globalNeeds = inject(GlobalNeedsService);
 
   workbookId = environment.optionalFinancialWorkbookId;
   driveWebhookToken = this.driveWebhooks.getChannelToken();
@@ -161,6 +180,7 @@ export class SettingsAdvancedToolsComponent {
   devMessage = signal<string | null>(null);
   devOk = signal(true);
   webhookMessage = signal<string | null>(null);
+  dangerMessage = signal<string | null>(null);
   driveWatchBusy = signal(false);
 
   busy(): boolean {
@@ -245,5 +265,36 @@ export class SettingsAdvancedToolsComponent {
     } finally {
       this.driveWatchBusy.set(false);
     }
+  }
+
+  confirmClearCache(): void {
+    if (!confirm('Clear all cached data in localStorage and sessionStorage? The page will reload.')) {
+      return;
+    }
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch { /* ignore */ }
+    location.reload();
+  }
+
+  confirmResetDefaults(): void {
+    if (!confirm('Reset all app settings to defaults? Local preferences will be cleared but Firestore data is unchanged.')) {
+      return;
+    }
+    this.resetSettingsToDefaults();
+    this.dangerMessage.set('Settings reset to defaults. Reload the page if navigation looks stale.');
+  }
+
+  private resetSettingsToDefaults(): void {
+    this.globalNeeds.setShowAllTools(true);
+    this.globalNeeds.resetPinnedTools();
+    setWorkCompAuditEnabled(false);
+    apiConfig.setBaseUrl('');
+    apiConfig.setUseApiBackend(true);
+    this.driveWebhooks.setChannelToken('');
+    this.driveWebhookToken = '';
+    environment.setOptionalFinancialWorkbookId('');
+    this.workbookId = '';
   }
 }

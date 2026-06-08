@@ -12,6 +12,7 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { downloadCsv } from '@shared/utils/csv-export';
 import { wipConfidenceLabel, wipGroupLabel } from '@features/financials/utils/wip.compute';
 import {
@@ -38,14 +39,18 @@ import { WIPRecord } from '@app/models/financial.types';
     CompactStatStripComponent,
     SegmentedControlComponent,
     StatusChipComponent,
+    EmptyStateComponent,
   ],
   template: `
     <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-page-header
         title="WIP"
-        subtitle="Active jobs, over/under billing, projected margin, and closeout AR"
-        primaryActionLabel="Recalculate WIP"
-        (primaryAction)="recalculate()">
+        subtitle="Active jobs, over/under billing, projected margin, and closeout AR">
+        <button type="button" (click)="recalculate()" [disabled]="recalculating()"
+                class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 flex items-center gap-2">
+          <mat-icon class="!text-[18px]">{{ recalculating() ? 'hourglass_empty' : 'sync' }}</mat-icon>
+          {{ recalculating() ? 'Recalculating…' : 'Recalculate WIP' }}
+        </button>
         <button type="button" (click)="exportCsv()"
                 class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
           Export CSV
@@ -105,10 +110,10 @@ import { WIPRecord } from '@app/models/financial.types';
 
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
-          <div class="px-5 py-4 hover:bg-slate-50/80">
+          <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'wip' }"
+             class="block px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
             <div class="flex flex-wrap items-start gap-4">
-              <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'wip' }"
-                 class="min-w-0 flex-1">
+              <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2 mb-1">
                   <span class="text-xs font-bold font-mono text-slate-500">#{{ row.jobNumber }}</span>
                   <span class="text-sm font-bold text-slate-900">{{ row.projectName }}</span>
@@ -124,7 +129,14 @@ import { WIPRecord } from '@app/models/financial.types';
                   <span><span class="text-slate-400">Actual</span> <span class="font-mono font-semibold">{{ fmt(row.costToDate) }}</span></span>
                   <span><span class="text-slate-400">Billed</span> <span class="font-mono font-semibold">{{ fmt(row.billedToDate) }}</span></span>
                   <span><span class="text-slate-400">Earned</span> <span class="font-mono font-semibold">{{ fmt(row.earnedRevenue) }}</span></span>
-                  <span><span class="text-slate-400">O/U</span> <span class="font-mono font-semibold" [class.text-rose-700]="row.overUnderBilling > 1000" [class.text-blue-700]="row.overUnderBilling < -1000">{{ fmt(row.overUnderBilling) }}</span></span>
+                  <span><span class="text-slate-400">O/U</span>
+                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                          [class.text-rose-700]="row.overUnderBilling > 1000"
+                          [class.bg-rose-50]="row.overUnderBilling > 1000"
+                          [class.text-emerald-700]="row.overUnderBilling < -1000"
+                          [class.bg-emerald-50]="row.overUnderBilling < -1000"
+                          [class.text-slate-700]="Math.abs(row.overUnderBilling) <= 1000">{{ fmt(row.overUnderBilling) }}</span>
+                  </span>
                   <span><span class="text-slate-400">Margin</span> <span class="font-mono font-semibold" [class.text-rose-700]="row.forecastMargin < 20">{{ row.forecastMargin | number:'1.0-1' }}%</span></span>
                   @if (row.arBalance > 0) {
                     <span><span class="text-slate-400">AR</span> <span class="font-mono font-semibold text-orange-700">{{ fmt(row.arBalance) }}</span></span>
@@ -141,12 +153,14 @@ import { WIPRecord } from '@app/models/financial.types';
                     }
                   </div>
                 }
-              </a>
+              </div>
               <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</span>
             </div>
-          </div>
+          </a>
         } @empty {
-          <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No WIP jobs match this segment</div>
+          <div class="p-5">
+            <app-empty-state title="No WIP jobs match this segment" message="Try another filter or refresh WIP data." />
+          </div>
         }
       </section>
     </div>

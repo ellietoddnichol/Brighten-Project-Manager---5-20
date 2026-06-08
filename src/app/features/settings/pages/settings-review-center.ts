@@ -33,9 +33,10 @@ import { SettingsImportReview } from './settings-import-review';
         @for (f of filters; track f.id) {
           <button type="button" (click)="activeFilter.set(f.id)"
                   class="text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors"
-                  [class.bg-indigo-600]="activeFilter() === f.id"
+                  [class.bg-slate-900]="activeFilter() === f.id"
                   [class.text-white]="activeFilter() === f.id"
-                  [class.border-indigo-600]="activeFilter() === f.id"
+                  [class.border-slate-900]="activeFilter() === f.id"
+                  [class.hover:bg-slate-800]="activeFilter() === f.id"
                   [class.bg-white]="activeFilter() !== f.id"
                   [class.text-slate-700]="activeFilter() !== f.id"
                   [class.border-slate-200]="activeFilter() !== f.id">
@@ -50,7 +51,7 @@ import { SettingsImportReview } from './settings-import-review';
       @if (filteredItems().length) {
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
           @for (item of filteredItems(); track item.id) {
-            <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+            <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
                   @if (item.jobNumber) {

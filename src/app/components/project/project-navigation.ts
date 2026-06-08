@@ -274,6 +274,31 @@ export function persistShowAllToolsKey(projectId: string): string {
   return `brighten.projectShowAllTools.${projectId}`;
 }
 
+export function persistLastTabKey(projectId: string): string {
+  return `brighten.lastTab.${projectId}`;
+}
+
+export function loadPersistedLastTab(projectId: string): ProjectPrimarySection | null {
+  try {
+    const raw = localStorage.getItem(persistLastTabKey(projectId));
+    if (raw === 'overview' || raw === 'workflows' || raw === 'financials' || raw === 'documents') {
+      return raw;
+    }
+    const legacy = loadPersistedNav(projectId);
+    return legacy?.section ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePersistedLastTab(projectId: string, section: ProjectPrimarySection): void {
+  try {
+    localStorage.setItem(persistLastTabKey(projectId), section);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function savePersistedNav(projectId: string, state: ProjectNavState): void {
 
   try {

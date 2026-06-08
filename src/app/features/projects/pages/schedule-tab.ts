@@ -20,9 +20,9 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
           <p class="text-xl font-bold text-slate-900">{{ projectMilestones().length }}</p>
         </div>
         <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200" [class.bg-red-50]="overdueMilestones().length > 0">
-          <p class="text-[10px] font-bold uppercase tracking-widest mb-1" [class.text-red-500]="overdueMilestones().length > 0" [class.text-slate-500]="overdueMilestones().length === 0">Overdue</p>
+          <p class="text-[10px] font-bold uppercase tracking-widest mb-1" [class.text-rose-700]="overdueMilestones().length > 0" [class.text-slate-500]="overdueMilestones().length === 0">Overdue</p>
           <div class="flex items-end justify-between">
-             <p class="text-xl font-bold" [class.text-red-600]="overdueMilestones().length > 0" [class.text-slate-900]="overdueMilestones().length === 0">{{ overdueMilestones().length }}</p>
+             <p class="text-xl font-bold" [class.text-rose-700]="overdueMilestones().length > 0" [class.text-slate-900]="overdueMilestones().length === 0">{{ overdueMilestones().length }}</p>
              <mat-icon class="text-red-300" *ngIf="overdueMilestones().length > 0">warning</mat-icon>
           </div>
         </div>
@@ -84,7 +84,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
 
              <div class="col-span-full flex justify-end gap-2 mt-2">
                 <button (click)="cancelMS()" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button (click)="saveMS()" class="bg-indigo-600 text-white px-4 py-2 rounded font-bold hover:bg-indigo-700 text-sm">Save Milestone</button>
+                <button (click)="saveMS()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save Milestone</button>
              </div>
           </div>
         }
@@ -120,7 +120,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
                     </td>
                     <td class="px-6 py-4 text-slate-600 text-xs gap-1 flex flex-col">
                       @if (m.plannedStartDate) { <span>Start: {{ m.plannedStartDate | date:'shortDate' }}</span> }
-                      @if (m.plannedEndDate) { <span [class.text-red-500]="isOverdue(m) && m.status !== 'Complete'">End: {{ m.plannedEndDate | date:'shortDate' }}</span> }
+                      @if (m.plannedEndDate) { <span [class.text-rose-700]="isOverdue(m) && m.status !== 'Complete'">End: {{ m.plannedEndDate | date:'shortDate' }}</span> }
                     </td>
                     <td class="px-6 py-4 text-right space-x-2">
                        @if (m.status !== 'Complete') {

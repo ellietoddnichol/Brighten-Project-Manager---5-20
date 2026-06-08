@@ -13,7 +13,7 @@ import { isActiveSetupProject } from '@shared/utils/settings-hub.compute';
   standalone: true,
   imports: [CommonModule, MatIconModule, RouterLink],
   template: `
-    <section id="drive-links" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="drive-links" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
       <span id="drive-folders" class="sr-only"></span>
       <h2 class="text-xl font-bold mb-2">Drive Links</h2>
       <p class="text-sm text-slate-500 font-medium mb-4 max-w-2xl">
@@ -48,7 +48,7 @@ import { isActiveSetupProject } from '@shared/utils/settings-hub.compute';
 
       <div class="flex flex-wrap gap-3 mb-4">
         <a routerLink="/documents" [queryParams]="{ segment: 'driveLinks' }"
-           class="bg-blue-600 text-white px-5 py-2.5 rounded-md text-sm font-semibold hover:bg-blue-700 flex items-center gap-2">
+           class="bg-slate-900 text-white px-5 py-2.5 rounded-md text-sm font-semibold hover:bg-slate-800 flex items-center gap-2">
           <mat-icon class="!text-[18px]">folder_open</mat-icon>
           Open Documents → Drive Links
         </a>

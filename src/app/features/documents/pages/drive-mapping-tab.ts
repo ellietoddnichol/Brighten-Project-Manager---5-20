@@ -137,7 +137,7 @@ import { folderNeedStatusLabel } from '@features/projects/utils/project-requirem
             </div>
           </div>
           <div class="flex gap-2 mt-4">
-            <button (click)="saveManualLink()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold text-sm">Save link</button>
+            <button (click)="saveManualLink()" class="bg-slate-900 text-white px-4 py-2 rounded font-bold text-sm">Save link</button>
             <button (click)="cancelManualLink()" class="px-4 py-2 rounded font-bold text-slate-600 text-sm">Cancel</button>
           </div>
         </div>

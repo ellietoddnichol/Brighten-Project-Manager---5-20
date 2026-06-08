@@ -14,6 +14,7 @@ import {
   wipEligibleLaborActuals,
 } from '@features/labor/utils/labor-code-mapping.compute';
 import { LaborCodeFilter } from '@app/models/labor-code-mapping.types';
+import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-module-banner';
 import { GlobalNeedsService } from '@core/services/global-needs.service';
 import { isWorkCompAuditEnabled, shouldShowWorkCompAudit } from '@app/config/feature-setup.config';
@@ -34,24 +35,20 @@ interface LaborGroupRow {
 @Component({
   selector: 'app-labor-actuals-page',
   standalone: true,
-  imports: [CommonModule, RouterLink, HiddenModuleBannerComponent],
+  imports: [CommonModule, RouterLink, HiddenModuleBannerComponent, PageHeaderComponent],
   template: `
-    <div class="p-8 max-w-[1400px] mx-auto space-y-6">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-hidden-module-banner moduleId="labor-actuals" />
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-bold">Labor Actuals</h1>
-          <p class="text-sm text-slate-500">Approved time logs rolled into project labor cost and budget actuals</p>
-        </div>
-        <button type="button" (click)="exportCsv()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+      <app-page-header title="Labor Actuals" subtitle="Approved time logs rolled into project labor cost and budget actuals">
+        <button type="button" (click)="exportCsv()" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
           Export CSV
         </button>
         @if (showWorkCompAudit()) {
-          <button type="button" (click)="exportWorkCompAudit()" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold">
+          <button type="button" (click)="exportWorkCompAudit()" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
             Work Comp Audit CSV
           </button>
         }
-      </div>
+      </app-page-header>
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         @for (card of summaryCards(); track card.label) {
@@ -65,14 +62,12 @@ interface LaborGroupRow {
       <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
         @for (tab of tabs; track tab.id) {
           <button type="button" (click)="activeTab.set(tab.id)"
-                  class="px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors"
-                  [class.bg-white]="activeTab() === tab.id"
-                  [class.text-blue-700]="activeTab() === tab.id"
-                  [class.border]="activeTab() === tab.id"
-                  [class.border-slate-200]="activeTab() === tab.id"
-                  [class.border-b-white]="activeTab() === tab.id"
-                  [class.-mb-px]="activeTab() === tab.id"
-                  [class.text-slate-500]="activeTab() !== tab.id">
+                  class="px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors shrink-0"
+                  [class.bg-slate-900]="activeTab() === tab.id"
+                  [class.text-white]="activeTab() === tab.id"
+                  [class.text-slate-500]="activeTab() !== tab.id"
+                  [class.hover:text-slate-900]="activeTab() !== tab.id"
+                  [class.hover:bg-slate-50]="activeTab() !== tab.id">
             {{ tab.label }}
             @if (tab.id === 'exceptions' && exceptionRows().length) {
               <span class="ml-1 px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px]">{{ exceptionRows().length }}</span>
@@ -98,10 +93,10 @@ interface LaborGroupRow {
                 </thead>
                 <tbody>
                   @for (row of exceptionRows(); track row.id) {
-                    <tr class="border-b hover:bg-slate-50">
+                    <tr class="border-b hover:bg-slate-50 transition-colors">
                       <td class="px-4 py-3">
                         <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'workflows', workflow: 'certified-payroll' }"
-                           class="text-blue-600 font-medium">{{ row.projectName || row.jobNumber || '—' }}</a>
+                           class="text-indigo-700 font-medium hover:underline">{{ row.projectName || row.jobNumber || '—' }}</a>
                       </td>
                       <td class="px-4 py-3">{{ row.employeeName || '—' }}</td>
                       <td class="px-4 py-3">{{ row.workDate }}</td>
@@ -182,11 +177,11 @@ interface LaborGroupRow {
               </thead>
               <tbody>
                 @for (row of groupedRows(); track row.key) {
-                  <tr class="border-b hover:bg-slate-50">
+                  <tr class="border-b hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3">
                       @if (row.projectId) {
                         <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', financial: 'budget' }"
-                           class="text-blue-600 font-medium">{{ row.label }}</a>
+                           class="text-indigo-700 font-medium hover:underline">{{ row.label }}</a>
                       } @else {
                         {{ row.label }}
                       }

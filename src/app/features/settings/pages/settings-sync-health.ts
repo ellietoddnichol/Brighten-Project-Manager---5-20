@@ -9,7 +9,7 @@ import { SyncHealthService, SyncHealthStatus } from '@core/services/sync-health.
   standalone: true,
   imports: [CommonModule, MatIconModule, RouterLink],
   template: `
-    <section id="sync-health" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="sync-health" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
       <h2 class="text-xl font-bold mb-1">Sync Health</h2>
       <p class="text-sm text-slate-500 mb-2">
         Phase Zero source-of-truth: Firestore is the normalized working database.
