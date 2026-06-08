@@ -322,4 +322,45 @@ export class ProjectApiService {
     ]);
     return { inserted: resp.inserted, totalBudget: resp.totalBudget };
   }
+
+  /** Create a single budget line in SQL. */
+  async createBudgetLine(idOrJob: string, line: BudgetLineWriteInput): Promise<void> {
+    await this.api.post(`/api/projects/${encodeURIComponent(idOrJob)}/budget/lines`, line);
+    await this.loadProjectBudget(idOrJob);
+  }
+
+  /** Bulk-import budget lines (e.g. from a pasted spreadsheet/CSV) in SQL. */
+  async importBudgetLines(idOrJob: string, lines: BudgetLineWriteInput[]): Promise<{ imported: number }> {
+    const resp = await this.api.post<{ ok: boolean; imported: number }>(
+      `/api/projects/${encodeURIComponent(idOrJob)}/budget/lines/import`,
+      { lines },
+    );
+    await this.loadProjectBudget(idOrJob);
+    return { imported: resp.imported };
+  }
+
+  /** Update an existing SQL budget line. */
+  async updateBudgetLine(idOrJob: string, lineId: string, line: BudgetLineWriteInput): Promise<void> {
+    await this.api.patch(`/api/projects/${encodeURIComponent(idOrJob)}/budget/lines/${encodeURIComponent(lineId)}`, line);
+    await this.loadProjectBudget(idOrJob);
+  }
+
+  /** Delete a SQL budget line. */
+  async deleteBudgetLine(idOrJob: string, lineId: string): Promise<void> {
+    await this.api.delete(`/api/projects/${encodeURIComponent(idOrJob)}/budget/lines/${encodeURIComponent(lineId)}`);
+    await this.loadProjectBudget(idOrJob);
+  }
+}
+
+export interface BudgetLineWriteInput {
+  costCode: string;
+  category: string;
+  description?: string | null;
+  budgetAmount?: number | null;
+  actualToDate?: number | null;
+  committedAmount?: number | null;
+  projectedFinalCost?: number | null;
+  varianceAmount?: number | null;
+  status?: string | null;
+  notes?: string | null;
 }
