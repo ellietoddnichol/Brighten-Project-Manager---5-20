@@ -43,11 +43,6 @@ export class AuthService {
     });
   }
 
-  /** Basic Google sign-in — identity only. Drive/Sheets scopes are requested later. */
-  private signInProvider(): GoogleAuthProvider {
-    return new GoogleAuthProvider();
-  }
-
   private googleProvider(forceConsent = false): GoogleAuthProvider {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive');
@@ -127,11 +122,15 @@ export class AuthService {
     }
   }
 
-  /** Primary sign-in — user clicked "Sign in with Google" on the login screen. */
+  /**
+   * Primary sign-in — user clicked "Sign in with Google" on the login screen.
+   * Requests Drive/Sheets scopes up front so the resulting token can sync
+   * immediately, without a separate "re-authorize Drive" step.
+   */
   async login(): Promise<void> {
     this.loginError.set(null);
     this.signingIn.set(true);
-    const provider = this.signInProvider();
+    const provider = this.googleProvider();
 
     try {
       const result = await signInWithPopup(auth, provider);
