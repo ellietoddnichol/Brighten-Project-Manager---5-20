@@ -74,7 +74,7 @@ import { formatProjectDate } from '@shared/utils/project';
           @if (loadingFiles) {
             <p class="p-8 text-center text-slate-500">Loading...</p>
           } @else if (driveError) {
-            <p class="p-8 text-center text-red-600">{{ driveError }}</p>
+            <p class="p-8 text-center text-rose-700">{{ driveError }}</p>
           } @else if (!project.driveFolderId) {
             <p class="p-8 text-center text-slate-500">Link a Drive folder in Setup first.</p>
           } @else {

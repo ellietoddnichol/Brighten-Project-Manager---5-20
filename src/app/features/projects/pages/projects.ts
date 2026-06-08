@@ -46,6 +46,8 @@ import { SegmentedControlComponent } from '@app/components/ui/segmented-control'
 
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
+
 import {
 
   DetailDrawerComponent,
@@ -83,7 +85,8 @@ import {
 
 } from '@features/projects/utils/projects-hub.compute';
 
-
+type LifecycleStatusFilter = 'active' | 'closed' | 'all';
+type ProjectsSortKey = 'name' | 'jobNumber' | 'updated';
 
 const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[] = [
 
@@ -131,6 +134,8 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
     StatusChipComponent,
 
+    EmptyStateComponent,
+
     DetailDrawerComponent,
 
     DrawerSectionComponent,
@@ -157,7 +162,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         <a routerLink="/settings" fragment="import-review"
 
-           class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
+           class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
 
           Import / source review
 
@@ -165,7 +170,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         <button type="button" (click)="syncProjects()" [disabled]="syncing()"
 
-                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2">
+                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 flex items-center gap-2">
 
           <mat-icon class="!text-[18px]">{{ syncing() ? 'hourglass_empty' : 'sync' }}</mat-icon>
 
@@ -175,7 +180,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         <button type="button" (click)="exportCsv()"
 
-                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
+                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
 
           Export CSV
 
@@ -192,9 +197,12 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
       }
 
       @if (projectApi.error()) {
-
-        <p class="text-sm text-amber-700 -mt-2">Using Firestore fallback — {{ projectApi.error() }}</p>
-
+        <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
+          <span>Could not load projects from API — using Firestore fallback. {{ projectApi.error() }}</span>
+          <button type="button" (click)="retryLoadProjects()"
+                  class="ml-auto text-xs font-semibold underline hover:text-amber-900 transition-colors shrink-0">Retry</button>
+        </div>
       }
 
 
@@ -246,16 +254,20 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
 
             <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
-
-                   placeholder="Search job #, project, customer, address, county…"
-
-                   class="w-full pl-10 pr-4 py-2.5 bg-slate-50 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-300 outline-none text-sm">
+                   placeholder="Search projects…"
+                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
 
           </div>
 
-          <button type="button" (click)="openFilterDrawer()"
+          <select [(ngModel)]="sortKey" (ngModelChange)="resetVisibleCount()"
+                  class="shrink-0 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white hover:bg-slate-50 transition-colors">
+            <option value="jobNumber">Job #</option>
+            <option value="name">Name</option>
+            <option value="updated">Last updated</option>
+          </select>
 
-                  class="shrink-0 text-sm font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-4 py-2.5 rounded-lg flex items-center gap-2">
+          <button type="button" (click)="openFilterDrawer()"
+                  class="shrink-0 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
 
             <mat-icon class="!text-[18px]">tune</mat-icon>
 
@@ -263,7 +275,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
             @if (advancedFilterCount()) {
 
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-600 text-white">{{ advancedFilterCount() }}</span>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{{ advancedFilterCount() }}</span>
 
             }
 
@@ -271,7 +283,21 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         </div>
 
-
+        <div class="flex flex-wrap items-center gap-2">
+          @for (opt of lifecycleFilterOptions; track opt.id) {
+            <button type="button" (click)="setLifecycleFilter(opt.id)"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                    [class.bg-slate-900]="lifecycleStatusFilter() === opt.id"
+                    [class.text-white]="lifecycleStatusFilter() === opt.id"
+                    [class.bg-white]="lifecycleStatusFilter() !== opt.id"
+                    [class.border]="lifecycleStatusFilter() !== opt.id"
+                    [class.border-slate-200]="lifecycleStatusFilter() !== opt.id"
+                    [class.text-slate-700]="lifecycleStatusFilter() !== opt.id"
+                    [class.hover:bg-slate-50]="lifecycleStatusFilter() !== opt.id">
+              {{ opt.label }}
+            </button>
+          }
+        </div>
 
         <app-segmented-control
 
@@ -301,9 +327,19 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
 
-        @if (listRows().length) {
+        @if (listLoading()) {
+          <div class="p-4 space-y-3">
+            @for (i of skeletonRows; track i) {
+              <div class="animate-pulse bg-slate-100 rounded h-12"></div>
+            }
+          </div>
+        } @else if (listRows().length) {
+
+          <p class="px-5 pt-4 pb-2 text-xs text-slate-500">
+            Showing {{ visibleListRows().length }} of {{ listRows().length }} projects
+          </p>
 
           @if (tableLayout()) {
           <div class="overflow-x-auto">
@@ -322,8 +358,9 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                @for (row of listRows(); track row.project.id) {
-                  <tr class="hover:bg-slate-50" [class.opacity-70]="row.quietRow">
+                @for (row of visibleListRows(); track row.project.id) {
+                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
+                      (click)="navigateToProject(row, $event)">
                     <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
@@ -332,26 +369,23 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                       @if (row.warnings.length) {
                         <div class="flex flex-wrap gap-1 mt-1">
                           @for (chip of row.warnings; track chip.id) {
-                            <a [routerLink]="warningRoute(row, chip)"
-                               class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full hover:underline"
-                               [class.bg-rose-100]="chip.kind === 'critical'"
-                               [class.text-rose-800]="chip.kind === 'critical'"
-                               [class.bg-amber-100]="chip.kind === 'setup'"
-                               [class.text-amber-800]="chip.kind === 'setup'">
-                              {{ chip.label }}
+                            <a [routerLink]="warningRoute(row, chip)" class="hover:underline">
+                              <app-status-chip [tone]="chip.kind === 'critical' ? 'red' : 'amber'">{{ chip.label }}</app-status-chip>
                             </a>
                           }
                         </div>
                       }
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
+                    <td class="px-4 py-2.5 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
                     <td class="px-4 py-2.5">
                       <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600">{{ row.project.billingStatus || 'Pending' }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.financial.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.moneySecondaryValue) }}</td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
+                    </td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="row.nextActionRoute"
                          class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
@@ -367,21 +401,22 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
           <div class="divide-y divide-slate-100">
 
-            @for (row of listRows(); track row.project.id) {
+            @for (row of visibleListRows(); track row.project.id) {
 
-              <div class="group px-5 py-4 hover:bg-slate-50/80 transition-colors"
+              <div class="group px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
 
-                   [class.opacity-70]="row.quietRow">
+                   [class.opacity-70]="row.quietRow"
+                   (click)="navigateToProject(row, $event)">
 
-                <div class="flex flex-wrap items-start gap-4">
+                <div class="flex flex-wrap items-center gap-3 min-w-0 flex-1">
 
                   <a [routerLink]="['/projects', row.project.id]" class="min-w-0 flex-1">
 
                     <div class="flex flex-wrap items-center gap-2 mb-1">
 
-                      <span class="text-xs font-bold font-mono text-slate-900">#{{ row.project.projectNumber }}</span>
+                      <span class="text-xs font-mono font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
 
-                      <span class="text-sm font-bold text-slate-900 group-hover:text-indigo-700 truncate max-w-[320px]">
+                      <span class="text-sm font-semibold text-slate-900 min-w-0 truncate flex-1 group-hover:text-indigo-700">
 
                         {{ row.project.projectName }}
 
@@ -425,19 +460,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                         @for (chip of row.warnings; track chip.id) {
 
-                          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-
-                                [class.bg-rose-100]="chip.kind === 'critical'"
-
-                                [class.text-rose-800]="chip.kind === 'critical'"
-
-                                [class.bg-amber-100]="chip.kind === 'setup'"
-
-                                [class.text-amber-800]="chip.kind === 'setup'">
-
-                            {{ chip.label }}
-
-                          </span>
+                          <app-status-chip [tone]="chip.kind === 'critical' ? 'red' : 'amber'">{{ chip.label }}</app-status-chip>
 
                         }
 
@@ -449,7 +472,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-                  <div class="flex flex-col items-end gap-2 shrink-0">
+                  <div class="flex flex-col items-end gap-2 shrink-0 ml-auto">
 
                     <div class="flex items-center gap-2">
 
@@ -459,7 +482,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                            (click)="$event.stopPropagation()"
 
-                           class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100"
+                           class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center hover:bg-indigo-100 transition-colors"
 
                            title="Open Drive folder">
 
@@ -479,7 +502,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                       <button type="button" (click)="openQuickView(row); $event.stopPropagation()"
 
-                              class="text-xs font-semibold text-slate-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-slate-100">
+                              class="text-xs font-semibold text-slate-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-slate-100 transition-colors">
 
                         Quick view
 
@@ -489,7 +512,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                     <a [routerLink]="row.nextActionRoute"
 
-                       class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg">
+                       class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
 
                       {{ row.nextActionLabel }}
 
@@ -507,17 +530,20 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
           }
 
+          @if (visibleListRows().length < listRows().length) {
+            <div class="px-5 py-4 border-t border-slate-100 text-center">
+              <button type="button" (click)="loadMore()"
+                      class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+                Load more
+              </button>
+            </div>
+          }
+
         } @else {
 
-          <div class="px-5 py-16 text-center">
+          <div class="p-5">
 
-            <p class="text-sm font-medium text-slate-700">{{ emptyState().title }}</p>
-
-            @if (emptyState().hint) {
-
-              <p class="text-xs text-slate-500 mt-2 max-w-md mx-auto">{{ emptyState().hint }}</p>
-
-            }
+            <app-empty-state icon="folder_off" title="No projects found" message="Try adjusting your search or filters." />
 
           </div>
 
@@ -797,7 +823,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <button type="submit" [disabled]="loading()"
 
-                        class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-800 disabled:opacity-50 text-sm">
+                        class="bg-slate-900 text-white px-6 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-800 disabled:opacity-50 text-sm transition-colors">
 
                   {{ loading() ? 'Saving…' : 'Create Project' }}
 
@@ -863,6 +889,20 @@ export class Projects implements OnInit {
   viewMode = signal<ProjectsListView>('default');
 
   searchQuery = signal('');
+
+  lifecycleStatusFilter = signal<LifecycleStatusFilter>('active');
+
+  sortKey: ProjectsSortKey = 'jobNumber';
+
+  visibleCount = signal(25);
+
+  readonly skeletonRows = [1, 2, 3, 4, 5];
+
+  readonly lifecycleFilterOptions: { id: LifecycleStatusFilter; label: string }[] = [
+    { id: 'active', label: 'Active' },
+    { id: 'closed', label: 'Closed' },
+    { id: 'all', label: 'All' },
+  ];
 
   showNewProject = signal(false);
 
@@ -1078,6 +1118,8 @@ export class Projects implements OnInit {
 
     const filters = this.advancedFilters();
 
+    const lifecycleFilter = this.lifecycleStatusFilter();
+
 
 
     let rows = this.allListRows();
@@ -1098,15 +1140,19 @@ export class Projects implements OnInit {
 
     rows = rows.filter(r => matchesProjectsAdvancedFilters(r, filters));
 
+    rows = rows.filter(r => this.matchesLifecycleStatusFilter(r, lifecycleFilter));
 
 
-    return rows.sort((a, b) =>
 
-      a.project.projectNumber.localeCompare(b.project.projectNumber, undefined, { numeric: true }),
-
-    );
+    return this.sortProjectRows(rows, this.sortKey);
 
   });
+
+
+
+  visibleListRows = computed(() => this.listRows().slice(0, this.visibleCount()));
+
+  listLoading = computed(() => this.projectApi.loading() && !this.allListRows().length);
 
 
 
@@ -1221,6 +1267,62 @@ export class Projects implements OnInit {
     void this.projectApi.loadProjects();
   }
 
+  retryLoadProjects(): void {
+    void this.projectApi.loadProjects();
+  }
+
+  setLifecycleFilter(filter: LifecycleStatusFilter): void {
+    this.lifecycleStatusFilter.set(filter);
+    this.visibleCount.set(25);
+    if (filter === 'active') this.viewMode.set('default');
+    else if (filter === 'closed') this.viewMode.set('closed2026');
+    else this.viewMode.set('all');
+  }
+
+  loadMore(): void {
+    this.visibleCount.update(n => n + 25);
+  }
+
+  resetVisibleCount(): void {
+    this.visibleCount.set(25);
+  }
+
+  navigateToProject(row: ProjectListRow, event: Event): void {
+    const target = event.target as HTMLElement;
+    if (target.closest('a, button')) return;
+    void this.router.navigate(['/projects', row.project.id]);
+  }
+
+  private matchesLifecycleStatusFilter(row: ProjectListRow, filter: LifecycleStatusFilter): boolean {
+    if (filter === 'all') return true;
+    const group = row.lifecycle.projectLifecycleGroup;
+    const isClosed = group === 'Closed2026' || group === 'Archive'
+      || row.displayStatus === 'Closed' || row.displayStatus === 'Archived';
+    return filter === 'closed' ? isClosed : !isClosed;
+  }
+
+  private sortProjectRows(rows: ProjectListRow[], key: ProjectsSortKey): ProjectListRow[] {
+    const copy = [...rows];
+    switch (key) {
+      case 'name':
+        return copy.sort((a, b) => a.project.projectName.localeCompare(b.project.projectName));
+      case 'updated':
+        return copy.sort((a, b) => this.projectUpdatedMs(b.project) - this.projectUpdatedMs(a.project));
+      case 'jobNumber':
+      default:
+        return copy.sort((a, b) =>
+          a.project.projectNumber.localeCompare(b.project.projectNumber, undefined, { numeric: true }),
+        );
+    }
+  }
+
+  private projectUpdatedMs(project: Project): number {
+    const raw = project.updatedAt;
+    if (!raw) return 0;
+    const ms = raw instanceof Date ? raw.getTime() : new Date(String(raw)).getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
 
 
   lifecycleFor(project: Project): ProjectLifecycleSnapshot {
@@ -1291,6 +1393,12 @@ export class Projects implements OnInit {
 
     this.viewMode.set(view);
 
+    this.visibleCount.set(25);
+
+    if (view === 'default' || view === 'active') this.lifecycleStatusFilter.set('active');
+    else if (view === 'closed2026' || view === 'archive') this.lifecycleStatusFilter.set('closed');
+    else if (view === 'all') this.lifecycleStatusFilter.set('all');
+
     void this.router.navigate([], {
 
       relativeTo: this.route,
@@ -1310,6 +1418,8 @@ export class Projects implements OnInit {
   onSearch(value: string): void {
 
     this.searchQuery.set(value);
+
+    this.visibleCount.set(25);
 
     if (value.trim()) {
 

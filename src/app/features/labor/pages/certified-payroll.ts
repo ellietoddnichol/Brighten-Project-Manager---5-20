@@ -29,7 +29,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-hidden-module-banner moduleId="certified-payroll" />
       @if (cpr.exportBanner()) {
         <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
@@ -49,26 +49,24 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
         subtitle="Prepare, validate, and export prevailing wage certified payroll drafts from approved time logs."
         [hasActions]="true">
         <button type="button" (click)="generate()" [disabled]="cpr.loading()"
-                class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
+                class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-800 disabled:opacity-50 flex items-center gap-2">
           <mat-icon class="!text-[18px]">{{ cpr.loading() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
           Generate Weekly Drafts
         </button>
-        <a routerLink="/settings" class="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1">
+        <a routerLink="/settings" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
           Connect export sheet <mat-icon class="!text-[16px] w-4 h-4">settings</mat-icon>
         </a>
       </app-page-header>
 
-      <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-1">
+      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
         @for (tab of tabs; track tab.id) {
           <button type="button" (click)="activeTab.set(tab.id)"
-                  class="px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors"
-                  [class.bg-white]="activeTab() === tab.id"
-                  [class.text-blue-700]="activeTab() === tab.id"
-                  [class.border]="activeTab() === tab.id"
-                  [class.border-slate-200]="activeTab() === tab.id"
-                  [class.border-b-white]="activeTab() === tab.id"
-                  [class.-mb-px]="activeTab() === tab.id"
-                  [class.text-slate-500]="activeTab() !== tab.id">
+                  class="px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors shrink-0"
+                  [class.bg-slate-900]="activeTab() === tab.id"
+                  [class.text-white]="activeTab() === tab.id"
+                  [class.text-slate-500]="activeTab() !== tab.id"
+                  [class.hover:text-slate-900]="activeTab() !== tab.id"
+                  [class.hover:bg-slate-50]="activeTab() !== tab.id">
             <mat-icon class="!text-[16px] align-middle mr-1">{{ tab.icon }}</mat-icon>
             {{ tab.label }}
             @if (tab.id === 'exceptions' && openExceptions().length) {

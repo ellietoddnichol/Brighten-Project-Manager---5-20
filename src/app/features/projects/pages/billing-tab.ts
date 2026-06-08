@@ -13,6 +13,7 @@ import {
   isIncludedInDraftPayApp,
 } from '@features/projects/utils/change-management';
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { BillingSegment } from '@features/projects/utils/project-money.compute';
 import { ArTabComponent } from './ar-tab';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -23,7 +24,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
 @Component({
   selector: 'app-billing-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ArTabComponent],
+  imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, EmptyStateComponent, ArTabComponent],
   template: `
     <div class="space-y-4">
       @if (segment === 'summary' || !simplified) {
@@ -143,7 +144,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
             }
           </ul>
         } @else {
-          <p class="px-5 py-6 text-sm text-slate-400 italic">No approved unbilled change orders.</p>
+          <div class="p-5"><app-empty-state title="No approved unbilled change orders" /></div>
         }
       </section>
       }
@@ -163,13 +164,13 @@ import { ImportReviewService } from '@core/services/import-review.service';
                 <span class="font-mono">{{ coApprovedAmount(co) | currency }}</span>
                 <span class="text-xs text-blue-700 font-semibold">IncludedInDraftPayApp</span>
                 @if (!readOnly && draftPayApp(); as draft) {
-                  <button type="button" (click)="removeCoFromDraft(co, draft)" class="text-xs font-bold text-red-600 hover:underline">Remove</button>
+                  <button type="button" (click)="removeCoFromDraft(co, draft)" class="text-xs font-bold text-rose-700 hover:underline">Remove</button>
                 }
               </li>
             }
           </ul>
         } @else {
-          <p class="px-5 py-6 text-sm text-slate-400 italic">No COs in draft pay apps.</p>
+          <div class="p-5"><app-empty-state title="No COs in draft pay apps" /></div>
         }
       </section>
 
@@ -208,10 +209,12 @@ import { ImportReviewService } from '@core/services/import-review.service';
                           }
                           @if (b.status === 'Approved') {
                             <button type="button" (click)="markInvoiced(b)" class="text-xs font-bold text-indigo-700 hover:underline">Mark invoiced</button>
-                            <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
+                            <button type="button" (click)="markPaid(b)"
+                                    class="text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors">Mark Paid</button>
                           }
                           @if (b.status === 'Invoiced' || b.status === 'Past Due') {
-                            <button type="button" (click)="markPaid(b)" class="text-xs font-bold text-blue-700 hover:underline">Mark paid</button>
+                            <button type="button" (click)="markPaid(b)"
+                                    class="text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors">Mark Paid</button>
                           }
                         }
                       </div>
@@ -230,6 +233,11 @@ import { ImportReviewService } from '@core/services/import-review.service';
                 </div>
               }
             </div>
+            @if (group.key === 'invoiced' && group.items.length) {
+              <div class="px-4 py-3 bg-slate-50 border-t border-slate-100 text-xs font-semibold text-slate-900">
+                {{ group.items.length }} invoice(s) · {{ invoiceGroupTotal(group.items) | currency }} total
+              </div>
+            }
           } @else {
             <p class="px-4 py-4 text-sm text-slate-400 italic">None</p>
           }
@@ -246,7 +254,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
           @if (sovLines().length) {
             <div class="overflow-x-auto">
               <table class="w-full text-sm min-w-[900px]">
-                <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 font-bold">
+                <thead class="bg-white text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   <tr>
                     <th class="px-3 py-2 text-left">#</th>
                     <th class="px-3 py-2 text-left">Description</th>
@@ -259,17 +267,22 @@ import { ImportReviewService } from '@core/services/import-review.service';
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                   @for (sov of sovLines(); track sov.id) {
-                    <tr [class.bg-amber-50]="sov.confidence === 'Medium'">
-                      <td class="px-3 py-2">{{ sov.lineNumber }}</td>
-                      <td class="px-3 py-2">
+                    <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700" [class.bg-amber-50]="sov.confidence === 'Medium'">
+                      <td class="px-3 py-2.5 font-mono font-bold">{{ sov.lineNumber }}</td>
+                      <td class="px-3 py-2.5">
                         <p>{{ sov.description }}</p>
                         @if (sov.costCode) { <p class="text-xs text-slate-400">{{ sov.costCode }}</p> }
                         @if (sov.reviewNote) { <p class="text-xs text-amber-700">{{ sov.reviewNote }}</p> }
                       </td>
-                      <td class="px-3 py-2 text-right font-mono">{{ sov.scheduledValue | currency }}</td>
-                      <td class="px-3 py-2 text-right font-mono">{{ sov.billedAmount | currency }}</td>
-                      <td class="px-3 py-2 text-right font-mono">{{ sov.thisPeriod | currency }}</td>
-                      <td class="px-3 py-2 text-right">{{ sov.percentComplete != null ? (sov.percentComplete * 100 | number:'1.0-2') + '%' : '—' }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.scheduledValue | currency }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.billedAmount | currency }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.thisPeriod | currency }}</td>
+                      <td class="px-3 py-2.5 text-right">
+                        <input type="number" min="0" max="100" step="0.1"
+                               class="w-16 border border-slate-200 rounded px-2 py-1 text-xs text-right"
+                               [ngModel]="sovPercentDisplay(sov)"
+                               (ngModelChange)="setSovPercent(sov.id, $event)" />
+                      </td>
                       <td class="px-3 py-2">
                         <span class="text-xs font-semibold"
                               [class.text-emerald-700]="sov.confidence === 'High'"
@@ -282,7 +295,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
               </table>
             </div>
           } @else {
-            <p class="px-5 py-6 text-sm text-slate-400 italic">No SOV lines imported for this project.</p>
+            <div class="p-5"><app-empty-state title="No SOV lines imported for this project" /></div>
           }
         </section>
       }
@@ -303,7 +316,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
               }
             </ul>
           } @else {
-            <p class="px-5 py-6 text-sm text-slate-400 italic">No imported pay app source on file.</p>
+            <div class="p-5"><app-empty-state title="No imported pay app source on file" /></div>
           }
         </section>
       }
@@ -340,7 +353,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
               }
             </ul>
           } @else {
-            <p class="px-5 py-6 text-sm text-slate-400 italic">No billing review flags for this project.</p>
+            <div class="p-5"><app-empty-state title="No billing review flags for this project" /></div>
           }
         </section>
       }
@@ -355,7 +368,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
           <p class="text-2xl font-bold text-slate-900">{{ financial().retainageHeld | currency }}</p>
           <p class="text-sm text-slate-500">Retainage held on billed work. Review pay apps for release timing.</p>
           @if (financial().retainageHeld <= 0) {
-            <p class="text-sm text-slate-400 italic">No retainage recorded for this project.</p>
+            <div class="p-1"><app-empty-state title="No retainage recorded for this project" /></div>
           }
         </section>
       }
@@ -437,6 +450,7 @@ export class BillingTabComponent implements OnInit {
   });
 
   expandedId = signal<string | null>(null);
+  sovPercentOverrides = signal<Record<string, number>>({});
 
   ngOnInit(): void {
     void this.payApps.refreshPayAppAutomation(this.project.id);
@@ -499,6 +513,23 @@ export class BillingTabComponent implements OnInit {
     const pct = b.percentCompleteCalculated;
     if (pct == null) return '—';
     return `${(pct * 100).toFixed(2)}%`;
+  }
+
+  invoiceGroupTotal(items: Billing[]): number {
+    return items.reduce((sum, b) => sum + (b.netDue ?? b.currentApplication ?? b.workCompletedThisPeriod ?? 0), 0);
+  }
+
+  sovPercentDisplay(sov: { id: string; percentComplete?: number }): number {
+    const override = this.sovPercentOverrides()[sov.id];
+    if (override != null) return override;
+    if (sov.percentComplete == null) return 0;
+    return Math.abs(sov.percentComplete) <= 1 ? sov.percentComplete * 100 : sov.percentComplete;
+  }
+
+  setSovPercent(id: string, value: number | string): void {
+    const pct = typeof value === 'string' ? parseFloat(value) : value;
+    if (!Number.isFinite(pct)) return;
+    this.sovPercentOverrides.update(m => ({ ...m, [id]: pct }));
   }
 
   async toggleReviewLock(b: Billing): Promise<void> {

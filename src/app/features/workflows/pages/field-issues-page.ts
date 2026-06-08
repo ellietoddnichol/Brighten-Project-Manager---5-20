@@ -11,7 +11,7 @@ import { computeConstructionOpsMetrics, isFieldIssueOpen } from '@shared/utils/c
   standalone: true,
   imports: [CommonModule, RouterLink, HiddenModuleBannerComponent],
   template: `
-    <div class="p-8 max-w-7xl mx-auto space-y-6">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-hidden-module-banner moduleId="field-issues" />
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Field Issues</h1>

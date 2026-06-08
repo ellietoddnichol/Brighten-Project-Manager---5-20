@@ -13,11 +13,14 @@ import {
   buildProjectHoursRows,
   currentLaborMonthKey,
 } from '@features/labor/utils/labor-hours-summary.compute';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { take } from 'rxjs';
 import { ProjectPayAppsApiResponse } from '@core/services/api/project-api.types';
 import { mapPayAppsResponse, ProjectSqlPayApp } from '@core/services/api/project-pay-app-api.mapper';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
+import { StatCardComponent } from '@app/components/ui/stat-card';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ChartCardComponent } from '@app/components/ui/chart-card';
 import { DonutChartComponent, DonutSlice } from '@app/components/charts/donut-chart';
 import {
@@ -39,7 +42,6 @@ interface DashboardMetric {
   subtext: string;
   icon: string;
   route: string;
-  tone?: 'slate' | 'amber' | 'green' | 'blue';
 }
 
 interface DashboardFinancialMetric {
@@ -56,60 +58,74 @@ interface DashboardFinancialMetric {
     MatIconModule,
     RouterLink,
     PageHeaderComponent,
+    StatCardComponent,
     StatusChipComponent,
+    EmptyStateComponent,
     ChartCardComponent,
     DonutChartComponent,
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-4 lg:p-6 w-full max-w-[1500px] mx-auto space-y-5">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-page-header
-        title="Construction Dashboard"
+        title="Dashboard"
         subtitle="Active jobs, billing follow-up, and review items for the office"
         [hasActions]="true">
         <a routerLink="/projects"
-           class="bg-slate-900 text-white px-3 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-800 transition-all flex items-center gap-2">
+           class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
           <mat-icon class="!text-[18px]">folder</mat-icon>
           Open Projects
         </a>
         <a routerLink="/billing"
-           class="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 flex items-center gap-2">
+           class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
           <mat-icon class="!text-[18px]">request_quote</mat-icon>
           Review Billing
         </a>
       </app-page-header>
 
-      <section class="grid grid-cols-2 xl:grid-cols-5 gap-3">
+      @if (dashboardError()) {
+        <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+          <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
+          <span>{{ dashboardError() }}</span>
+          <button type="button" (click)="retryDashboard()"
+                  class="ml-auto text-xs font-semibold underline hover:text-amber-900 transition-colors">Retry</button>
+        </div>
+      }
+
+      @if (dashboardLoading()) {
+        <div class="animate-pulse space-y-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (i of skeletonSlots; track i) {
+              <div class="rounded-xl border border-slate-200 bg-slate-100 h-24"></div>
+            }
+          </div>
+          <div class="rounded-xl border border-slate-200 bg-slate-100 h-48"></div>
+        </div>
+      } @else {
+
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @for (metric of topMetrics(); track metric.label) {
           <a [routerLink]="metric.route"
-             class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 hover:shadow transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ metric.label }}</p>
-                <p class="text-2xl font-bold text-slate-950 mt-1">{{ metric.value }}</p>
-              </div>
-              <span class="w-9 h-9 rounded-lg flex items-center justify-center"
-                    [class.bg-slate-100]="!metric.tone || metric.tone === 'slate'"
-                    [class.text-slate-600]="!metric.tone || metric.tone === 'slate'"
-                    [class.bg-amber-50]="metric.tone === 'amber'"
-                    [class.text-amber-700]="metric.tone === 'amber'"
-                    [class.bg-emerald-50]="metric.tone === 'green'"
-                    [class.text-emerald-700]="metric.tone === 'green'"
-                    [class.bg-blue-50]="metric.tone === 'blue'"
-                    [class.text-blue-700]="metric.tone === 'blue'">
-                <mat-icon class="!text-[19px]">{{ metric.icon }}</mat-icon>
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 mt-2 truncate">{{ metric.subtext }}</p>
+             class="block rounded-xl hover:ring-2 hover:ring-indigo-200 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300">
+            <app-stat-card
+              [label]="metric.label"
+              [value]="metric.value"
+              [subtext]="metric.subtext"
+              [icon]="metric.icon" />
           </a>
         }
       </section>
 
-      <div class="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)] gap-5">
+      <div class="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)] gap-6">
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Daily Action Center</h2>
+            <h2 class="text-lg font-bold text-slate-900">
+              Daily Action Center
+              @if (priorities().length) {
+                <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
+              }
+            </h2>
             <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
           </div>
           <a routerLink="/active-2026-control"
@@ -123,11 +139,11 @@ interface DashboardFinancialMetric {
               <a [routerLink]="item.route"
                  [queryParams]="item.queryParams"
                  [fragment]="item.fragment"
-                 class="px-4 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80 transition-colors">
+                 class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     @if (item.jobNumber) {
-                      <span class="text-xs font-bold text-slate-900">{{ item.jobNumber }}</span>
+                      <span class="text-xs font-mono font-bold text-slate-900">{{ item.jobNumber }}</span>
                       @if (item.projectName) {
                         <span class="text-xs text-slate-500 truncate max-w-[240px]">{{ item.projectName }}</span>
                       }
@@ -150,14 +166,16 @@ interface DashboardFinancialMetric {
             }
           </div>
         } @else {
-          <div class="px-5 py-10 text-center text-slate-400 text-sm italic">No urgent priorities — you're caught up</div>
+          <div class="p-5">
+            <app-empty-state title="No urgent priorities" message="You're caught up for now." />
+          </div>
         }
       </section>
 
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Billing Snapshot</h2>
+            <h2 class="text-lg font-bold text-slate-900">Billing Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Recent Pay Apps, retainage, and A/R follow-up</p>
           </div>
           <a routerLink="/billing" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Review Billing</a>
@@ -173,7 +191,7 @@ interface DashboardFinancialMetric {
             @for (record of recentBillingRecords(); track record.id) {
               <a [routerLink]="['/projects', record.projectId]"
                  [queryParams]="{ section: 'financials', view: 'billing' }"
-                 class="px-4 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
+                 class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     <span class="font-mono text-xs font-bold text-slate-900">{{ record.jobNumber }}</span>
@@ -186,13 +204,15 @@ interface DashboardFinancialMetric {
                 </div>
                 <div class="text-right shrink-0">
                   <div class="text-xs text-slate-500">Current Due</div>
-                  <div class="font-mono text-sm font-bold text-slate-900">{{ currencyOrPending(record.currentPaymentDue) }}</div>
+                  <div class="text-xs font-mono text-slate-700 font-semibold">{{ currencyOrPending(record.currentPaymentDue) }}</div>
                 </div>
               </a>
             }
           </div>
         } @else {
-          <div class="px-5 py-10 text-center text-slate-400 text-sm italic">No Pay App records found yet</div>
+          <div class="p-5">
+            <app-empty-state title="No Pay App records yet" message="Billing snapshot will populate when SQL pay apps load." />
+          </div>
         }
       </section>
       </div>
@@ -200,7 +220,7 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Active Projects</h2>
+            <h2 class="text-lg font-bold text-slate-900">Active Projects</h2>
             <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
           </div>
           <a routerLink="/active-2026-control"
@@ -227,7 +247,7 @@ interface DashboardFinancialMetric {
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of activeProjectRows(); track row.projectId) {
-                  <tr class="hover:bg-slate-50">
+                  <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
@@ -261,14 +281,16 @@ interface DashboardFinancialMetric {
             </table>
           </div>
         } @else {
-          <div class="px-5 py-10 text-center text-slate-400 text-sm italic">No active jobs loaded</div>
+          <div class="p-5">
+            <app-empty-state icon="work_off" title="No active projects" message="All projects are closed or archived." />
+          </div>
         }
       </section>
 
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Financial Snapshot</h2>
+            <h2 class="text-lg font-bold text-slate-900">Financial Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
           </div>
           <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
@@ -294,7 +316,7 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Field Labor Hours</h2>
+            <h2 class="text-lg font-bold text-slate-900">Field Labor Hours</h2>
             <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
           </div>
           <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
@@ -312,8 +334,8 @@ interface DashboardFinancialMetric {
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of laborHoursRows(); track row.projectNumber) {
-                  <tr class="hover:bg-slate-50/80">
-                    <td class="px-4 py-3 font-bold text-slate-900">{{ row.projectNumber }}</td>
+                  <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
                     <td class="px-4 py-3 text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
                     <td class="px-4 py-3 text-right font-mono font-semibold">{{ fmtHours(row.totalHours) }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">{{ row.employeeCount }}</td>
@@ -323,8 +345,8 @@ interface DashboardFinancialMetric {
             </table>
           </div>
         } @else {
-          <div class="px-5 py-10 text-center text-slate-400 text-sm italic">
-            No approved timekeeper hours loaded for this month.
+          <div class="p-5">
+            <app-empty-state title="No timekeeper hours this month" message="Approved hours from the Master Time Data Sheet will appear here." />
           </div>
         }
       </section>
@@ -332,9 +354,9 @@ interface DashboardFinancialMetric {
       <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         @for (action of quickActions(); track action.label) {
           <a [routerLink]="action.route"
-             class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 hover:border-slate-300 transition-all">
+             class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-100 shadow-sm p-4 transition-colors">
             <div class="flex items-center gap-3">
-              <span class="w-9 h-9 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">
+              <span class="w-9 h-9 rounded-lg bg-indigo-100/80 text-indigo-700 flex items-center justify-center">
                 <mat-icon class="!text-[19px]">{{ action.icon }}</mat-icon>
               </span>
               <div>
@@ -347,22 +369,23 @@ interface DashboardFinancialMetric {
       </section>
 
       @if (sourceWarnings().length) {
-        <section class="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
+        <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
           <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <h2 class="text-sm font-bold text-amber-950">Missing Pay App Backup</h2>
+            <h2 class="text-lg font-bold text-amber-800">Missing Pay App Backup</h2>
             <a routerLink="/settings" fragment="import-review" class="text-xs font-bold text-amber-900 underline">Admin / Setup</a>
           </div>
           <div class="flex flex-wrap gap-2">
             @for (row of sourceWarnings(); track row.id) {
               <a [routerLink]="homeSourceHealthRoute(row.id)"
                  [fragment]="homeSourceHealthFragment(row.id)"
-                 class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-950 hover:border-amber-300 transition-colors">
+                 class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
                 <mat-icon class="!text-[16px] text-amber-600">warning</mat-icon>
                 {{ backupReviewLabel(row.label) }}
               </a>
             }
           </div>
         </section>
+      }
       }
     </div>
   `,
@@ -388,6 +411,13 @@ export class Dashboard {
   billingRecords = signal<DashboardBillingRecord[]>([]);
   private billingLoadStarted = false;
 
+  projectsReady = signal(false);
+  projectsError = signal<string | null>(null);
+  readonly skeletonSlots = [1, 2, 3, 4, 5];
+
+  dashboardError = computed(() => this.projectsError() ?? this.billingError());
+  dashboardLoading = computed(() => !this.projectsReady() || (this.billingLoading() && !this.billingRecords().length && this.globalNeeds.active2026Rows().length > 0));
+
   activeProjectRows = computed(() =>
     [...this.globalNeeds.active2026Rows()]
       .sort((a, b) => this.activeProjectRank(b) - this.activeProjectRank(a) || a.jobNumber.localeCompare(b.jobNumber))
@@ -412,7 +442,6 @@ export class Dashboard {
         subtext: 'Open project workspace',
         icon: 'domain',
         route: '/projects',
-        tone: 'slate',
       },
       {
         label: 'Waiting on A/R',
@@ -420,7 +449,6 @@ export class Dashboard {
         subtext: this.fmt(waitingArRows.reduce((sum, row) => sum + row.arBalance, 0)),
         icon: 'receipt_long',
         route: '/ar',
-        tone: waitingArRows.length ? 'amber' : 'green',
       },
       {
         label: 'Current Due',
@@ -428,7 +456,6 @@ export class Dashboard {
         subtext: this.billingRecords().length ? 'Open Pay App current due' : 'No Pay Apps yet',
         icon: 'request_quote',
         route: '/billing',
-        tone: currentDue && currentDue > 0 ? 'blue' : 'slate',
       },
       {
         label: 'Review Items',
@@ -436,7 +463,6 @@ export class Dashboard {
         subtext: 'Billing review, project setup, missing backup',
         icon: 'rule',
         route: '/active-2026-control',
-        tone: reviewCount ? 'amber' : 'green',
       },
       {
         label: 'Active / Updated',
@@ -444,7 +470,6 @@ export class Dashboard {
         subtext: 'Jobs with billing or follow-up',
         icon: 'update',
         route: '/projects',
-        tone: 'slate',
       },
     ];
   });
@@ -559,6 +584,14 @@ export class Dashboard {
   );
 
   constructor() {
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => this.projectsReady.set(true),
+      error: (err) => {
+        this.projectsReady.set(true);
+        this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+      },
+    });
+
     effect(() => {
       const rows = this.globalNeeds.active2026Rows();
       if (!this.billingLoadStarted && rows.length > 0) {
@@ -675,6 +708,28 @@ export class Dashboard {
     return people.length ? people.join(' / ') : 'Not assigned';
   }
 
+  retryDashboard(): void {
+    this.projectsError.set(null);
+    this.billingError.set(null);
+    this.billingLoadStarted = false;
+    this.billingRecords.set([]);
+    this.projectsReady.set(false);
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => this.projectsReady.set(true),
+      error: (err) => {
+        this.projectsReady.set(true);
+        this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+      },
+    });
+    const rows = this.globalNeeds.active2026Rows();
+    if (rows.length) {
+      this.billingLoadStarted = true;
+      void this.loadBillingSnapshot(rows);
+    } else {
+      this.projectsReady.set(true);
+    }
+  }
+
   private async loadBillingSnapshot(rows: Active2026ControlRow[]): Promise<void> {
     const scopedRows = rows.slice(0, 24);
     if (!scopedRows.length) return;
@@ -695,11 +750,11 @@ export class Dashboard {
       const records = results.flatMap(result => result.status === 'fulfilled' ? result.value : []);
       this.billingRecords.set(records);
       if (results.some(result => result.status === 'rejected')) {
-        this.billingError.set(records.length ? null : 'Billing snapshot failed');
+        this.billingError.set(records.length ? null : 'Billing snapshot is not available right now. Check your API connection.');
       }
     } catch (err) {
       this.billingRecords.set([]);
-      this.billingError.set(err instanceof Error ? err.message : 'Billing snapshot failed');
+      this.billingError.set(err instanceof Error ? err.message : 'Billing snapshot is not available right now. Check your API connection.');
     } finally {
       this.billingLoading.set(false);
     }

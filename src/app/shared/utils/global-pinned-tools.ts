@@ -31,9 +31,11 @@ export const PINNABLE_TOOLS: GlobalModuleId[] = [
 
 export function loadGlobalShowAllTools(): boolean {
   try {
-    return localStorage.getItem(GLOBAL_SHOW_ALL_TOOLS_KEY) === 'true';
+    const raw = localStorage.getItem(GLOBAL_SHOW_ALL_TOOLS_KEY);
+    if (raw === null) return true;
+    return raw === 'true';
   } catch {
-    return false;
+    return true;
   }
 }
 

@@ -20,7 +20,7 @@ import { ProjectMoreMenuComponent } from './project-more-menu';
               <mat-icon class="!text-[14px]">arrow_back</mat-icon> Back
             </a>
             <span class="text-slate-600">·</span>
-            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">#{{ project?.projectNumber }}</span>
+            <span class="text-xs font-mono font-bold text-slate-400 tracking-widest">#{{ project?.projectNumber }}</span>
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-white/10 text-slate-100 border border-white/10">
               {{ project?.status }}
             </span>
@@ -37,17 +37,17 @@ import { ProjectMoreMenuComponent } from './project-more-menu';
         <div class="flex flex-wrap items-center gap-2 shrink-0">
           @if (project?.driveFolderUrl || project?.driveFolderId) {
             <a [href]="project?.driveFolderUrl" target="_blank" rel="noopener"
-               class="bg-white/10 text-slate-100 border border-white/10 px-3 py-1.5 rounded-lg font-semibold hover:bg-white/15 transition-all text-xs flex items-center gap-1.5">
+               class="bg-white/10 text-slate-100 border border-white/10 px-3 py-1.5 rounded-lg font-semibold hover:bg-white/15 transition-colors text-xs flex items-center gap-1.5">
               <mat-icon class="!text-[16px]">folder_shared</mat-icon> Drive
             </a>
           }
           <button type="button" (click)="edit.emit()"
-                  class="bg-white text-slate-900 px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-100 transition-all text-xs flex items-center gap-1.5">
+                  class="bg-white text-slate-900 px-3 py-1.5 rounded-lg font-semibold hover:bg-slate-100 transition-colors text-xs flex items-center gap-1.5">
             <mat-icon class="!text-[16px]">edit</mat-icon> Edit
           </button>
           <div class="relative">
             <button type="button" (click)="newMenuOpen.set(!newMenuOpen())"
-                    class="bg-blue-600 text-white px-3 py-1.5 rounded-lg font-semibold shadow-sm hover:bg-blue-500 transition-all text-xs flex items-center gap-1.5">
+                    class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold shadow-sm hover:bg-slate-800 transition-colors text-xs flex items-center gap-1.5">
               <mat-icon class="!text-[16px]">add</mat-icon> New Item
               <mat-icon class="!text-[16px]">{{ newMenuOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
             </button>
@@ -55,7 +55,7 @@ import { ProjectMoreMenuComponent } from './project-more-menu';
               <div class="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-slate-200 shadow-lg z-30 py-1">
                 @for (item of newItems; track item.id) {
                   <button type="button" (click)="selectNewItem(item)"
-                          class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+                          class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
                     <mat-icon class="!text-[18px] text-slate-400">{{ item.icon }}</mat-icon>
                     {{ item.label }}
                   </button>

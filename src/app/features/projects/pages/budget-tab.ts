@@ -12,6 +12,7 @@ import { DataService } from '@core/services/data.service';
 import { ImportDataService } from '@core/services/import-data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ProjectApiService } from '@core/services/api/project-api.service';
 import { ProjectSqlBudgetLine } from '@core/services/api/project-budget-api.mapper';
 import { BudgetSegment } from '@features/projects/utils/project-money.compute';
@@ -22,7 +23,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
 @Component({
   selector: 'app-budget-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent],
+  imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent, EmptyStateComponent],
   template: `
     <div class="space-y-4">
       @if (!simplified) {
@@ -132,7 +133,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">{{ cat.label }}</p>
             <p class="text-xs text-slate-500">Budget {{ cat.budget | currency }}</p>
             <p class="text-xs text-slate-500">Actual {{ cat.actual | currency }}</p>
-            <p class="text-sm font-bold mt-1" [class.text-red-600]="cat.variance < 0">{{ cat.variance | currency }}</p>
+            <p class="text-sm font-bold mt-1" [class.text-rose-700]="cat.variance < 0">{{ cat.variance | currency }}</p>
           </div>
         }
       </div>
@@ -146,25 +147,25 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
           </div>
           <div class="overflow-x-auto max-h-64">
             <table class="w-full text-sm min-w-[900px]">
-              <thead class="bg-slate-50 text-[10px] uppercase text-slate-500">
+              <thead class="bg-white text-[10px] font-bold uppercase tracking-widest text-slate-500">
                 <tr>
-                  <th class="px-4 py-2 text-left">Date</th>
-                  <th class="px-4 py-2 text-left">Vendor</th>
-                  <th class="px-4 py-2 text-left">Category</th>
-                  <th class="px-4 py-2 text-left">Account</th>
-                  <th class="px-4 py-2 text-right">Amount</th>
-                  <th class="px-4 py-2 text-left">WIP</th>
+                  <th class="px-3 py-2 text-left">Date</th>
+                  <th class="px-3 py-2 text-left">Vendor</th>
+                  <th class="px-3 py-2 text-left">Category</th>
+                  <th class="px-3 py-2 text-left">Account</th>
+                  <th class="px-3 py-2 text-right">Amount</th>
+                  <th class="px-3 py-2 text-left">WIP</th>
                 </tr>
               </thead>
-              <tbody class="divide-y">
+              <tbody class="divide-y divide-slate-100">
                 @for (t of qbCostTransactions(); track t.id) {
-                  <tr>
-                    <td class="px-4 py-2">{{ t.transactionDate || '—' }}</td>
-                    <td class="px-4 py-2">{{ t.vendorName || '—' }}</td>
-                    <td class="px-4 py-2">{{ t.costCategory }}</td>
-                    <td class="px-4 py-2 text-xs text-slate-500">{{ t.account || t.memo || '—' }}</td>
-                    <td class="px-4 py-2 text-right font-mono">{{ t.amount | currency }}</td>
-                    <td class="px-4 py-2 text-xs">{{ t.includeInWipActuals ? 'Included' : 'Excluded' }}</td>
+                  <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
+                    <td class="px-3 py-2.5">{{ t.transactionDate || '—' }}</td>
+                    <td class="px-3 py-2.5">{{ t.vendorName || '—' }}</td>
+                    <td class="px-3 py-2.5">{{ t.costCategory }}</td>
+                    <td class="px-3 py-2.5 text-xs text-slate-500">{{ t.account || t.memo || '—' }}</td>
+                    <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ t.amount | currency }}</td>
+                    <td class="px-3 py-2.5 text-xs">{{ t.includeInWipActuals ? 'Included' : 'Excluded' }}</td>
                   </tr>
                 }
               </tbody>
@@ -187,33 +188,33 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead>
-              <tr class="bg-white border-b border-slate-200 text-[10px] uppercase tracking-widest text-slate-400">
-                <th class="px-4 py-2.5 font-bold">Code / Category</th>
-                <th class="px-3 py-2.5 font-bold text-right">Budget</th>
-                <th class="px-3 py-2.5 font-bold text-right">Committed</th>
-                <th class="px-3 py-2.5 font-bold text-right text-red-600">Actual</th>
-                <th class="px-3 py-2.5 font-bold text-right">Projected</th>
-                <th class="px-3 py-2.5 font-bold text-right">CTC</th>
-                <th class="px-3 py-2.5 font-bold text-right">Variance</th>
-                <th class="px-3 py-2.5 font-bold">Source</th>
+              <tr class="bg-white border-b border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <th class="px-3 py-2 text-left">Code / Category</th>
+                <th class="px-3 py-2 text-right">Budget</th>
+                <th class="px-3 py-2 text-right">Committed</th>
+                <th class="px-3 py-2 text-right">Actual</th>
+                <th class="px-3 py-2 text-right">Projected</th>
+                <th class="px-3 py-2 text-right">CTC</th>
+                <th class="px-3 py-2 text-right">Variance</th>
+                <th class="px-3 py-2 text-left">Source</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-sm">
               @for (line of displayLines(); track line.id) {
-                <tr class="hover:bg-slate-50" [class.cursor-pointer]="!sqlBudgetConfirmed()" (click)="!sqlBudgetConfirmed() && editLine(line)">
-                  <td class="px-4 py-2.5">
+                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700" [class.cursor-pointer]="!sqlBudgetConfirmed()" (click)="!sqlBudgetConfirmed() && editLine(line)">
+                  <td class="px-3 py-2.5">
                     <p class="text-slate-900 font-bold">{{ line.costCode || '—' }}</p>
                     <p class="text-[10px] text-slate-500 uppercase">{{ line.category }}</p>
                     @if (line.isEstimated) {
                       <span class="text-[10px] text-amber-700 font-bold">Estimated</span>
                     }
                   </td>
-                  <td class="px-3 py-2.5 text-right font-mono">{{ line.budgetAmount | currency }}</td>
-                  <td class="px-3 py-2.5 text-right font-mono text-indigo-800">{{ line.committedAmount | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-red-600 font-mono">{{ line.actualCost | currency }}</td>
-                  <td class="px-3 py-2.5 text-right font-mono">{{ line.projectedCost | currency }}</td>
-                  <td class="px-3 py-2.5 text-right font-mono">{{ line.costToComplete | currency }}</td>
-                  <td class="px-3 py-2.5 text-right font-mono font-bold" [class.text-red-600]="line.variance < 0">{{ line.variance | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.budgetAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.committedAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono" [class.text-rose-700]="line.actualCost > 0">{{ line.actualCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.projectedCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.costToComplete | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono font-bold" [class.text-emerald-700]="line.variance > 0" [class.text-rose-700]="line.variance < 0">{{ line.variance | currency }}</td>
                   <td class="px-3 py-2.5 text-xs">
                     <span class="px-2 py-0.5 rounded-full font-semibold"
                           [class.bg-emerald-100]="sourceBadge(line) === 'Budget Workbook'"
@@ -256,7 +257,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
                 </div>
               </div>
             } @empty {
-              <p class="text-slate-400 italic">No imported snapshots for this job.</p>
+              <app-empty-state title="No imported snapshots for this job" />
             }
 
             @if (originalSnapshot() && updatedSnapshot()) {
@@ -340,7 +341,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
             <label class="flex items-center gap-2 text-sm">
               <input type="checkbox" [(ngModel)]="lineDraft.isEstimated"> Mark as estimated
             </label>
-            <button type="button" (click)="saveLine()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Save Line</button>
+            <button type="button" (click)="saveLine()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors">Save Line</button>
           </div>
         </aside>
       }

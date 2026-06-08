@@ -5,11 +5,13 @@ import { FormsModule } from '@angular/forms';
 import { Project, ChangeOrder } from '@app/models/types';
 import { DataService } from '@core/services/data.service';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 
 @Component({
   selector: 'app-co-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, StatusChipComponent, EmptyStateComponent],
   template: `
     <div class="space-y-6">
       
@@ -96,7 +98,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
              </div>
              <div class="col-span-full flex justify-end gap-2 mt-2">
                 <button (click)="cancelCO()" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button (click)="saveCO()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold hover:bg-emerald-700 text-sm">Save CO</button>
+                <button (click)="saveCO()" class="bg-slate-900 text-white px-4 py-2 rounded font-bold hover:bg-slate-800 text-sm">Save CO</button>
              </div>
           </div>
         }
@@ -104,48 +106,40 @@ import { toSignal } from '@angular/core/rxjs-interop';
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm whitespace-nowrap min-w-[1000px]">
             <thead>
-              <tr class="bg-white border-b border-slate-200">
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Number / Title</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Status</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Cost Impact</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Markup %</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Sell Price</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Approved Amt</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider">Requested By / Dates</th>
-                <th class="px-6 py-4 font-bold text-slate-400 uppercase text-[10px] tracking-wider text-right">Actions</th>
+              <tr class="bg-white border-b border-slate-200 text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <th class="px-3 py-2 text-left">Number / Title</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-right">Cost Impact</th>
+                <th class="px-3 py-2 text-right">Markup %</th>
+                <th class="px-3 py-2 text-right">Sell Price</th>
+                <th class="px-3 py-2 text-right">Approved Amt</th>
+                <th class="px-3 py-2 text-left">Requested By / Dates</th>
+                <th class="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (co of projectCOs(); track co.id) {
-                <tr class="hover:bg-slate-50 transition-colors group">
-                  <td class="px-6 py-4 flex flex-col">
-                    <span class="font-bold text-slate-900">{{ co.coNumber || 'N/A' }} - {{ co.title }}</span>
+                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 group">
+                  <td class="px-3 py-2.5 flex flex-col">
+                    <span class="font-mono font-bold text-slate-900">{{ co.coNumber || 'N/A' }} - {{ co.title }}</span>
                     <span class="text-xs text-slate-500 font-medium truncate max-w-[200px]" [title]="co.description || ''">{{ co.description || 'No description' }}</span>
                   </td>
-                  <td class="px-6 py-4">
-                    <span class="px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide"
-                      [ngClass]="{
-                        'bg-slate-100 text-slate-600': co.status === 'Draft' || co.status === 'Internal Review',
-                        'bg-amber-100 text-amber-700': co.status === 'Submitted' || co.status === 'Need Pricing',
-                        'bg-emerald-100 text-emerald-700': co.status === 'Approved',
-                        'bg-rose-100 text-rose-700': co.status === 'Rejected' || co.status === 'Void'
-                      }">
-                      {{ co.status }}
-                    </span>
+                  <td class="px-3 py-2.5">
+                    <app-status-chip [tone]="coStatusTone(co.status)" [label]="co.status" />
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="font-mono text-slate-700">{{ co.costImpact | currency }}</span>
+                  <td class="px-3 py-2.5 text-right">
+                    <span class="text-xs font-mono text-slate-700">{{ co.costImpact | currency }}</span>
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="font-mono text-slate-600">{{ co.markup }}%</span>
+                  <td class="px-3 py-2.5 text-right">
+                    <span class="text-xs font-mono text-slate-600">{{ co.markup }}%</span>
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="font-mono text-slate-700">{{ co.sellPrice | currency }}</span>
+                  <td class="px-3 py-2.5 text-right">
+                    <span class="text-xs font-mono text-slate-700">{{ co.sellPrice | currency }}</span>
                   </td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="font-mono font-bold text-slate-900">{{ co.approvedAmount | currency }}</span>
+                  <td class="px-3 py-2.5 text-right">
+                    <span class="text-xs font-mono font-bold text-slate-900">{{ co.approvedAmount | currency }}</span>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-3 py-2.5">
                     <div class="flex flex-col text-xs text-slate-600">
                       @if (co.requestedBy) { <span class="font-medium text-slate-800">Req: {{ co.requestedBy }}</span> }
                       @if (co.dateSubmitted) { <span>Sub: {{ co.dateSubmitted | date:'shortDate' }}</span> }
@@ -159,7 +153,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="px-6 py-12 text-center text-slate-400 italic">No change orders found</td></tr>
+                <tr><td colspan="8" class="p-0"><app-empty-state icon="difference" title="No change orders found" /></td></tr>
               }
             </tbody>
           </table>
@@ -190,6 +184,13 @@ export class CoTabComponent {
   
   getCoCount(statuses: string[]): number {
     return this.projectCOs().filter(co => statuses.includes(co.status)).length;
+  }
+
+  coStatusTone(status: string): StatusTone {
+    if (status === 'Approved') return 'green';
+    if (status === 'Submitted' || status === 'Need Pricing') return 'amber';
+    if (status === 'Rejected' || status === 'Void') return 'red';
+    return 'slate';
   }
 
   recalcCO() {

@@ -28,6 +28,7 @@ import { SettingsSetupDefaultsComponent } from './settings-setup-defaults';
 import { SettingsReviewCenterComponent } from './settings-review-center';
 import { SettingsImportCenterComponent } from './settings-import-center';
 import { SettingsAdvancedToolsComponent } from './settings-advanced-tools';
+import { AuthService } from '@core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -66,6 +67,29 @@ import { SettingsAdvancedToolsComponent } from './settings-advanced-tools';
       }
       @if (hubError()) {
         <p class="text-sm text-rose-700">{{ hubError() }}</p>
+      }
+
+      @if (auth.user(); as profile) {
+        <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <h3 class="text-sm font-bold text-slate-900 mb-3">Profile</h3>
+          <div class="flex flex-wrap items-center gap-4">
+            @if (profile.photoURL) {
+              <img [src]="profile.photoURL" alt="" class="w-10 h-10 rounded-full shrink-0" />
+            } @else {
+              <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                <span class="text-sm font-bold text-slate-500">{{ profileInitial(profile) }}</span>
+              </div>
+            }
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-slate-900">{{ profile.displayName || 'Signed in' }}</p>
+              <p class="text-xs text-slate-500">{{ profile.email }}</p>
+            </div>
+            <button type="button" (click)="signOut()"
+                    class="text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-100 transition-colors">
+              Sign Out
+            </button>
+          </div>
+        </article>
       }
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -118,6 +142,7 @@ export class Settings implements OnInit {
   private lifecycle = inject(ProjectLifecycleService);
   private timeSync = inject(TimeDataSheetSyncService);
   private qbSync = inject(QuickBooksSyncSheetsService);
+  auth = inject(AuthService);
 
   segment = signal<SettingsSegmentId>('sourceHealth');
   hubMessage = signal<string | null>(null);
@@ -190,5 +215,14 @@ export class Settings implements OnInit {
       ['Metric', 'Value'],
       settingsHubCsvRows(this.summary()),
     );
+  }
+
+  profileInitial(profile: { displayName?: string | null; email?: string | null }): string {
+    const name = profile.displayName?.trim() || profile.email?.trim() || '?';
+    return name.charAt(0).toUpperCase();
+  }
+
+  async signOut(): Promise<void> {
+    await this.auth.logout();
   }
 }

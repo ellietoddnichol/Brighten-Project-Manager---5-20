@@ -25,7 +25,7 @@ import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-modul
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, HiddenModuleBannerComponent],
   template: `
-    <div class="p-8 max-w-[1500px] mx-auto space-y-6">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-hidden-module-banner moduleId="foreman-bonuses" />
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -46,7 +46,7 @@ import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-modul
             Export
           </button>
           <button type="button" (click)="approveSelected()" [disabled]="!selectedIds().size"
-                  class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
+                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50">
             Approve payment batch
           </button>
         </div>

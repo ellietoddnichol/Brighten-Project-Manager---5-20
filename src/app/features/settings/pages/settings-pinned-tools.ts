@@ -14,7 +14,7 @@ import { globalNavLabel } from '@shared/utils/global-enabled-modules.compute';
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <section id="pinned-tools" class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm mb-6">
+    <section id="pinned-tools" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
       <div class="flex flex-wrap items-start justify-between gap-4 mb-4">
         <div>
           <h2 class="text-xl font-bold mb-1">Navigation / Pinned Tools</h2>

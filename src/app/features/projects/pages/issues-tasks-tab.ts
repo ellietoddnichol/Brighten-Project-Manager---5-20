@@ -16,9 +16,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- Stats -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200" [class.bg-red-50]="openIssues().length > 0">
-          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" [class.text-red-500]="openIssues().length > 0">Open Issues</p>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1" [class.text-rose-700]="openIssues().length > 0">Open Issues</p>
           <div class="flex items-end justify-between">
-             <p class="text-xl font-bold text-slate-900" [class.text-red-600]="openIssues().length > 0">{{ openIssues().length }}</p>
+             <p class="text-xl font-bold text-slate-900" [class.text-rose-700]="openIssues().length > 0">{{ openIssues().length }}</p>
              <mat-icon class="text-red-300" *ngIf="openIssues().length > 0">warning</mat-icon>
           </div>
         </div>
@@ -43,8 +43,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 class="text-lg font-bold text-slate-900">Project Issues</h3>
-          <button (click)="showNewIssue = true" class="bg-white border text-red-600 border-red-200 px-4 py-2 rounded-md font-bold shadow-sm hover:bg-red-50 transition-all text-sm flex items-center gap-2">
-            <mat-icon class="!text-[18px] w-4 h-4 text-red-500">add</mat-icon> Log Issue
+          <button (click)="showNewIssue = true" class="bg-white border text-rose-700 border-red-200 px-4 py-2 rounded-md font-bold shadow-sm hover:bg-red-50 transition-all text-sm flex items-center gap-2">
+            <mat-icon class="!text-[18px] w-4 h-4 text-rose-700">add</mat-icon> Log Issue
           </button>
         </div>
         
@@ -213,7 +213,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
              </div>
              <div class="col-span-full flex justify-end gap-2 mt-2">
                 <button (click)="cancelTask()" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-                <button (click)="saveTask()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold hover:bg-emerald-700 text-sm">Save Task</button>
+                <button (click)="saveTask()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save Task</button>
              </div>
           </div>
         }
@@ -260,7 +260,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
                     <td class="px-6 py-4">
                       <div class="flex flex-col text-xs gap-1" [class.text-slate-600]="t.status !== 'Complete'" [class.text-slate-400]="t.status === 'Complete'">
                         @if (t.assignedTo) { <span class="font-bold border-slate-800">{{ t.assignedTo }}</span> }
-                        @if (t.dueDate) { <span [class.text-red-500]="isOverdue(t) && t.status !== 'Complete'">Due: {{ t.dueDate | date:'shortDate' }}</span> }
+                        @if (t.dueDate) { <span [class.text-rose-700]="isOverdue(t) && t.status !== 'Complete'">Due: {{ t.dueDate | date:'shortDate' }}</span> }
                       </div>
                     </td>
                     <td class="px-6 py-4 text-right space-x-2">

@@ -148,6 +148,24 @@ export class CertifiedPayrollService {
     );
   }
 
+  async markWeeksSubmitted(weekIds: string[]): Promise<void> {
+    this.loading.set(true);
+    this.lastError.set(null);
+    try {
+      for (const id of weekIds) {
+        const week = this.cprData.getWeeksSnapshot().find(w => w.id === id);
+        if (week && week.status !== 'exported') {
+          await this.cprData.upsertWeek({ ...week, status: 'submitted' });
+        }
+      }
+      this.lastMessage.set(`Marked ${weekIds.length} week(s) as submitted.`);
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'Failed to mark weeks submitted.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
   private async seedRatesFromLaborModule(): Promise<void> {
     const rates = this.laborData.classificationRates();
     const classificationRates: StoredClassificationRate[] = rates.map((rate, index) => ({

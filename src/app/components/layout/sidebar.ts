@@ -24,11 +24,11 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
   standalone: true,
   imports: [CommonModule, RouterLink, MatIconModule],
   template: `
-    <aside class="w-56 bg-slate-900 flex flex-col z-20 border-r border-slate-800 shrink-0 h-full">
-      <div class="px-4 py-4 flex items-center gap-2.5 border-b border-slate-800">
-        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center font-bold text-sm text-white">B</div>
+    <aside class="w-56 bg-white flex flex-col z-20 border-r border-slate-200 shrink-0 h-full">
+      <div class="px-4 py-4 flex items-center gap-2.5 border-b border-slate-200">
+        <div class="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center font-bold text-sm text-white">B</div>
         <div class="min-w-0">
-          <div class="text-sm font-semibold text-white truncate">Brighten</div>
+          <div class="text-sm font-semibold text-slate-900 truncate">Brighten</div>
           <div class="text-[10px] text-slate-500 truncate">Project Manager</div>
         </div>
       </div>
@@ -43,16 +43,19 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
               <div class="space-y-0.5">
                 @for (item of group.items; track item.id) {
                   <a [routerLink]="item.route"
-                     [class.bg-slate-800]="isActive(item)"
-                     [class.text-white]="isActive(item)"
-                     [class.text-slate-400]="!isActive(item)"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium min-w-0">
-                    <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0 opacity-90">{{ item.icon }}</mat-icon>
+                     [class.bg-indigo-50]="isActive(item)"
+                     [class.text-indigo-700]="isActive(item)"
+                     [class.font-semibold]="isActive(item)"
+                     [class.text-slate-600]="!isActive(item)"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-slate-900 hover:bg-slate-50 transition-colors text-sm min-w-0">
+                    <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ item.icon }}</mat-icon>
                     <span class="truncate flex-1">{{ item.label }}</span>
                     @if (item.badge; as badge) {
                       <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full shrink-0"
                             [class.bg-rose-600]="badge.tone === 'urgent'"
-                            [class.bg-amber-500]="badge.tone === 'review'">{{ badge.count }}</span>
+                            [class.text-white]="badge.tone === 'urgent'"
+                            [class.bg-amber-500]="badge.tone === 'review'"
+                            [class.text-white]="badge.tone === 'review'">{{ badge.count }}</span>
                     }
                   </a>
                 }
@@ -62,13 +65,14 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
         </div>
       </nav>
 
-      <div class="px-2 pb-2 border-t border-slate-800 pt-2 space-y-2">
+      <div class="px-2 pb-2 border-t border-slate-200 pt-2 space-y-2">
         <a [routerLink]="settingsNav.route"
-           [class.bg-slate-800]="isActive(settingsNav)"
-           [class.text-white]="isActive(settingsNav)"
-           [class.text-slate-400]="!isActive(settingsNav)"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:bg-slate-800 hover:text-white transition-colors text-sm font-medium">
-          <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0 opacity-90">{{ settingsNav.icon }}</mat-icon>
+           [class.bg-indigo-50]="isActive(settingsNav)"
+           [class.text-indigo-700]="isActive(settingsNav)"
+           [class.font-semibold]="isActive(settingsNav)"
+           [class.text-slate-600]="!isActive(settingsNav)"
+           class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-slate-900 hover:bg-slate-50 transition-colors text-sm">
+          <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ settingsNav.icon }}</mat-icon>
           <span class="truncate flex-1">{{ settingsNav.label }}</span>
         </a>
         <div class="px-3 py-1.5 flex items-center gap-2 text-[10px] text-slate-500">

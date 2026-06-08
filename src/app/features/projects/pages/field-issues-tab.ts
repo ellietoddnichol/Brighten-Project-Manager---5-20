@@ -13,6 +13,7 @@ import {
 import { DataService } from '@core/services/data.service';
 import { ConstructionOperationsService } from '@features/projects/services/construction-operations.service';
 import { RelatedRecordsSectionComponent } from '@app/components/related-records-section';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { computeConstructionOpsMetrics, isFieldIssueOpen } from '@shared/utils/construction-operations';
 
 type IssueFilter = 'all' | 'open' | 'closed';
@@ -20,7 +21,7 @@ type IssueFilter = 'all' | 'open' | 'closed';
 @Component({
   selector: 'app-field-issues-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, RelatedRecordsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, RelatedRecordsSectionComponent, StatusChipComponent],
   template: `
     <div class="space-y-6">
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -74,7 +75,7 @@ type IssueFilter = 'all' | 'open' | 'closed';
             <div class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="draft.scheduleImpact" id="fiSched"><label for="fiSched">Schedule impact</label></div>
             <div class="col-span-full flex justify-end gap-2">
               <button type="button" (click)="cancel()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button type="button" (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save</button>
             </div>
           </div>
         }
@@ -82,19 +83,25 @@ type IssueFilter = 'all' | 'open' | 'closed';
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead><tr class="text-[10px] uppercase text-slate-400 border-b">
-              <th class="px-5 py-3 text-left">Title</th><th class="px-5 py-3 text-left">Type</th>
+              <th class="px-5 py-3 text-left">#</th><th class="px-5 py-3 text-left">Title</th><th class="px-5 py-3 text-left">Type</th>
               <th class="px-5 py-3 text-left">Priority</th><th class="px-5 py-3 text-left">Status</th><th class="px-5 py-3 text-right">Actions</th>
             </tr></thead>
             <tbody class="divide-y divide-slate-100">
               @for (issue of filteredIssues(); track issue.id) {
-                <tr class="hover:bg-slate-50">
+                <tr class="hover:bg-slate-50 transition-colors"
+                    [class.bg-rose-50]="issue.priority === 'Critical'">
+                  <td class="px-5 py-3 text-xs font-mono font-bold text-slate-900">#{{ issue.id.slice(0, 8) }}</td>
                   <td class="px-5 py-3 font-medium max-w-sm truncate">{{ issue.title }}</td>
                   <td class="px-5 py-3">{{ issue.issueType || '—' }}</td>
-                  <td class="px-5 py-3">{{ issue.priority || 'Normal' }}</td>
-                  <td class="px-5 py-3">{{ issue.status }}</td>
+                  <td class="px-5 py-3">
+                    <app-status-chip [tone]="priorityTone(issue.priority)">{{ issue.priority || 'Normal' }}</app-status-chip>
+                  </td>
+                  <td class="px-5 py-3">
+                    <app-status-chip [tone]="issueStatusTone(issue.status)">{{ issue.status }}</app-status-chip>
+                  </td>
                   <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1">
-                    <button type="button" (click)="edit(issue)" class="text-xs font-bold text-blue-600 hover:underline">Edit</button>
-                    <button type="button" (click)="toggleDetail(issue.id)" class="text-xs font-bold text-slate-600 hover:underline">Detail</button>
+                    <button type="button" (click)="edit(issue)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Edit</button>
+                    <button type="button" (click)="toggleDetail(issue.id)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Detail</button>
                     @if (issue.status === 'Open' || issue.status === 'In Review') {
                       <button type="button" (click)="convertRfi(issue)" class="text-xs font-bold text-indigo-700 hover:underline">→ RFI</button>
                       <button type="button" (click)="convertCr(issue)" class="text-xs font-bold text-orange-600 hover:underline">→ CR</button>
@@ -106,14 +113,14 @@ type IssueFilter = 'all' | 'open' | 'closed';
                   </td>
                 </tr>
                 @if (expandedId() === issue.id) {
-                  <tr><td colspan="5" class="px-5 py-4 bg-slate-50">
+                  <tr><td colspan="6" class="px-5 py-4 bg-slate-50">
                     <app-related-records-section [projectId]="project.id" [fieldIssueId]="issue.id"
                       [rfiId]="issue.linkedRfiId" [dailyLogId]="issue.linkedDailyLogId" [changeRequestId]="issue.linkedChangeRequestId"
                       sourceRecordType="FieldIssue" [sourceRecordId]="issue.id" />
                   </td></tr>
                 }
               } @empty {
-                <tr><td colspan="5" class="px-5 py-10 text-center text-slate-400 italic">No field issues match this filter</td></tr>
+                <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400 italic">No field issues match this filter</td></tr>
               }
             </tbody>
           </table>
@@ -198,4 +205,17 @@ export class FieldIssuesTabComponent implements OnInit {
   async close(issue: FieldIssue): Promise<void> { await this.ops.closeFieldIssue(issue); }
   async voidIssue(issue: FieldIssue): Promise<void> { await this.ops.voidFieldIssue(issue); }
   toggleDetail(id: string): void { this.expandedId.set(this.expandedId() === id ? null : id); }
+
+  priorityTone(priority?: FieldIssuePriority | string): StatusTone {
+    if (priority === 'Critical') return 'red';
+    if (priority === 'High') return 'amber';
+    return 'slate';
+  }
+
+  issueStatusTone(status: FieldIssueStatus | string): StatusTone {
+    if (status === 'Closed' || status === 'Converted') return 'green';
+    if (status === 'Void') return 'red';
+    if (status === 'In Review') return 'amber';
+    return 'blue';
+  }
 }

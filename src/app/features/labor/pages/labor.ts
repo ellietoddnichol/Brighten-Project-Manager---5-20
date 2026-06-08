@@ -50,7 +50,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
         Read-only labor accrual from Google Sheets timekeeper rows
         (<strong>Approval Status = Approved</strong>).
@@ -84,18 +84,15 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
         </a>
       </app-page-header>
 
-      <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-1">
+      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
         @for (tab of tabs; track tab.id) {
           <button type="button" (click)="activeTab.set(tab.id)"
-                  class="px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors"
-                  [class.bg-white]="activeTab() === tab.id"
-                  [class.text-blue-700]="activeTab() === tab.id"
-                  [class.border]="activeTab() === tab.id"
-                  [class.border-slate-200]="activeTab() === tab.id"
-                  [class.border-b-white]="activeTab() === tab.id"
-                  [class.-mb-px]="activeTab() === tab.id"
+                  class="px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors shrink-0"
+                  [class.bg-slate-900]="activeTab() === tab.id"
+                  [class.text-white]="activeTab() === tab.id"
                   [class.text-slate-500]="activeTab() !== tab.id"
-                  [class.hover:text-slate-700]="activeTab() !== tab.id">
+                  [class.hover:text-slate-900]="activeTab() !== tab.id"
+                  [class.hover:bg-slate-50]="activeTab() !== tab.id">
             <mat-icon class="!text-[16px] align-middle mr-1">{{ tab.icon }}</mat-icon>
             {{ tab.label }}
             @if (tab.id === 'exceptions' && laborData.exceptions().length) {
@@ -483,7 +480,18 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
       }
 
       @if (activeTab() === 'accrual') {
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <button type="button" (click)="shiftAccrualPeriod(-1)"
+                  class="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+            <mat-icon class="!text-[18px] align-middle">chevron_left</mat-icon>
+          </button>
+          <span class="bg-slate-900 text-white rounded-lg px-3 py-1.5 text-sm font-semibold">{{ accrualPeriodLabel() }}</span>
+          <button type="button" (click)="shiftAccrualPeriod(1)"
+                  class="bg-white border border-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+            <mat-icon class="!text-[18px] align-middle">chevron_right</mat-icon>
+          </button>
+        </div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold">
@@ -502,8 +510,8 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                @for (row of laborData.monthlyAccruals(); track row.id) {
-                  <tr class="hover:bg-slate-50">
+                @for (row of accrualRows(); track row.id) {
+                  <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3 font-mono">{{ row.month }}</td>
                     <td class="px-4 py-3">
                       <div class="font-medium">J{{ row.projectNo }}</div>
@@ -577,6 +585,7 @@ export class Labor {
   laborCodeMonth = signal<string>(currentMonthKey());
   laborCodeFilter = signal<LaborCodeFilter>('all');
   classMonth = signal<string>(currentMonthKey());
+  accrualPeriod = signal<string>(currentMonthKey());
 
   laborCodeFilterOptions: { id: LaborCodeFilter; label: string }[] = [
     { id: 'all', label: 'All' },
@@ -723,6 +732,17 @@ export class Labor {
 
   laborCodeTotalHours = computed(() => this.laborCodeTotals().totalHours);
 
+  accrualPeriodLabel = computed(() => {
+    const p = this.accrualPeriod();
+    const [y, m] = p.split('-').map(Number);
+    if (!y || !m) return p;
+    return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  });
+
+  accrualRows = computed(() =>
+    this.laborData.monthlyAccruals().filter(row => row.month === this.accrualPeriod()),
+  );
+
   hoursByLaborCode = computed(() => {
     const month = currentMonthKey();
     const rows = groupHoursByLaborCode(
@@ -744,6 +764,12 @@ export class Labor {
 
   onClassMonthChange(event: Event): void {
     this.classMonth.set((event.target as HTMLSelectElement).value);
+  }
+
+  shiftAccrualPeriod(delta: number): void {
+    const [y, m] = this.accrualPeriod().split('-').map(Number);
+    const d = new Date(y, (m - 1) + delta, 1);
+    this.accrualPeriod.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
   }
 
   exportByClass(): void {

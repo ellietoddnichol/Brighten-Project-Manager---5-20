@@ -8,13 +8,14 @@ import { Project, ProjectTask } from '@app/models/types';
 import { PROJECT_TASK_GROUPS } from '@app/models/project-controls.types';
 import { DataService } from '@core/services/data.service';
 import { ListRowComponent } from '@app/components/ui/list-row';
+import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { filterTasksBySegment, TaskFilterSegment } from '@features/projects/utils/project-work.compute';
 import { isManualProjectTask } from '@features/projects/utils/project-task.util';
 
 @Component({
   selector: 'app-tasks-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, ListRowComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, ListRowComponent, StatusChipComponent],
   template: `
     <div class="space-y-4">
       @if (!simplified) {
@@ -25,12 +26,28 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
       </div>
       }
 
-      <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-base font-bold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
-          <button (click)="openNew()" class="bg-slate-900 text-white px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5">
-            <mat-icon class="!text-[16px]">add</mat-icon> Add Task
-          </button>
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center gap-3">
+          <h3 class="text-sm font-bold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
+          <div class="flex items-center gap-2">
+            @if (!simplified) {
+              <div class="flex rounded-lg border border-slate-200 overflow-hidden">
+                <button type="button" (click)="setViewMode('list')"
+                        class="px-3 py-1.5 text-xs font-semibold transition-colors"
+                        [class.bg-slate-900]="viewMode() === 'list'"
+                        [class.text-white]="viewMode() === 'list'"
+                        [class.text-slate-600]="viewMode() !== 'list'">List</button>
+                <button type="button" (click)="setViewMode('kanban')"
+                        class="px-3 py-1.5 text-xs font-semibold transition-colors"
+                        [class.bg-slate-900]="viewMode() === 'kanban'"
+                        [class.text-white]="viewMode() === 'kanban'"
+                        [class.text-slate-600]="viewMode() !== 'kanban'">Kanban</button>
+              </div>
+            }
+            <button (click)="openNew()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-800 transition-colors">
+              <mat-icon class="!text-[16px]">add</mat-icon> Add Task
+            </button>
+          </div>
         </div>
 
         @if (showForm()) {
@@ -57,7 +74,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
             </div>
             <div class="col-span-full flex justify-end gap-2">
               <button (click)="cancel()" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold hover:bg-emerald-700 text-sm">Save Task</button>
+              <button (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save Task</button>
             </div>
           </div>
         }
@@ -74,27 +91,49 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
           } @empty {
             <div class="px-4 py-6 text-center text-slate-400 italic">No tasks match this filter</div>
           }
+        } @else if (viewMode() === 'kanban') {
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 p-3">
+            @for (col of kanbanColumns(); track col.id) {
+              <div class="rounded-lg border border-slate-200 bg-slate-50/50">
+                <div class="px-3 py-2 border-b border-slate-200 text-xs font-bold uppercase tracking-widest text-slate-500">{{ col.label }} ({{ col.tasks.length }})</div>
+                @for (task of col.tasks; track task.id) {
+                  <div class="px-3 py-2 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+                       [class.bg-rose-50]="isOverdue(task)">
+                    <div class="text-xs font-mono font-bold text-slate-500 mb-0.5">#{{ task.id.slice(0, 8) }}</div>
+                    <div class="font-medium text-slate-900 text-sm">{{ task.title }}</div>
+                    <div class="text-xs text-slate-500 mt-1">{{ task.assignedTo || 'Unassigned' }}</div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                      <app-status-chip [tone]="taskStatusTone(task)">{{ task.status }}</app-status-chip>
+                      @if (task.priority) {
+                        <app-status-chip [tone]="priorityTone(task.priority)">{{ task.priority }}</app-status-chip>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
         } @else {
         @for (group of groupedTasks(); track group.name) {
           <div class="border-b border-slate-100 last:border-0">
             <div class="px-3 py-2 bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">{{ group.name }} ({{ group.tasks.length }})</div>
             @for (task of group.tasks; track task.id) {
-              <div class="px-3 py-2 flex items-center justify-between hover:bg-slate-50 border-b border-slate-50">
+              <div class="px-5 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors border-b border-slate-50"
+                   [class.bg-rose-50]="isOverdue(task)">
                 <div>
+                  <div class="text-xs font-mono font-bold text-slate-500 mb-0.5">#{{ task.id.slice(0, 8) }}</div>
                   <div class="font-medium text-slate-900">{{ task.title }}</div>
                   <div class="text-xs text-slate-500">
                     {{ task.assignedTo || 'Unassigned' }}
-                    @if (task.dueDate) { · Due {{ task.dueDate }} }
+                    @if (task.dueDate) {
+                      · Due <span [class.text-rose-700]="isOverdue(task)">{{ task.dueDate }}</span>
+                    }
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded"
-                        [class.bg-amber-100]="task.status !== 'Complete'"
-                        [class.text-amber-700]="task.status !== 'Complete'"
-                        [class.bg-emerald-100]="task.status === 'Complete'"
-                        [class.text-emerald-700]="task.status === 'Complete'">{{ task.status }}</span>
+                  <app-status-chip [tone]="taskStatusTone(task)">{{ task.status }}</app-status-chip>
                   @if (task.status !== 'Complete') {
-                    <button (click)="complete(task)" class="text-xs font-bold text-emerald-600 hover:underline">Done</button>
+                    <button (click)="complete(task)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Done</button>
                   }
                 </div>
               </div>
@@ -148,8 +187,37 @@ export class TasksTabComponent {
   }
 
   showForm = signal(false);
+  viewMode = signal<'list' | 'kanban'>(loadTasksView());
   editingId: string | null = null;
   draft: Partial<ProjectTask> = this.reset();
+
+  kanbanColumns = computed(() => {
+    const tasks = this.projectTasks().filter(t => t.status !== 'Complete' && t.status !== 'Canceled');
+    return [
+      { id: 'todo', label: 'To Do', tasks: tasks.filter(t => t.status === 'Not Started') },
+      { id: 'progress', label: 'In Progress', tasks: tasks.filter(t => t.status === 'In Progress') },
+      { id: 'blocked', label: 'Blocked', tasks: tasks.filter(t => t.status === 'Waiting') },
+      { id: 'done', label: 'Done', tasks: this.completeTasks() },
+    ];
+  });
+
+  taskStatusTone(task: ProjectTask): StatusTone {
+    if (task.status === 'Complete') return 'green';
+    if (this.isOverdue(task)) return 'red';
+    if (task.status === 'Waiting') return 'amber';
+    return 'slate';
+  }
+
+  priorityTone(priority: string): StatusTone {
+    if (priority === 'Critical' || priority === 'High') return 'red';
+    if (priority === 'Medium') return 'amber';
+    return 'slate';
+  }
+
+  setViewMode(mode: 'list' | 'kanban'): void {
+    this.viewMode.set(mode);
+    try { localStorage.setItem('brighten.tasksView', mode); } catch { /* ignore */ }
+  }
 
   reset(): Partial<ProjectTask> {
     return { status: 'Not Started', priority: 'Medium', taskGroup: 'Field Operations', source: 'manual' };
@@ -182,5 +250,14 @@ export class TasksTabComponent {
 
   isOverdue(task: ProjectTask): boolean {
     return !!task.dueDate && task.dueDate < new Date().toISOString().slice(0, 10);
+  }
+}
+
+function loadTasksView(): 'list' | 'kanban' {
+  try {
+    const v = localStorage.getItem('brighten.tasksView');
+    return v === 'kanban' ? 'kanban' : 'list';
+  } catch {
+    return 'list';
   }
 }

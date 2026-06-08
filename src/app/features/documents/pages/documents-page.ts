@@ -6,6 +6,9 @@ import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { DataService } from '@core/services/data.service';
+import { AuthService } from '@core/services/auth.service';
+import { DriveService } from '@core/services/drive.service';
+import { ProjectDocumentSaveService } from '@features/projects/services/project-document-save.service';
 import { DriveFolderDiscoveryService } from '@features/subcontractors/services/drive-folder-discovery.service';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
@@ -15,6 +18,7 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import {
   DetailDrawerComponent,
   DrawerSectionComponent,
@@ -55,6 +59,7 @@ import {
     CompactStatStripComponent,
     SegmentedControlComponent,
     StatusChipComponent,
+    EmptyStateComponent,
     DetailDrawerComponent,
     DrawerSectionComponent,
     DrawerFieldComponent,
@@ -126,13 +131,13 @@ import {
         @case ('overview') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
-              <h2 class="text-sm font-bold text-slate-900">Document actions</h2>
+              <h2 class="text-lg font-bold text-slate-900">Document actions</h2>
               <p class="text-xs text-slate-500 mt-0.5">Missing docs, Drive setup, recent files, and source issues</p>
             </div>
             @if (overviewRows().length) {
               <div class="divide-y divide-slate-100">
                 @for (row of overviewRows(); track row.id) {
-                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50/80">
+                  <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
                     <div class="min-w-0 flex-1">
                       <div class="flex flex-wrap items-center gap-2">
                         <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -154,7 +159,9 @@ import {
                 }
               </div>
             } @else {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No document actions right now</div>
+              <div class="p-5">
+                <app-empty-state title="No document actions right now" message="Uploads and Drive mapping are up to date." />
+              </div>
             }
           </section>
         }
@@ -162,7 +169,7 @@ import {
         @case ('driveLinks') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of driveLinkRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'documents', view: 'drive-mapping' }" class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -182,7 +189,9 @@ import {
                    class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No active jobs need Drive mapping review</div>
+              <div class="p-5">
+                <app-empty-state title="No Drive mapping review needed" message="Active jobs have folder links assigned." />
+              </div>
             }
           </section>
         }
@@ -190,7 +199,7 @@ import {
         @case ('needsReview') {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of needsReviewRows(); track row.id) {
-              <div class="px-5 py-4 hover:bg-slate-50/80 flex flex-wrap items-start gap-4">
+              <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
@@ -206,7 +215,9 @@ import {
                 }
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No file or source issues need review</div>
+              <div class="p-5">
+                <app-empty-state title="No file issues to review" message="Imports and document sources look clean." />
+              </div>
             }
           </section>
         }
@@ -214,7 +225,7 @@ import {
         @default {
           <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
             @for (row of fileRows(); track row.id) {
-              <div class="px-5 py-3 hover:bg-slate-50/80 flex flex-wrap items-start gap-4"
+              <div class="px-5 py-3 hover:bg-slate-50 flex flex-wrap items-start gap-4"
                    [class.bg-amber-50/50]="row.item.kind === 'missing'">
                 <button type="button" (click)="openFileRow(row)" class="min-w-0 flex-1 text-left">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
@@ -241,7 +252,9 @@ import {
                 </div>
               </div>
             } @empty {
-              <div class="px-5 py-12 text-center text-slate-400 text-sm italic">{{ emptyMessage() }}</div>
+              <div class="p-5">
+                <app-empty-state [title]="emptyMessage()" />
+              </div>
             }
           </section>
         }
@@ -276,13 +289,46 @@ import {
               </select>
             </div>
             <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">File</label>
+              <input #fileInput type="file" (change)="onFileSelected($event)"
+                     class="w-full text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                            file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100
+                            file:transition-colors">
+              @if (uploadSelectedFile(); as f) {
+                <p class="text-xs text-slate-500 mt-1">Selected: {{ f.name }} ({{ (f.size / 1024) | number:'1.0-0' }} KB) — uploads directly to the project's Drive folder.</p>
+              } @else {
+                <p class="text-xs text-slate-400 mt-1">Or paste a Drive / file URL below to save a link without uploading.</p>
+              }
+            </div>
+            <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Drive / file URL</label>
               <input [(ngModel)]="uploadDraft.fileUrl" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://drive.google.com/...">
             </div>
-            <p class="text-xs text-slate-500">Files stay in Google Drive. This saves metadata in Firestore only.</p>
+            @if (uploadError(); as err) {
+              <div class="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                <span class="material-icons text-rose-500 !text-[16px]">error</span>
+                <span>{{ err }}</span>
+              </div>
+            }
+            <p class="text-xs text-slate-500">
+              @if (uploadSelectedFile()) {
+                The file uploads to the project's mapped Drive folder (or project root if not mapped) and the link is saved automatically.
+              } @else {
+                Files stay in Google Drive. This saves metadata in Firestore only.
+              }
+            </p>
             <div class="flex gap-2 pt-2">
-              <button type="button" (click)="saveUpload()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save metadata</button>
-              <button type="button" (click)="closeUpload()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
+              <button type="button" (click)="saveUpload()" [disabled]="uploadInProgress()"
+                      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                @if (uploadInProgress()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                  Uploading…
+                } @else {
+                  {{ uploadSelectedFile() ? 'Upload & save' : 'Save metadata' }}
+                }
+              </button>
+              <button type="button" (click)="closeUpload()" [disabled]="uploadInProgress()"
+                      class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Cancel</button>
             </div>
           </div>
         </aside>
@@ -324,6 +370,9 @@ import {
 })
 export class Documents {
   private data = inject(DataService);
+  private auth = inject(AuthService);
+  private drive = inject(DriveService);
+  private documentSave = inject(ProjectDocumentSaveService);
   private lifecycleSvc = inject(ProjectLifecycleService);
   private requirements = inject(ProjectRequirementsService);
   private driveDiscovery = inject(DriveFolderDiscoveryService);
@@ -340,6 +389,9 @@ export class Documents {
   drawerOpen = signal(false);
   selectedRow = signal<DocumentsHubFileRow | null>(null);
   uploadDraft: Partial<ProjectFile> & { projectId?: string } = {};
+  uploadSelectedFile = signal<File | null>(null);
+  uploadInProgress = signal(false);
+  uploadError = signal<string | null>(null);
 
   readonly documentsOverviewSectionLabel = documentsOverviewSectionLabel;
 
@@ -477,21 +529,81 @@ export class Documents {
       documentStatus: 'Received',
       ...defaultsForNewUpload('CONTRACT'),
     };
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
     this.uploadOpen.set(true);
   }
 
   closeUpload(): void {
+    if (this.uploadInProgress()) return;
     this.uploadOpen.set(false);
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.uploadSelectedFile.set(file);
+    this.uploadError.set(null);
+    if (file && !this.uploadDraft.fileName?.trim()) {
+      this.uploadDraft.fileName = file.name;
+    }
   }
 
   async saveUpload(): Promise<void> {
     if (!this.uploadDraft.projectId || !this.uploadDraft.fileName?.trim()) return;
     const project = (this.projects() ?? []).find(p => p.id === this.uploadDraft.projectId);
     if (!project) return;
+
+    this.uploadError.set(null);
+    let fileUrl = this.uploadDraft.fileUrl?.trim() || undefined;
+    let fileId = this.uploadDraft.fileId;
+
+    const selectedFile = this.uploadSelectedFile();
+    if (selectedFile) {
+      this.uploadInProgress.set(true);
+      try {
+        const target = await this.documentSave.ensureSaveTarget(project, this.uploadDraft.folderKey ?? 'CONTRACT', []);
+        if (!target) {
+          this.uploadError.set('Link a Drive folder for this project in Setup before uploading files.');
+          this.uploadInProgress.set(false);
+          return;
+        }
+
+        let token = await this.auth.getAccessToken();
+        if (!token) {
+          token = await this.auth.refreshDriveAccess();
+        }
+        if (!token) {
+          this.uploadError.set('Drive not connected — sign in or click Re-authorize Drive, then try again.');
+          this.uploadInProgress.set(false);
+          return;
+        }
+
+        const uploaded = await this.drive.uploadFile(
+          target.folderId,
+          this.uploadDraft.fileName.trim(),
+          selectedFile,
+          selectedFile.type || 'application/octet-stream',
+        );
+        fileUrl = uploaded.webViewLink;
+        fileId = uploaded.id;
+      } catch (err) {
+        this.uploadError.set(err instanceof Error ? err.message : 'Drive upload failed. Try again or paste a Drive link instead.');
+        this.uploadInProgress.set(false);
+        return;
+      } finally {
+        this.uploadInProgress.set(false);
+      }
+    }
+
     const payload = enrichProjectFileOnSave({
       ...this.uploadDraft,
       projectId: project.id,
       fileName: this.uploadDraft.fileName.trim(),
+      fileUrl,
+      fileId,
       documentType: this.uploadDraft.documentType ?? 'Upload',
       documentStatus: this.uploadDraft.documentStatus ?? 'Received',
     }, project);
@@ -524,6 +636,8 @@ export class Documents {
     const row = this.selectedRow();
     if (!row?.item.file) return;
     this.uploadDraft = { ...row.item.file };
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
     this.drawerOpen.set(false);
     this.uploadOpen.set(true);
   }

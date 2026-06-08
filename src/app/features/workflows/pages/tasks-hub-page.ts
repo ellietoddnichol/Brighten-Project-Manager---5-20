@@ -9,7 +9,7 @@ import { GlobalNeedsService } from '@core/services/global-needs.service';
   standalone: true,
   imports: [PageHeaderComponent, NavHubCardComponent],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-5xl mx-auto">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-page-header
         title="Tasks"
         subtitle="Open work items and changes that need action." />

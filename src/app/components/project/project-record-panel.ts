@@ -45,10 +45,10 @@ type RecordTab = 'details' | 'financial' | 'change-orders' | 'budget-lines';
         }
       </div>
 
-      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
+      <div class="flex gap-2 border-b border-slate-200 pb-1 overflow-x-auto whitespace-nowrap">
         @for (tab of tabs; track tab.id) {
           <button type="button" (click)="activeTab.set(tab.id)"
-                  class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2"
+                  class="px-4 py-2 rounded-t-lg text-sm font-semibold border-b-2 transition-colors"
                   [class.border-slate-900]="activeTab() === tab.id"
                   [class.text-slate-900]="activeTab() === tab.id"
                   [class.border-transparent]="activeTab() !== tab.id"
@@ -150,18 +150,18 @@ type RecordTab = 'details' | 'financial' | 'change-orders' | 'budget-lines';
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Google Drive folder ID</label>
                 <div class="flex gap-2">
                   <input type="text" [(ngModel)]="driveId" name="drive" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
-                  <button type="button" (click)="saveDrive.emit(driveId)" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold">Save</button>
+                  <button type="button" (click)="saveDrive.emit(driveId)" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save</button>
                 </div>
               </div>
               <div>
                 <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Google Sheet ID</label>
                 <div class="flex gap-2">
                   <input type="text" [(ngModel)]="sheetId" name="sheet" class="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-sm">
-                  <button type="button" (click)="saveSheet.emit(sheetId)" class="bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold">Save</button>
+                  <button type="button" (click)="saveSheet.emit(sheetId)" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">Save</button>
                 </div>
               </div>
             </div>
-            <button type="button" (click)="openUtility.emit('drive-mapping')" class="text-sm font-semibold text-orange-600 hover:underline">
+            <button type="button" (click)="openUtility.emit('drive-mapping')" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 transition-colors hover:underline">
               Open Drive Mapping →
             </button>
           </section>

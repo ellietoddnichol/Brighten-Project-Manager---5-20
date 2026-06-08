@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, computed, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,6 +13,7 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { downloadCsv } from '@shared/utils/csv-export';
 import {
   AR_HUB_CSV_HEADERS,
@@ -29,6 +31,7 @@ import {
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     MatIconModule,
     PageHeaderComponent,
@@ -36,6 +39,7 @@ import {
     CompactStatStripComponent,
     SegmentedControlComponent,
     StatusChipComponent,
+    EmptyStateComponent,
   ],
   template: `
     <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
@@ -45,7 +49,7 @@ import {
         primaryActionLabel="Re-sync QuickBooks"
         (primaryAction)="resyncQuickBooks()">
         <button type="button" (click)="exportCsv()"
-                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
+                class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
           Export CSV
         </button>
         <a routerLink="/settings" fragment="import-review"
@@ -83,15 +87,37 @@ import {
         </button>
       </div>
 
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        @for (bucket of agingBuckets(); track bucket.label) {
+          <div class="rounded-lg border p-4" [ngClass]="bucket.boxClass">
+            <p class="text-[10px] font-bold uppercase tracking-widest mb-1" [ngClass]="bucket.labelClass">{{ bucket.label }}</p>
+            <p class="text-xl font-black" [ngClass]="bucket.valueClass">{{ fmt(bucket.amount) }}</p>
+            <div class="mt-2 h-1.5 rounded-full bg-white/60 overflow-hidden">
+              <div class="h-full rounded-full transition-all" [ngClass]="bucket.barClass" [style.width.%]="bucket.pct"></div>
+            </div>
+          </div>
+        }
+      </div>
+
       @if (compactStats().length) {
         <app-compact-stat-strip [stats]="compactStats()" />
       }
 
       <app-segmented-control [options]="segmentOptions" [value]="segment()" (select)="setSegment($event)" />
 
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-[220px] max-w-md">
+          <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
+          <input type="text" [ngModel]="projectSearch()" (ngModelChange)="projectSearch.set($event)"
+                 placeholder="Filter by job # or project name…"
+                 class="w-full pl-10 pr-4 py-2.5 bg-white rounded-lg border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-300 outline-none">
+        </div>
+        <span class="text-xs text-slate-500">{{ filteredRows().length }} job(s) shown</span>
+      </div>
+
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
-          <div class="px-5 py-4 hover:bg-slate-50/80">
+          <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
             <div class="flex flex-wrap items-start gap-4">
               @if (rowLink(row); as link) {
                 <a [routerLink]="link" [queryParams]="{ section: 'financials', view: 'ar' }"
@@ -103,11 +129,21 @@ import {
                   <ng-container *ngTemplateOutlet="rowBody; context: { $implicit: row }" />
                 </div>
               }
-              <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</span>
+              <div class="flex flex-col items-end gap-2 shrink-0">
+                <span class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">{{ row.nextAction }}</span>
+                @if (row.totalOpen > 0 && !row.isUnmatched) {
+                  <button type="button" (click)="markRowPaid(row)"
+                          class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
+                    Mark as Paid
+                  </button>
+                }
+              </div>
             </div>
           </div>
         } @empty {
-          <div class="px-5 py-12 text-center text-slate-400 text-sm italic">No AR rows match this segment</div>
+          <div class="p-5">
+            <app-empty-state title="No AR rows match this segment" message="Adjust the segment filter or sync AR data." />
+          </div>
         }
       </section>
     </div>
@@ -155,6 +191,7 @@ export class ArPage implements OnInit {
   readonly segmentOptions = AR_PAGE_SEGMENT_OPTIONS;
 
   segment = signal<ArPageSegmentId>('open');
+  projectSearch = signal('');
   hubMessage = signal<string | null>(null);
   syncing = signal(false);
 
@@ -175,7 +212,26 @@ export class ArPage implements OnInit {
 
   filteredRows = computed(() => {
     const seg = this.segment();
-    return this.allRows().filter(r => matchesArJobSegment(r, seg));
+    const q = this.projectSearch().trim().toLowerCase();
+    return this.allRows().filter(r => {
+      if (!matchesArJobSegment(r, seg)) return false;
+      if (!q) return true;
+      return (r.jobNumber ?? '').toLowerCase().includes(q)
+        || (r.projectName ?? '').toLowerCase().includes(q)
+        || (r.customerName ?? '').toLowerCase().includes(q);
+    });
+  });
+
+  agingBuckets = computed(() => {
+    const s = this.summary();
+    const buckets = [
+      { label: 'Current', amount: s.current, boxClass: 'border-emerald-200 bg-emerald-50', labelClass: 'text-emerald-700', valueClass: 'text-emerald-900', barClass: 'bg-emerald-500' },
+      { label: '30–60', amount: s.days1To30 + s.days31To60, boxClass: 'border-amber-200 bg-amber-50', labelClass: 'text-amber-700', valueClass: 'text-amber-900', barClass: 'bg-amber-500' },
+      { label: '60–90', amount: s.days61To90, boxClass: 'border-orange-200 bg-orange-50', labelClass: 'text-orange-700', valueClass: 'text-orange-900', barClass: 'bg-orange-500' },
+      { label: '90+', amount: s.days90Plus, boxClass: 'border-rose-200 bg-rose-50', labelClass: 'text-rose-700', valueClass: 'text-rose-900', barClass: 'bg-rose-500' },
+    ];
+    const total = buckets.reduce((sum, b) => sum + b.amount, 0) || 1;
+    return buckets.map(b => ({ ...b, pct: Math.max(4, Math.round((b.amount / total) * 100)) }));
   });
 
   compactStats = computed(() => {
@@ -243,5 +299,21 @@ export class ArPage implements OnInit {
 
   exportCsv(): void {
     downloadCsv('ar-export.csv', AR_HUB_CSV_HEADERS, arHubCsvRows(this.filteredRows()));
+  }
+
+  async markRowPaid(row: ArJobRow): Promise<void> {
+    const openRecords = row.records.filter(r => r.status !== 'Paid' && (r.openBalance ?? 0) > 0);
+    if (!openRecords.length) return;
+    const msg = `Mark all open AR (${this.fmt(row.totalOpen)}) for ${row.projectName} as paid?`;
+    if (!confirm(msg)) return;
+    try {
+      for (const rec of openRecords) {
+        await this.arSvc.markPaid(rec);
+      }
+      await this.arSvc.refreshArAutomation();
+      this.hubMessage.set(`Marked ${openRecords.length} invoice(s) paid for ${row.projectName}.`);
+    } catch {
+      this.hubMessage.set('Could not mark AR as paid — try again.');
+    }
   }
 }

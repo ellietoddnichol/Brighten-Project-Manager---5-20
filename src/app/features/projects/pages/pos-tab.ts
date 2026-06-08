@@ -105,28 +105,28 @@ type PosSegment = 'pos' | 'subcontractors';
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
-              <tr class="text-[10px] uppercase text-slate-400 border-b bg-slate-50">
-                <th class="px-5 py-3 text-left">PO #</th>
-                <th class="px-5 py-3 text-left">Vendor</th>
-                <th class="px-5 py-3 text-left">Category</th>
-                <th class="px-5 py-3 text-right">Committed</th>
-                <th class="px-5 py-3 text-right">Invoiced</th>
-                <th class="px-5 py-3 text-right">Remaining</th>
-                <th class="px-5 py-3 text-left">Status</th>
-                <th class="px-5 py-3 text-left">Links</th>
-                <th class="px-5 py-3 text-center">Attach</th>
+              <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b bg-white">
+                <th class="px-3 py-2 text-left">PO #</th>
+                <th class="px-3 py-2 text-left">Vendor</th>
+                <th class="px-3 py-2 text-left">Category</th>
+                <th class="px-3 py-2 text-right">Committed</th>
+                <th class="px-3 py-2 text-right">Invoiced</th>
+                <th class="px-3 py-2 text-right">Remaining</th>
+                <th class="px-3 py-2 text-left">Status</th>
+                <th class="px-3 py-2 text-left">Links</th>
+                <th class="px-3 py-2 text-center">Attach</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               @for (row of filteredPos(); track row.po.id) {
-                <tr class="hover:bg-slate-50 cursor-pointer" (click)="selectPo(row.po)">
-                  <td class="px-5 py-3 font-medium">{{ row.po.poNumber }}</td>
-                  <td class="px-5 py-3">{{ row.po.vendor }}</td>
-                  <td class="px-5 py-3">{{ row.po.category || '—' }}</td>
-                  <td class="px-5 py-3 text-right font-mono">{{ row.committed | currency }}</td>
-                  <td class="px-5 py-3 text-right font-mono">{{ row.invoiced | currency }}</td>
-                  <td class="px-5 py-3 text-right font-mono">{{ row.remaining | currency }}</td>
-                  <td class="px-5 py-3">
+                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 cursor-pointer" (click)="selectPo(row.po)">
+                  <td class="px-3 py-2.5 font-mono font-bold">{{ row.po.poNumber }}</td>
+                  <td class="px-3 py-2.5">{{ row.po.vendor }}</td>
+                  <td class="px-3 py-2.5">{{ row.po.category || '—' }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.committed | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.invoiced | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.remaining | currency }}</td>
+                  <td class="px-3 py-2.5">
                     <span class="text-xs font-bold px-2 py-0.5 rounded-full"
                           [class.bg-slate-100]="row.status === 'Draft'"
                           [class.bg-blue-100]="row.status === 'Issued'"
@@ -258,12 +258,12 @@ type PosSegment = 'pos' | 'subcontractors';
             </div>
 
             <div class="flex flex-wrap gap-2 pt-2">
-              <button type="button" (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Save</button>
+              <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors">Save</button>
               @if (editingId() && draft.status === 'Draft') {
-                <button type="button" (click)="issueSelected()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Issue PO</button>
+                <button type="button" (click)="issueSelected()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm">Issue PO</button>
               }
               @if (editingId() && draft.status !== 'Void') {
-                <button type="button" (click)="voidSelected()" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm">Void</button>
+                <button type="button" (click)="voidSelected()" class="text-rose-700 bg-rose-50 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-rose-100 transition-colors">Void</button>
               }
             </div>
 

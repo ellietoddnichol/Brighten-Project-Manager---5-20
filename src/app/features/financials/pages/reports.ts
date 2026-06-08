@@ -11,7 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <div class="p-8 flex-1 overflow-y-auto w-full max-w-7xl mx-auto">
+    <div class="p-6 lg:p-8 flex-1 overflow-y-auto w-full max-w-[1440px] mx-auto space-y-6">
       <header class="flex justify-between items-center mb-8">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">WIP Report</h1>
