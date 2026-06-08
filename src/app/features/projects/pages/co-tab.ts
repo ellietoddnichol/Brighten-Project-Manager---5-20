@@ -218,10 +218,11 @@ export class CoTabComponent {
     }
     this.newCO.projectId = this.project.id;
     
+    const onError = () => alert('Failed to save the change order. Please try again.');
     if (this.editingId) {
-       this.dataService.updateChangeOrder(this.editingId, this.newCO).subscribe(() => this.cancelCO());
+       this.dataService.updateChangeOrder(this.editingId, this.newCO).subscribe({ next: () => this.cancelCO(), error: onError });
     } else {
-       this.dataService.createChangeOrder(this.newCO).subscribe(() => this.cancelCO());
+       this.dataService.createChangeOrder(this.newCO).subscribe({ next: () => this.cancelCO(), error: onError });
     }
   }
 }

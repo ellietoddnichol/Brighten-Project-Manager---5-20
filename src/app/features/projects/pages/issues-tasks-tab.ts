@@ -328,10 +328,11 @@ export class IssuesTasksTabComponent {
   saveIssue() {
     if (!this.newIssue.title) return;
     this.newIssue.projectId = this.project.id;
+    const onError = () => alert('Failed to save the issue. Please try again.');
     if (this.editingIssueId) {
-      this.dataService.updateProjectIssue(this.editingIssueId, this.newIssue).subscribe(() => this.cancelIssue());
+      this.dataService.updateProjectIssue(this.editingIssueId, this.newIssue).subscribe({ next: () => this.cancelIssue(), error: onError });
     } else {
-      this.dataService.createProjectIssue(this.newIssue).subscribe(() => this.cancelIssue());
+      this.dataService.createProjectIssue(this.newIssue).subscribe({ next: () => this.cancelIssue(), error: onError });
     }
   }
 
@@ -354,10 +355,11 @@ export class IssuesTasksTabComponent {
   saveTask() {
     if (!this.newTask.title) return;
     this.newTask.projectId = this.project.id;
+    const onError = () => alert('Failed to save the task. Please try again.');
     if (this.editingTaskId) {
-      this.dataService.updateProjectTask(this.editingTaskId, this.newTask).subscribe(() => this.cancelTask());
+      this.dataService.updateProjectTask(this.editingTaskId, this.newTask).subscribe({ next: () => this.cancelTask(), error: onError });
     } else {
-      this.dataService.createProjectTask(this.newTask).subscribe(() => this.cancelTask());
+      this.dataService.createProjectTask(this.newTask).subscribe({ next: () => this.cancelTask(), error: onError });
     }
   }
 }

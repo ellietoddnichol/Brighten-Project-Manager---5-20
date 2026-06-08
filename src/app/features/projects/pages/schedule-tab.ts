@@ -189,16 +189,19 @@ export class ScheduleTabComponent {
   }
 
   markComplete(m: ScheduleMilestone) {
-     this.dataService.updateMilestone(m.id, { status: 'Complete', actualEndDate: new Date().toISOString().split('T')[0] }).subscribe();
+     this.dataService.updateMilestone(m.id, { status: 'Complete', actualEndDate: new Date().toISOString().split('T')[0] }).subscribe({
+       error: () => alert('Failed to mark the milestone complete. Please try again.'),
+     });
   }
 
   saveMS() {
     if (!this.newMS.title) return;
     this.newMS.projectId = this.project.id;
+    const onError = () => alert('Failed to save the milestone. Please try again.');
     if (this.editingMSId) {
-      this.dataService.updateMilestone(this.editingMSId, this.newMS).subscribe(() => this.cancelMS());
+      this.dataService.updateMilestone(this.editingMSId, this.newMS).subscribe({ next: () => this.cancelMS(), error: onError });
     } else {
-      this.dataService.createMilestone(this.newMS).subscribe(() => this.cancelMS());
+      this.dataService.createMilestone(this.newMS).subscribe({ next: () => this.cancelMS(), error: onError });
     }
   }
 }
