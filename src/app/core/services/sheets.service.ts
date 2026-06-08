@@ -1,23 +1,32 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '@core/services/auth.service';
 
-async function readSheetsApiError(response: Response): Promise<string> {
+interface SheetsApiErrorInfo {
+  detail: string;
+  insufficientScopes: boolean;
+}
+
+async function readSheetsApiError(response: Response): Promise<SheetsApiErrorInfo> {
   try {
     const body = await response.json();
     const message = body?.error?.message as string | undefined;
     if (message) {
+      const insufficientScopes = response.status === 403 && /insufficient.*(authentication )?scopes/i.test(message);
       if (response.status === 403 && message.includes('has not been used')) {
-        return 'Google Sheets API is not enabled. Enable it in Google Cloud Console for project "brighten-project-manager".';
+        return {
+          detail: 'Google Sheets API is not enabled. Enable it in Google Cloud Console for project "brighten-project-manager".',
+          insufficientScopes: false,
+        };
       }
       if (response.status === 403) {
-        return `Sheets access denied — ${message}`;
+        return { detail: `Sheets access denied — ${message}`, insufficientScopes };
       }
-      return message;
+      return { detail: message, insufficientScopes: false };
     }
   } catch {
     // ignore
   }
-  return response.statusText || `HTTP ${response.status}`;
+  return { detail: response.statusText || `HTTP ${response.status}`, insufficientScopes: false };
 }
 
 export interface SpreadsheetSheetMeta {
@@ -42,16 +51,16 @@ export class SheetsService {
     });
 
     if (!response.ok) {
-      if (response.status === 401 && allowRetry) {
+      const errorInfo = await readSheetsApiError(response);
+      if ((response.status === 401 || errorInfo.insufficientScopes) && allowRetry) {
         this.authService.clearAccessToken();
         const refreshed = await this.authService.refreshDriveAccess();
         if (!refreshed) {
-          throw new Error('Google Sheets session expired. Use Re-authorize Drive in project setup or sign out and back in.');
+          throw new Error('Google Sheets session expired or missing permissions. Use Re-authorize Drive in project setup or sign out and back in.');
         }
         return this.getSpreadsheetSheets(spreadsheetId, false);
       }
-      const detail = await readSheetsApiError(response);
-      throw new Error(`Sheets API error: ${detail}`);
+      throw new Error(`Sheets API error: ${errorInfo.detail}`);
     }
 
     const data = await response.json();
@@ -74,16 +83,16 @@ export class SheetsService {
     });
 
     if (!response.ok) {
-      if (response.status === 401 && allowRetry) {
+      const errorInfo = await readSheetsApiError(response);
+      if ((response.status === 401 || errorInfo.insufficientScopes) && allowRetry) {
         this.authService.clearAccessToken();
         const refreshed = await this.authService.refreshDriveAccess();
         if (!refreshed) {
-          throw new Error('Google Sheets session expired. Use Re-authorize Drive in project setup or sign out and back in.');
+          throw new Error('Google Sheets session expired or missing permissions. Use Re-authorize Drive in project setup or sign out and back in.');
         }
         return this.getValues(spreadsheetId, range, false);
       }
-      const detail = await readSheetsApiError(response);
-      throw new Error(`Sheets API error: ${detail}`);
+      throw new Error(`Sheets API error: ${errorInfo.detail}`);
     }
 
     const data = await response.json();
@@ -108,16 +117,16 @@ export class SheetsService {
     });
 
     if (!response.ok) {
-      if (response.status === 401 && allowRetry) {
+      const errorInfo = await readSheetsApiError(response);
+      if ((response.status === 401 || errorInfo.insufficientScopes) && allowRetry) {
         this.authService.clearAccessToken();
         const refreshed = await this.authService.refreshDriveAccess();
         if (!refreshed) {
-          throw new Error('Google Sheets session expired. Use Re-authorize Drive in project setup or sign out and back in.');
+          throw new Error('Google Sheets session expired or missing permissions. Use Re-authorize Drive in project setup or sign out and back in.');
         }
         return this.appendValues(spreadsheetId, range, rows, false);
       }
-      const detail = await readSheetsApiError(response);
-      throw new Error(`Sheets API error: ${detail}`);
+      throw new Error(`Sheets API error: ${errorInfo.detail}`);
     }
   }
 }
