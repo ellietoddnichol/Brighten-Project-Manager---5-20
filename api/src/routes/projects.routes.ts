@@ -1,6 +1,14 @@
 import { Router } from 'express';
-import { queryOne, queryRows, withTransaction } from '../db.js';
+import { getPool, queryOne, queryRows, withTransaction } from '../db.js';
 import { confirmEstimatedBudgetForProject } from '../utils/budgetConfirm.js';
+import {
+  BudgetLineValidationError,
+  deleteBudgetLine,
+  insertBudgetLine,
+  parseBudgetLineInput,
+  resolveProjectId,
+  updateBudgetLine,
+} from '../utils/budgetLines.js';
 import type { GenericViewRow, ProjectDashboardRow } from '../types.js';
 import { normalizeJobNumber, projectFilterParams } from '../utils/projectFilter.js';
 import { applyProjectPatch, PatchValidationError } from '../utils/projectPatch.js';
@@ -497,5 +505,115 @@ projectsRouter.get('/projects/:id/budget', async (req, res, next) => {
     res.json({ ok: true, summary, lines, lineCount: lines.length });
   } catch (err) {
     next(err);
+  }
+});
+
+projectsRouter.post('/projects/:id/budget/lines', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const input = parseBudgetLineInput(req.body);
+    const lineId = await withTransaction(conn => insertBudgetLine(conn, projectId, input));
+    res.status(201).json({ ok: true, projectId, lineId });
+  } catch (err) {
+    if (err instanceof BudgetLineValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to create budget line';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.post('/projects/:id/budget/lines/import', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const rawLines = (req.body as { lines?: unknown[] })?.lines;
+    if (!Array.isArray(rawLines) || rawLines.length === 0) {
+      res.status(400).json({ ok: false, error: 'Request body must include a non-empty "lines" array.' });
+      return;
+    }
+
+    const inputs = rawLines.map((line, index) => {
+      try {
+        return parseBudgetLineInput(line);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Invalid line';
+        throw new BudgetLineValidationError(`Line ${index + 1}: ${message}`);
+      }
+    });
+
+    const lineIds = await withTransaction(async conn => {
+      const ids: string[] = [];
+      for (const input of inputs) {
+        ids.push(await insertBudgetLine(conn, projectId, input));
+      }
+      return ids;
+    });
+
+    res.status(201).json({ ok: true, projectId, imported: lineIds.length, lineIds });
+  } catch (err) {
+    if (err instanceof BudgetLineValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to import budget lines';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.patch('/projects/:id/budget/lines/:lineId', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const input = parseBudgetLineInput(req.body);
+    const updated = await withTransaction(conn =>
+      updateBudgetLine(conn, projectId, req.params.lineId, input),
+    );
+    if (!updated) {
+      res.status(404).json({ ok: false, error: 'Budget line not found' });
+      return;
+    }
+    res.json({ ok: true, projectId, lineId: req.params.lineId });
+  } catch (err) {
+    if (err instanceof BudgetLineValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to update budget line';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
+
+projectsRouter.delete('/projects/:id/budget/lines/:lineId', async (req, res) => {
+  try {
+    const job = normalizeJobNumber(req.params.id);
+    const projectId = await resolveProjectId(getPool(), req.params.id, job);
+    if (!projectId) {
+      res.status(404).json({ ok: false, error: 'Project not found' });
+      return;
+    }
+    const deleted = await withTransaction(conn => deleteBudgetLine(conn, projectId, req.params.lineId));
+    if (!deleted) {
+      res.status(404).json({ ok: false, error: 'Budget line not found' });
+      return;
+    }
+    res.json({ ok: true, projectId, lineId: req.params.lineId });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to delete budget line';
+    res.status(400).json({ ok: false, error: message });
   }
 });

@@ -13,7 +13,7 @@ import { ImportDataService } from '@core/services/import-data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
-import { ProjectApiService } from '@core/services/api/project-api.service';
+import { ProjectApiService, BudgetLineWriteInput } from '@core/services/api/project-api.service';
 import { ProjectSqlBudgetLine } from '@core/services/api/project-budget-api.mapper';
 import { BudgetSegment } from '@features/projects/utils/project-money.compute';
 import { BudgetRollup } from '@features/projects/utils/budget-line.compute';
@@ -178,11 +178,16 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
       <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
         <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
           <h3 class="text-base font-bold text-slate-900">Budget Lines</h3>
-          @if (!sqlBudgetConfirmed()) {
-          <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
-            <mat-icon class="!text-[16px]">add</mat-icon> Add Line
-          </button>
-          }
+          <div class="flex items-center gap-2">
+            @if (sqlBudget() && projectApi.isEnabled()) {
+            <button type="button" (click)="openImportLines()" class="bg-white border border-slate-300 text-slate-700 px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5 hover:bg-slate-50">
+              <mat-icon class="!text-[16px]">upload</mat-icon> Bulk Import
+            </button>
+            }
+            <button type="button" (click)="openNewLine()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-bold text-xs flex items-center gap-1.5">
+              <mat-icon class="!text-[16px]">add</mat-icon> Add Line
+            </button>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -197,11 +202,14 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
                 <th class="px-3 py-2 text-right">CTC</th>
                 <th class="px-3 py-2 text-right">Variance</th>
                 <th class="px-3 py-2 text-left">Source</th>
+                @if (sqlBudget()) {
+                <th class="px-3 py-2 text-right">Actions</th>
+                }
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 text-sm">
               @for (line of displayLines(); track line.id) {
-                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700" [class.cursor-pointer]="!sqlBudgetConfirmed()" (click)="!sqlBudgetConfirmed() && editLine(line)">
+                <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 cursor-pointer" (click)="editLine(line)">
                   <td class="px-3 py-2.5">
                     <p class="text-slate-900 font-bold">{{ line.costCode || '—' }}</p>
                     <p class="text-[10px] text-slate-500 uppercase">{{ line.category }}</p>
@@ -226,9 +234,16 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
                       {{ sourceBadge(line) }}
                     </span>
                   </td>
+                  @if (sqlBudget()) {
+                  <td class="px-3 py-2.5 text-right" (click)="$event.stopPropagation()">
+                    <button type="button" (click)="deleteLine(line)" class="text-rose-700 hover:text-rose-900" title="Delete line">
+                      <mat-icon class="!text-[16px]">delete</mat-icon>
+                    </button>
+                  </td>
+                  }
                 </tr>
               } @empty {
-                <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 italic">No budget lines — add lines or import seed/QB data.</td></tr>
+                <tr><td [attr.colspan]="sqlBudget() ? 9 : 8" class="px-4 py-8 text-center text-slate-400 italic">No budget lines — add lines or import seed/QB data.</td></tr>
               }
             </tbody>
           </table>
@@ -341,7 +356,41 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
             <label class="flex items-center gap-2 text-sm">
               <input type="checkbox" [(ngModel)]="lineDraft.isEstimated"> Mark as estimated
             </label>
-            <button type="button" (click)="saveLine()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors">Save Line</button>
+            @if (lineSaveError()) {
+              <p class="text-sm text-rose-700">{{ lineSaveError() }}</p>
+            }
+            <button type="button" (click)="saveLine()" [disabled]="lineSaving()"
+                    class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors disabled:opacity-50">
+              {{ lineSaving() ? 'Saving…' : 'Save Line' }}
+            </button>
+          </div>
+        </aside>
+      }
+
+      @if (importDrawerOpen()) {
+        <div class="fixed inset-0 z-40 bg-black/30" (click)="closeImportLines()"></div>
+        <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
+          <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+            <h3 class="text-lg font-bold">Bulk Import Budget Lines</h3>
+            <button type="button" (click)="closeImportLines()"><mat-icon>close</mat-icon></button>
+          </div>
+          <div class="p-5 space-y-4">
+            <p class="text-sm text-slate-600">
+              Paste rows as CSV with a header row. Required columns: <code class="text-xs">costCode, category</code>.
+              Optional: <code class="text-xs">description, budgetAmount, actualToDate, committedAmount, projectedFinalCost, varianceAmount, status, notes</code>.
+            </p>
+            <textarea [(ngModel)]="importText" rows="10" placeholder="costCode,category,description,budgetAmount&#10;01-100,Labor,Site supervision,50000&#10;01-200,Materials,Concrete,120000"
+                      class="w-full px-3 py-2 border rounded-lg text-xs font-mono"></textarea>
+            @if (importError()) {
+              <p class="text-sm text-rose-700">{{ importError() }}</p>
+            }
+            @if (importMessage()) {
+              <p class="text-sm text-emerald-700">{{ importMessage() }}</p>
+            }
+            <button type="button" (click)="submitImportLines()" [disabled]="importSubmitting()"
+                    class="bg-slate-900 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-slate-800 transition-colors disabled:opacity-50">
+              {{ importSubmitting() ? 'Importing…' : 'Import Lines' }}
+            </button>
           </div>
         </aside>
       }
@@ -384,6 +433,14 @@ export class BudgetTabComponent implements OnChanges {
   editingLineId = signal<string | null>(null);
   lineDraft: Partial<ProjectBudgetLine> = {};
   lineBudgetAmount = 0;
+  lineSaving = signal(false);
+  lineSaveError = signal<string | null>(null);
+
+  importDrawerOpen = signal(false);
+  importText = '';
+  importSubmitting = signal(false);
+  importError = signal<string | null>(null);
+  importMessage = signal<string | null>(null);
 
   readonly defaultCategories = DEFAULT_BUDGET_CATEGORIES;
 
@@ -496,6 +553,7 @@ export class BudgetTabComponent implements OnChanges {
     this.editingLineId.set(null);
     this.lineDraft = { category: 'Materials', source: 'Manual', actualCost: 0, costToComplete: 0 };
     this.lineBudgetAmount = 0;
+    this.lineSaveError.set(null);
     this.drawerOpen.set(true);
   }
 
@@ -503,6 +561,7 @@ export class BudgetTabComponent implements OnChanges {
     this.editingLineId.set(line.id);
     this.lineDraft = { ...line, source: 'Manual' };
     this.lineBudgetAmount = line.budgetAmount;
+    this.lineSaveError.set(null);
     this.drawerOpen.set(true);
   }
 
@@ -514,8 +573,117 @@ export class BudgetTabComponent implements OnChanges {
   async saveLine(): Promise<void> {
     this.lineDraft.budgetAmount = this.lineBudgetAmount;
     this.lineDraft.originalBudget = this.lineBudgetAmount;
+    this.lineSaveError.set(null);
+
+    const sql = this.sqlBudget();
+    if (sql) {
+      this.lineSaving.set(true);
+      try {
+        const idOrJob = this.project.projectNumber || this.project.id;
+        const input: BudgetLineWriteInput = {
+          costCode: this.lineDraft.costCode || '',
+          category: this.lineDraft.category || 'Other',
+          description: this.lineDraft.description ?? null,
+          budgetAmount: this.lineBudgetAmount,
+          actualToDate: this.lineDraft.actualCost ?? null,
+          notes: this.lineDraft.notes ?? null,
+        };
+        const editingId = this.editingLineId();
+        if (editingId) {
+          await this.projectApi.updateBudgetLine(idOrJob, editingId, input);
+        } else {
+          await this.projectApi.createBudgetLine(idOrJob, input);
+        }
+        this.closeDrawer();
+      } catch (err) {
+        this.lineSaveError.set(err instanceof Error ? err.message : 'Failed to save budget line');
+      } finally {
+        this.lineSaving.set(false);
+      }
+      return;
+    }
+
     await this.budgetSvc.saveLine(this.project, this.lineDraft, this.editingLineId());
     this.closeDrawer();
+  }
+
+  async deleteLine(line: ComputedBudgetLine): Promise<void> {
+    if (!this.sqlBudget()) return;
+    if (!confirm(`Delete budget line "${line.costCode || line.category}"? This cannot be undone.`)) return;
+    try {
+      const idOrJob = this.project.projectNumber || this.project.id;
+      await this.projectApi.deleteBudgetLine(idOrJob, line.id);
+    } catch (err) {
+      this.lineSaveError.set(err instanceof Error ? err.message : 'Failed to delete budget line');
+    }
+  }
+
+  openImportLines(): void {
+    this.importText = '';
+    this.importError.set(null);
+    this.importMessage.set(null);
+    this.importDrawerOpen.set(true);
+  }
+
+  closeImportLines(): void {
+    this.importDrawerOpen.set(false);
+  }
+
+  async submitImportLines(): Promise<void> {
+    this.importError.set(null);
+    this.importMessage.set(null);
+
+    let lines: BudgetLineWriteInput[];
+    try {
+      lines = this.parseImportCsv(this.importText);
+    } catch (err) {
+      this.importError.set(err instanceof Error ? err.message : 'Could not parse pasted data');
+      return;
+    }
+    if (!lines.length) {
+      this.importError.set('No rows found — paste CSV with a header row plus at least one data row.');
+      return;
+    }
+
+    this.importSubmitting.set(true);
+    try {
+      const idOrJob = this.project.projectNumber || this.project.id;
+      const result = await this.projectApi.importBudgetLines(idOrJob, lines);
+      this.importMessage.set(`Imported ${result.imported} budget line(s).`);
+      this.importText = '';
+    } catch (err) {
+      this.importError.set(err instanceof Error ? err.message : 'Bulk import failed');
+    } finally {
+      this.importSubmitting.set(false);
+    }
+  }
+
+  private parseImportCsv(text: string): BudgetLineWriteInput[] {
+    const rows = text.split(/\r?\n/).map(r => r.trim()).filter(r => r.length > 0);
+    if (rows.length < 2) return [];
+
+    const header = rows[0].split(',').map(h => h.trim());
+    const numericKeys = new Set([
+      'budgetAmount', 'actualToDate', 'committedAmount', 'projectedFinalCost', 'varianceAmount',
+    ]);
+
+    return rows.slice(1).map((row, index) => {
+      const cells = row.split(',').map(c => c.trim());
+      const record: Record<string, unknown> = {};
+      header.forEach((key, i) => {
+        const raw = cells[i] ?? '';
+        if (!raw) {
+          record[key] = numericKeys.has(key) ? null : null;
+          return;
+        }
+        record[key] = numericKeys.has(key) ? Number(raw) : raw;
+      });
+
+      if (!record['costCode'] || !record['category']) {
+        throw new Error(`Row ${index + 2}: "costCode" and "category" are required.`);
+      }
+      return record as unknown as BudgetLineWriteInput;
+    });
   }
 
   async approveEstimatedBudget(): Promise<void> {
