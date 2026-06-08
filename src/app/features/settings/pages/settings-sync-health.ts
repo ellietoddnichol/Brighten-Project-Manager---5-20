@@ -99,9 +99,9 @@ export class SettingsSyncHealthComponent {
 
   statusClass(status: SyncHealthStatus): string {
     switch (status) {
-      case 'connected': return 'text-emerald-600';
-      case 'warning': return 'text-amber-600';
-      case 'error': return 'text-rose-600';
+      case 'connected': return 'text-emerald-700';
+      case 'warning': return 'text-amber-700';
+      case 'error': return 'text-rose-700';
       default: return 'text-slate-400';
     }
   }

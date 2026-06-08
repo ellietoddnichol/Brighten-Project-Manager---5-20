@@ -6,6 +6,9 @@ import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MatIconModule } from '@angular/material/icon';
 import { firstValueFrom } from 'rxjs';
 import { DataService } from '@core/services/data.service';
+import { AuthService } from '@core/services/auth.service';
+import { DriveService } from '@core/services/drive.service';
+import { ProjectDocumentSaveService } from '@features/projects/services/project-document-save.service';
 import { DriveFolderDiscoveryService } from '@features/subcontractors/services/drive-folder-discovery.service';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
@@ -286,13 +289,46 @@ import {
               </select>
             </div>
             <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">File</label>
+              <input #fileInput type="file" (change)="onFileSelected($event)"
+                     class="w-full text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0
+                            file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100
+                            file:transition-colors">
+              @if (uploadSelectedFile(); as f) {
+                <p class="text-xs text-slate-500 mt-1">Selected: {{ f.name }} ({{ (f.size / 1024) | number:'1.0-0' }} KB) — uploads directly to the project's Drive folder.</p>
+              } @else {
+                <p class="text-xs text-slate-400 mt-1">Or paste a Drive / file URL below to save a link without uploading.</p>
+              }
+            </div>
+            <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Drive / file URL</label>
               <input [(ngModel)]="uploadDraft.fileUrl" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://drive.google.com/...">
             </div>
-            <p class="text-xs text-slate-500">Files stay in Google Drive. This saves metadata in Firestore only.</p>
+            @if (uploadError(); as err) {
+              <div class="flex items-center gap-2 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800">
+                <span class="material-icons text-rose-500 !text-[16px]">error</span>
+                <span>{{ err }}</span>
+              </div>
+            }
+            <p class="text-xs text-slate-500">
+              @if (uploadSelectedFile()) {
+                The file uploads to the project's mapped Drive folder (or project root if not mapped) and the link is saved automatically.
+              } @else {
+                Files stay in Google Drive. This saves metadata in Firestore only.
+              }
+            </p>
             <div class="flex gap-2 pt-2">
-              <button type="button" (click)="saveUpload()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save metadata</button>
-              <button type="button" (click)="closeUpload()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
+              <button type="button" (click)="saveUpload()" [disabled]="uploadInProgress()"
+                      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-2">
+                @if (uploadInProgress()) {
+                  <span class="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin"></span>
+                  Uploading…
+                } @else {
+                  {{ uploadSelectedFile() ? 'Upload & save' : 'Save metadata' }}
+                }
+              </button>
+              <button type="button" (click)="closeUpload()" [disabled]="uploadInProgress()"
+                      class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Cancel</button>
             </div>
           </div>
         </aside>
@@ -334,6 +370,9 @@ import {
 })
 export class Documents {
   private data = inject(DataService);
+  private auth = inject(AuthService);
+  private drive = inject(DriveService);
+  private documentSave = inject(ProjectDocumentSaveService);
   private lifecycleSvc = inject(ProjectLifecycleService);
   private requirements = inject(ProjectRequirementsService);
   private driveDiscovery = inject(DriveFolderDiscoveryService);
@@ -350,6 +389,9 @@ export class Documents {
   drawerOpen = signal(false);
   selectedRow = signal<DocumentsHubFileRow | null>(null);
   uploadDraft: Partial<ProjectFile> & { projectId?: string } = {};
+  uploadSelectedFile = signal<File | null>(null);
+  uploadInProgress = signal(false);
+  uploadError = signal<string | null>(null);
 
   readonly documentsOverviewSectionLabel = documentsOverviewSectionLabel;
 
@@ -487,21 +529,81 @@ export class Documents {
       documentStatus: 'Received',
       ...defaultsForNewUpload('CONTRACT'),
     };
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
     this.uploadOpen.set(true);
   }
 
   closeUpload(): void {
+    if (this.uploadInProgress()) return;
     this.uploadOpen.set(false);
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    this.uploadSelectedFile.set(file);
+    this.uploadError.set(null);
+    if (file && !this.uploadDraft.fileName?.trim()) {
+      this.uploadDraft.fileName = file.name;
+    }
   }
 
   async saveUpload(): Promise<void> {
     if (!this.uploadDraft.projectId || !this.uploadDraft.fileName?.trim()) return;
     const project = (this.projects() ?? []).find(p => p.id === this.uploadDraft.projectId);
     if (!project) return;
+
+    this.uploadError.set(null);
+    let fileUrl = this.uploadDraft.fileUrl?.trim() || undefined;
+    let fileId = this.uploadDraft.fileId;
+
+    const selectedFile = this.uploadSelectedFile();
+    if (selectedFile) {
+      this.uploadInProgress.set(true);
+      try {
+        const target = await this.documentSave.ensureSaveTarget(project, this.uploadDraft.folderKey ?? 'CONTRACT', []);
+        if (!target) {
+          this.uploadError.set('Link a Drive folder for this project in Setup before uploading files.');
+          this.uploadInProgress.set(false);
+          return;
+        }
+
+        let token = await this.auth.getAccessToken();
+        if (!token) {
+          token = await this.auth.refreshDriveAccess();
+        }
+        if (!token) {
+          this.uploadError.set('Drive not connected — sign in or click Re-authorize Drive, then try again.');
+          this.uploadInProgress.set(false);
+          return;
+        }
+
+        const uploaded = await this.drive.uploadFile(
+          target.folderId,
+          this.uploadDraft.fileName.trim(),
+          selectedFile,
+          selectedFile.type || 'application/octet-stream',
+        );
+        fileUrl = uploaded.webViewLink;
+        fileId = uploaded.id;
+      } catch (err) {
+        this.uploadError.set(err instanceof Error ? err.message : 'Drive upload failed. Try again or paste a Drive link instead.');
+        this.uploadInProgress.set(false);
+        return;
+      } finally {
+        this.uploadInProgress.set(false);
+      }
+    }
+
     const payload = enrichProjectFileOnSave({
       ...this.uploadDraft,
       projectId: project.id,
       fileName: this.uploadDraft.fileName.trim(),
+      fileUrl,
+      fileId,
       documentType: this.uploadDraft.documentType ?? 'Upload',
       documentStatus: this.uploadDraft.documentStatus ?? 'Received',
     }, project);
@@ -534,6 +636,8 @@ export class Documents {
     const row = this.selectedRow();
     if (!row?.item.file) return;
     this.uploadDraft = { ...row.item.file };
+    this.uploadSelectedFile.set(null);
+    this.uploadError.set(null);
     this.drawerOpen.set(false);
     this.uploadOpen.set(true);
   }

@@ -26,6 +26,7 @@ import { CompactStatStripComponent } from '../ui/compact-stat-strip';
 import { SegmentedControlComponent, SegmentOption } from '../ui/segmented-control';
 import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '../ui/detail-drawer';
 import { EmptyStateComponent } from '../ui/empty-state';
+import { StatusChipComponent, StatusTone } from '../ui/status-chip';
 import {
   BillingSegment,
   BudgetSegment,
@@ -62,7 +63,7 @@ interface PayAppSummaryCard {
     BudgetTabComponent, PosTabComponent, BillingTabComponent, WipTabComponent, ArTabComponent,
     ProjectForemanBonusTabComponent,
     StatCardComponent, CompactStatStripComponent, SegmentedControlComponent,
-    DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent, EmptyStateComponent,
+    DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent, EmptyStateComponent, StatusChipComponent,
   ],
   template: `
     <div class="space-y-4">
@@ -314,9 +315,7 @@ interface PayAppSummaryCard {
                       <td class="px-3 py-2 align-top">
                         <div class="flex flex-wrap gap-1">
                           @for (chip of payAppStatusChips(payApp); track chip.label) {
-                            <span class="rounded-full px-2 py-0.5 text-[11px] font-bold" [ngClass]="chipClass(chip.tone)">
-                              {{ chip.label }}
-                            </span>
+                            <app-status-chip [tone]="chipTone(chip.tone)" [label]="chip.label" />
                           }
                         </div>
                       </td>
@@ -326,9 +325,7 @@ interface PayAppSummaryCard {
                       <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.balanceToFinish) }}</td>
                       <td class="px-3 py-2 align-top text-right font-semibold text-slate-700">{{ payApp.sovLineCount }}</td>
                       <td class="px-3 py-2 align-top">
-                        <span class="rounded-full px-2 py-0.5 text-[11px] font-bold" [ngClass]="reviewIndicatorClass(payApp)">
-                          {{ reviewIndicatorLabel(payApp) }}
-                        </span>
+                        <app-status-chip [tone]="recordNeedsReview(payApp) ? 'amber' : 'slate'" [label]="reviewIndicatorLabel(payApp)" />
                       </td>
                       <td class="px-3 py-2 align-top text-right">
                         <button type="button" (click)="selectSqlPayApp(payApp)"
@@ -373,9 +370,7 @@ interface PayAppSummaryCard {
                   <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base font-bold text-slate-900">{{ detail.payAppNumber || 'Pending pay app number' }}</h3>
                     @for (chip of payAppStatusChips(detail); track chip.label) {
-                      <span class="rounded-full px-2 py-0.5 text-[11px] font-bold" [ngClass]="chipClass(chip.tone)">
-                        {{ chip.label }}
-                      </span>
+                      <app-status-chip [tone]="chipTone(chip.tone)" [label]="chip.label" />
                     }
                   </div>
                   <p class="text-xs text-slate-500">{{ periodLabel(detail) }}</p>
@@ -817,27 +812,21 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     return chips;
   }
 
-  chipClass(tone: PayAppChipTone): string {
+  chipTone(tone: PayAppChipTone): StatusTone {
     switch (tone) {
       case 'amber':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
+        return 'amber';
       case 'emerald':
-        return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+        return 'green';
       case 'indigo':
-        return 'bg-indigo-100 text-indigo-800 border border-indigo-200';
+        return 'violet';
       default:
-        return 'bg-slate-100 text-slate-700 border border-slate-200';
+        return 'slate';
     }
   }
 
   reviewIndicatorLabel(payApp: ProjectSqlPayApp): string {
     return this.recordNeedsReview(payApp) ? 'Review' : 'OK';
-  }
-
-  reviewIndicatorClass(payApp: ProjectSqlPayApp): string {
-    return this.recordNeedsReview(payApp)
-      ? 'bg-amber-100 text-amber-800 border border-amber-200'
-      : 'bg-slate-100 text-slate-600 border border-slate-200';
   }
 
   hasReviewNotes(payApp: ProjectSqlPayApp): boolean {
