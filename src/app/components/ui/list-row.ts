@@ -1,12 +1,13 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
 
 @Component({
   selector: 'app-list-row',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, StatusChipComponent],
   template: `
     <button type="button"
             (click)="rowClick.emit()"
@@ -42,7 +43,7 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
           @if (chips.length) {
             <div class="flex flex-wrap gap-1 mt-1.5">
               @for (chip of chips; track chip) {
-                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{{ chip }}</span>
+                <app-status-chip tone="amber" [label]="chip" />
               }
             </div>
           }

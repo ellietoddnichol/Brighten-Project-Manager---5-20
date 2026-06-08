@@ -389,14 +389,10 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
                       @if (row.record.warningChips?.length || row.warnings.length) {
                         <div class="flex flex-wrap gap-1.5 mt-2">
                           @for (w of row.record.warningChips ?? []; track w.label) {
-                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-                                  [class.bg-rose-100]="w.tone === 'critical'"
-                                  [class.text-rose-800]="w.tone === 'critical'"
-                                  [class.bg-amber-100]="w.tone === 'amber'"
-                                  [class.text-amber-800]="w.tone === 'amber'">{{ w.label }}</span>
+                            <app-status-chip [tone]="w.tone === 'critical' ? 'red' : 'amber'" [label]="w.label" />
                           }
                           @for (w of row.warnings; track w) {
-                            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">{{ w }}</span>
+                            <app-status-chip tone="amber" [label]="w" />
                           }
                         </div>
                       }
