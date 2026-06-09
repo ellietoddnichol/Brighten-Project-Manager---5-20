@@ -90,7 +90,7 @@ import { EmptyStateComponent } from '@app/components/ui/empty-state';
              </div>
              <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Sell Price (Calc)</label>
-                <div class="px-3 py-2 bg-slate-100 rounded border border-slate-200 text-sm text-slate-600 font-mono">{{ newCO.sellPrice | currency }}</div>
+                <div class="px-3 py-2 bg-slate-100 rounded border border-slate-200 text-sm text-slate-600 font-numeric">{{ newCO.sellPrice | currency }}</div>
              </div>
              <div class="col-span-full">
                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Description</label>
@@ -121,23 +121,23 @@ import { EmptyStateComponent } from '@app/components/ui/empty-state';
               @for (co of projectCOs(); track co.id) {
                 <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 group">
                   <td class="px-3 py-2.5 flex flex-col">
-                    <span class="font-mono font-bold text-slate-900">{{ co.coNumber || 'N/A' }} - {{ co.title }}</span>
+                    <span class="font-numeric font-bold text-slate-900">{{ co.coNumber || 'N/A' }} - {{ co.title }}</span>
                     <span class="text-xs text-slate-500 font-medium truncate max-w-[200px]" [title]="co.description || ''">{{ co.description || 'No description' }}</span>
                   </td>
                   <td class="px-3 py-2.5">
                     <app-status-chip [tone]="coStatusTone(co.status)" [label]="co.status" />
                   </td>
                   <td class="px-3 py-2.5 text-right">
-                    <span class="text-xs font-mono text-slate-700">{{ co.costImpact | currency }}</span>
+                    <span class="text-xs font-numeric text-slate-700">{{ co.costImpact | currency }}</span>
                   </td>
                   <td class="px-3 py-2.5 text-right">
-                    <span class="text-xs font-mono text-slate-600">{{ co.markup }}%</span>
+                    <span class="text-xs font-numeric text-slate-600">{{ co.markup }}%</span>
                   </td>
                   <td class="px-3 py-2.5 text-right">
-                    <span class="text-xs font-mono text-slate-700">{{ co.sellPrice | currency }}</span>
+                    <span class="text-xs font-numeric text-slate-700">{{ co.sellPrice | currency }}</span>
                   </td>
                   <td class="px-3 py-2.5 text-right">
-                    <span class="text-xs font-mono font-bold text-slate-900">{{ co.approvedAmount | currency }}</span>
+                    <span class="text-xs font-numeric font-bold text-slate-900">{{ co.approvedAmount | currency }}</span>
                   </td>
                   <td class="px-3 py-2.5">
                     <div class="flex flex-col text-xs text-slate-600">

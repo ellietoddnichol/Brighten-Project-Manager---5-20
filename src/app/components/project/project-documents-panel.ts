@@ -282,7 +282,11 @@ export class ProjectDocumentsPanelComponent {
   modifiedLabel(file: ProjectFile): string {
     const raw = file.lastModifiedAt ?? file.uploadedAt;
     if (!raw) return 'Modified date unknown';
-    const d = typeof raw === 'string' ? new Date(raw) : raw?.toDate?.() ?? new Date(String(raw));
+    const t = raw as { toDate?: () => Date } | string | number;
+    const d = typeof t === 'string' ? new Date(t)
+      : typeof (t as { toDate?: () => Date }).toDate === 'function'
+        ? (t as { toDate: () => Date }).toDate()
+        : new Date(String(t));
     if (Number.isNaN(d.getTime())) return 'Modified date unknown';
     return `Modified ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(d)}`;
   }
@@ -290,7 +294,11 @@ export class ProjectDocumentsPanelComponent {
   private modifiedTs(file: ProjectFile): number {
     const raw = file.lastModifiedAt ?? file.uploadedAt;
     if (!raw) return 0;
-    const d = typeof raw === 'string' ? new Date(raw) : raw?.toDate?.() ?? new Date(String(raw));
+    const t = raw as { toDate?: () => Date } | string | number;
+    const d = typeof t === 'string' ? new Date(t)
+      : typeof (t as { toDate?: () => Date }).toDate === 'function'
+        ? (t as { toDate: () => Date }).toDate()
+        : new Date(String(t));
     return Number.isNaN(d.getTime()) ? 0 : d.getTime();
   }
 }

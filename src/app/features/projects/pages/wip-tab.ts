@@ -131,14 +131,14 @@ import { DataService } from '@core/services/data.service';
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           <table class="w-full text-sm">
             <tbody class="divide-y divide-slate-100">
-              <tr><td class="px-5 py-3 text-slate-500 w-48">Self-performed</td><td class="px-5 py-3 font-mono">{{ w.selfPerformedAmount | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Subcontractors</td><td class="px-5 py-3 font-mono">{{ w.subcontractorAmount | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Materials</td><td class="px-5 py-3 font-mono">{{ w.materialAmount | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Equipment</td><td class="px-5 py-3 font-mono">{{ w.equipmentAmount | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Other / GC</td><td class="px-5 py-3 font-mono">{{ w.otherAmount | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Retainage held</td><td class="px-5 py-3 font-mono">{{ w.retainageHeld | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Estimated final cost</td><td class="px-5 py-3 font-mono">{{ w.estimatedFinalCost | currency }}</td></tr>
-              <tr><td class="px-5 py-3 text-slate-500">Budget</td><td class="px-5 py-3 font-mono">{{ w.budgetAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500 w-48">Self-performed</td><td class="px-5 py-3 font-numeric">{{ w.selfPerformedAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Subcontractors</td><td class="px-5 py-3 font-numeric">{{ w.subcontractorAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Materials</td><td class="px-5 py-3 font-numeric">{{ w.materialAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Equipment</td><td class="px-5 py-3 font-numeric">{{ w.equipmentAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Other / GC</td><td class="px-5 py-3 font-numeric">{{ w.otherAmount | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Retainage held</td><td class="px-5 py-3 font-numeric">{{ w.retainageHeld | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Estimated final cost</td><td class="px-5 py-3 font-numeric">{{ w.estimatedFinalCost | currency }}</td></tr>
+              <tr><td class="px-5 py-3 text-slate-500">Budget</td><td class="px-5 py-3 font-numeric">{{ w.budgetAmount | currency }}</td></tr>
             </tbody>
           </table>
         </div>

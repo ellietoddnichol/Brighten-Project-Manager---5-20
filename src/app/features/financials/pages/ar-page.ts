@@ -42,7 +42,7 @@ import {
     EmptyStateComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="AR"
         subtitle="Open receivables, aging, and collection follow-up"
@@ -150,19 +150,19 @@ import {
 
     <ng-template #rowBody let-row>
       <div class="flex flex-wrap items-center gap-2 mb-1">
-        <span class="text-xs font-bold font-mono text-slate-500">#{{ row.jobNumber }}</span>
+        <span class="text-xs font-bold font-numeric text-slate-500">#{{ row.jobNumber }}</span>
         <span class="text-sm font-bold text-slate-900">{{ row.projectName }}</span>
         <span class="text-xs text-slate-500">{{ row.customerName }}</span>
         <app-status-chip tone="slate">{{ row.lifecycleLabel }}</app-status-chip>
         <app-status-chip tone="slate">{{ row.sourceLabel }}</app-status-chip>
       </div>
       <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-        <span><span class="text-slate-400">Current</span> <span class="font-mono font-semibold">{{ fmt(row.current) }}</span></span>
-        <span><span class="text-slate-400">1–30</span> <span class="font-mono font-semibold">{{ fmt(row.days1To30) }}</span></span>
-        <span><span class="text-slate-400">31–60</span> <span class="font-mono font-semibold">{{ fmt(row.days31To60) }}</span></span>
-        <span><span class="text-slate-400">61–90</span> <span class="font-mono font-semibold">{{ fmt(row.days61To90) }}</span></span>
-        <span><span class="text-slate-400">90+</span> <span class="font-mono font-semibold">{{ fmt(row.days90Plus) }}</span></span>
-        <span><span class="text-slate-400">Open</span> <span class="font-mono font-semibold text-orange-700">{{ fmt(row.totalOpen) }}</span></span>
+        <span><span class="text-slate-400">Current</span> <span class="font-numeric font-semibold">{{ fmt(row.current) }}</span></span>
+        <span><span class="text-slate-400">1–30</span> <span class="font-numeric font-semibold">{{ fmt(row.days1To30) }}</span></span>
+        <span><span class="text-slate-400">31–60</span> <span class="font-numeric font-semibold">{{ fmt(row.days31To60) }}</span></span>
+        <span><span class="text-slate-400">61–90</span> <span class="font-numeric font-semibold">{{ fmt(row.days61To90) }}</span></span>
+        <span><span class="text-slate-400">90+</span> <span class="font-numeric font-semibold">{{ fmt(row.days90Plus) }}</span></span>
+        <span><span class="text-slate-400">Open</span> <span class="font-numeric font-semibold text-orange-700">{{ fmt(row.totalOpen) }}</span></span>
         <span><span class="text-slate-400">Status</span> <span class="font-semibold">{{ row.collectionStatus }}</span></span>
       </div>
       @if (row.warningChips?.length) {

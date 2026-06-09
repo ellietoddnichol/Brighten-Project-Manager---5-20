@@ -101,7 +101,7 @@ interface LaborGroupRow {
                       <td class="px-4 py-3">{{ row.employeeName || '—' }}</td>
                       <td class="px-4 py-3">{{ row.workDate }}</td>
                       <td class="px-4 py-3 text-rose-700">{{ row.issue }}</td>
-                      <td class="px-4 py-3 text-right font-mono">{{ row.totalHours | number:'1.1-1' }}</td>
+                      <td class="px-4 py-3 text-right font-numeric">{{ row.totalHours | number:'1.1-1' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -144,13 +144,13 @@ interface LaborGroupRow {
                 @for (row of laborCodeRows(); track row.laborCode) {
                   <tr class="border-b hover:bg-slate-50"
                       [class.bg-amber-50]="row.unassigned || row.unmapped">
-                    <td class="px-4 py-3 font-mono font-semibold">{{ row.laborCode }}</td>
+                    <td class="px-4 py-3 font-numeric font-semibold">{{ row.laborCode }}</td>
                     <td class="px-4 py-3">{{ row.categoryLabel || 'Unmapped' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.regularHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.overtimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.totalCost | currency }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.regularHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.overtimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.totalCost | currency }}</td>
                     <td class="px-4 py-3 text-right text-slate-500">{{ row.rowCount }}</td>
                   </tr>
                 } @empty {
@@ -187,8 +187,8 @@ interface LaborGroupRow {
                       }
                     </td>
                     <td class="px-4 py-3 text-right">{{ row.rowCount }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.totalCost | currency }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.totalCost | currency }}</td>
                     <td class="px-4 py-3 text-right">{{ row.missingClassification }}</td>
                     <td class="px-4 py-3 text-right">{{ row.missingRate }}</td>
                   </tr>

@@ -33,7 +33,7 @@ import { Billing as BillingRecord } from '@app/models/types';
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <div class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
         {{ projectData.statusMessage() }}
       </div>
@@ -84,9 +84,9 @@ import { Billing as BillingRecord } from '@app/models/types';
             @for (row of draftInvoices(); track row.id) {
               <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
                 <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
-                   class="text-xs font-mono font-bold text-indigo-700 min-w-[80px]">{{ row.payAppNumber || '—' }}</a>
+                   class="text-xs font-numeric font-bold text-indigo-700 min-w-[80px]">{{ row.payAppNumber || '—' }}</a>
                 <span class="text-sm font-semibold text-slate-900 flex-1 min-w-0 truncate">{{ row.projectLabel }}</span>
-                <span class="text-xs font-mono text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</span>
+                <span class="text-xs font-numeric text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</span>
                 <app-status-chip [tone]="billingTone(row.status)">{{ row.status }}</app-status-chip>
               </div>
             }
@@ -116,12 +116,12 @@ import { Billing as BillingRecord } from '@app/models/types';
                 <tr class="hover:bg-slate-50 transition-colors">
                   <td class="px-5 py-3">
                     <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
-                       class="text-xs font-mono font-bold text-indigo-700">{{ row.payAppNumber || '—' }}</a>
+                       class="text-xs font-numeric font-bold text-indigo-700">{{ row.payAppNumber || '—' }}</a>
                   </td>
                   <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
                   <td class="px-5 py-3 text-slate-500">{{ row.billingPeriod || '—' }}</td>
-                  <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</td>
-                  <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-3 text-right text-xs font-numeric text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-3 text-right text-xs font-numeric text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-3">
                     <app-status-chip [tone]="billingTone(row.status)">{{ row.status }}</app-status-chip>
                   </td>
@@ -160,10 +160,10 @@ import { Billing as BillingRecord } from '@app/models/types';
                     <tr class="hover:bg-slate-50 transition-colors">
                       <td class="px-5 py-3">
                         <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
-                           class="text-xs font-mono font-bold text-slate-700">{{ row.payAppNumber || '—' }}</a>
+                           class="text-xs font-numeric font-bold text-slate-700">{{ row.payAppNumber || '—' }}</a>
                       </td>
                       <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
-                      <td class="px-5 py-3 text-right text-xs font-mono text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
+                      <td class="px-5 py-3 text-right text-xs font-numeric text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
                       <td class="px-5 py-3">
                         <app-status-chip tone="green">{{ row.status }}</app-status-chip>
                       </td>
@@ -199,7 +199,7 @@ import { Billing as BillingRecord } from '@app/models/types';
         <div>
           <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Amount</label>
           <input type="number" min="0" step="0.01" [(ngModel)]="invoiceDraft.amount"
-                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-mono">
+                 class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm font-numeric">
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>

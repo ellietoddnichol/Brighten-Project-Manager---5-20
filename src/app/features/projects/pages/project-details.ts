@@ -78,7 +78,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
   ],
   template: `
     <div class="project-detail-density min-h-full overflow-y-auto bg-slate-50/50">
-      <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+      <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
 
         @if (projectLoading()) {
           <div class="animate-pulse space-y-4">
@@ -122,8 +122,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0 flex-1">
               <app-page-header
-                [title]="p.projectNumber + ' — ' + p.projectName"
-                [subtitle]="p.status || 'Active'" />
+                [title]="p.projectNumber + ' — ' + p.projectName" />
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
               <app-status-chip [tone]="statusTone(p.status)">{{ p.status || 'Active' }}</app-status-chip>

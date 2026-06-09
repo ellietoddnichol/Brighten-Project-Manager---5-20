@@ -100,11 +100,11 @@ import { ImportReviewService } from '@core/services/import-review.service';
             </div>
             <div>
               <p class="text-[10px] uppercase text-slate-500 font-bold">Current Due</p>
-              <p class="font-mono">{{ (latest.netDue ?? latest.currentApplication) | currency }}</p>
+              <p class="font-numeric">{{ (latest.netDue ?? latest.currentApplication) | currency }}</p>
             </div>
             <div>
               <p class="text-[10px] uppercase text-slate-500 font-bold">Billed to Date</p>
-              <p class="font-mono">{{ (latest.completedToDate ?? latest.totalBilledToDate) | currency }}</p>
+              <p class="font-numeric">{{ (latest.completedToDate ?? latest.totalBilledToDate) | currency }}</p>
             </div>
             @if (latest.payAppContractSum != null && latest.payAppContractSum !== financial().currentContractAmount) {
               <div class="col-span-2 md:col-span-4 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -136,7 +136,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
             @for (co of approvedUnbilledCos(); track co.id) {
               <li class="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span class="font-medium">{{ coNumber(co) }} — {{ co.title }}</span>
-                <span class="font-mono text-emerald-800">{{ coApprovedAmount(co) | currency }}</span>
+                <span class="font-numeric text-emerald-800">{{ coApprovedAmount(co) | currency }}</span>
                 @if (!readOnly) {
                   <button type="button" (click)="addCoToPayApp(co)" class="text-xs font-bold text-emerald-700 hover:underline">Add to draft pay app</button>
                 }
@@ -161,7 +161,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
             @for (co of includedInDraftCos(); track co.id) {
               <li class="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>{{ coNumber(co) }} — {{ co.title }}</span>
-                <span class="font-mono">{{ coApprovedAmount(co) | currency }}</span>
+                <span class="font-numeric">{{ coApprovedAmount(co) | currency }}</span>
                 <span class="text-xs text-blue-700 font-semibold">IncludedInDraftPayApp</span>
                 @if (!readOnly && draftPayApp(); as draft) {
                   <button type="button" (click)="removeCoFromDraft(co, draft)" class="text-xs font-bold text-rose-700 hover:underline">Remove</button>
@@ -196,7 +196,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
                       }
                     </div>
                     <div class="text-right">
-                      <p class="font-mono font-bold">{{ (b.netDue ?? b.currentApplication ?? b.workCompletedThisPeriod) | currency }}</p>
+                      <p class="font-numeric font-bold">{{ (b.netDue ?? b.currentApplication ?? b.workCompletedThisPeriod) | currency }}</p>
                       <div class="flex flex-wrap justify-end gap-2 mt-2">
                         <button type="button" (click)="toggleDocs(b.id)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
                         @if (!readOnly) {
@@ -268,15 +268,15 @@ import { ImportReviewService } from '@core/services/import-review.service';
                 <tbody class="divide-y divide-slate-100">
                   @for (sov of sovLines(); track sov.id) {
                     <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700" [class.bg-amber-50]="sov.confidence === 'Medium'">
-                      <td class="px-3 py-2.5 font-mono font-bold">{{ sov.lineNumber }}</td>
+                      <td class="px-3 py-2.5 font-numeric font-bold">{{ sov.lineNumber }}</td>
                       <td class="px-3 py-2.5">
                         <p>{{ sov.description }}</p>
                         @if (sov.costCode) { <p class="text-xs text-slate-400">{{ sov.costCode }}</p> }
                         @if (sov.reviewNote) { <p class="text-xs text-amber-700">{{ sov.reviewNote }}</p> }
                       </td>
-                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.scheduledValue | currency }}</td>
-                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.billedAmount | currency }}</td>
-                      <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ sov.thisPeriod | currency }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ sov.scheduledValue | currency }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ sov.billedAmount | currency }}</td>
+                      <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ sov.thisPeriod | currency }}</td>
                       <td class="px-3 py-2.5 text-right">
                         <input type="number" min="0" max="100" step="0.1"
                                class="w-16 border border-slate-200 rounded px-2 py-1 text-xs text-right"

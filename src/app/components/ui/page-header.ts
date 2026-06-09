@@ -6,9 +6,9 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <header class="flex flex-wrap items-start justify-between gap-4 mb-6">
+    <header class="flex flex-wrap items-start justify-between gap-3 mb-4">
       <div class="min-w-0">
-        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">{{ title }}</h1>
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">{{ title }}</h1>
         @if (subtitle) {
           <p class="text-sm text-slate-500 mt-0.5">{{ subtitle }}</p>
         }

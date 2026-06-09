@@ -157,7 +157,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
               <tbody class="divide-y divide-slate-100">
                 @for (row of displayRows(); track row.projectId) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
+                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.projectName }}
@@ -170,9 +170,9 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
                     <td class="px-4 py-2.5">
                       <app-status-chip tone="slate">{{ row.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.currentContract) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmtCurrency(row.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmtCurrency(row.leftToBill) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmtCurrency(row.currentContract) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmtCurrency(row.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmtCurrency(row.leftToBill) }}</td>
                     <td class="px-4 py-2.5 text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="row.nextAction.route"

@@ -78,7 +78,7 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
                   </td>
                   <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
                   <td class="px-5 py-3 text-slate-600 max-w-[280px] truncate" [title]="row.title">{{ row.title }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-xs">{{ row.amount | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-3 text-right font-numeric text-xs">{{ row.amount | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-3">
                     <app-status-chip [tone]="coTone(row.status)">{{ normalizeCoStatus(row.status) }}</app-status-chip>
                   </td>

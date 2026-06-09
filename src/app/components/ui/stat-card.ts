@@ -7,14 +7,14 @@ import { MatIconModule } from '@angular/material/icon';
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 h-full">
+    <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 h-full">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0">
           <div class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{{ label }}</div>
           @if (value === null || value === undefined || value === '') {
-            <span class="animate-pulse bg-slate-100 rounded h-6 w-16 inline-block"></span>
+            <span class="animate-pulse bg-slate-200 rounded h-6 w-16 inline-block"></span>
           } @else {
-            <div class="text-xl font-black text-slate-900 truncate">{{ value }}</div>
+            <div class="text-xl font-bold font-numeric text-slate-900 truncate">{{ value }}</div>
           }
           @if (subtext) {
             <div class="text-xs text-slate-500 mt-1 truncate">{{ subtext }}</div>

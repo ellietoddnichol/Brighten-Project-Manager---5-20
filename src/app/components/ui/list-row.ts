@@ -35,7 +35,7 @@ export type HealthDot = 'Green' | 'Yellow' | 'Red' | 'Neutral';
               @for (m of metrics; track m.label) {
                 <span>
                   <span class="text-slate-400">{{ m.label }}</span>
-                  <span class="font-mono font-semibold ml-1" [class.text-rose-700]="m.alert">{{ m.value }}</span>
+                  <span class="font-numeric font-semibold ml-1" [class.text-rose-700]="m.alert">{{ m.value }}</span>
                 </span>
               }
             </div>

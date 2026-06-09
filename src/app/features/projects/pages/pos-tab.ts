@@ -120,12 +120,12 @@ type PosSegment = 'pos' | 'subcontractors';
             <tbody class="divide-y divide-slate-100">
               @for (row of filteredPos(); track row.po.id) {
                 <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 cursor-pointer" (click)="selectPo(row.po)">
-                  <td class="px-3 py-2.5 font-mono font-bold">{{ row.po.poNumber }}</td>
+                  <td class="px-3 py-2.5 font-numeric font-bold">{{ row.po.poNumber }}</td>
                   <td class="px-3 py-2.5">{{ row.po.vendor }}</td>
                   <td class="px-3 py-2.5">{{ row.po.category || '—' }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.committed | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.invoiced | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.remaining | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.committed | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.invoiced | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.remaining | currency }}</td>
                   <td class="px-3 py-2.5">
                     <span class="text-xs font-bold px-2 py-0.5 rounded-full"
                           [class.bg-slate-100]="row.status === 'Draft'"

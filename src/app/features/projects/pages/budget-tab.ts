@@ -109,10 +109,10 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
                       <td class="px-3 py-2.5">{{ entry.workDate || '—' }}</td>
                       <td class="px-3 py-2.5 font-bold text-slate-900">{{ entry.employeeName || '—' }}</td>
                       <td class="px-3 py-2.5 text-slate-500">{{ entry.classification || '—' }}</td>
-                      <td class="px-3 py-2.5 text-right font-mono">{{ entry.regularHours }}</td>
-                      <td class="px-3 py-2.5 text-right font-mono">{{ entry.overtimeHours }}</td>
-                      <td class="px-3 py-2.5 text-right font-mono">{{ entry.doubleTimeHours }}</td>
-                      <td class="px-3 py-2.5 text-right font-mono">{{ entry.laborCost != null ? (entry.laborCost | currency) : '—' }}</td>
+                      <td class="px-3 py-2.5 text-right font-numeric">{{ entry.regularHours }}</td>
+                      <td class="px-3 py-2.5 text-right font-numeric">{{ entry.overtimeHours }}</td>
+                      <td class="px-3 py-2.5 text-right font-numeric">{{ entry.doubleTimeHours }}</td>
+                      <td class="px-3 py-2.5 text-right font-numeric">{{ entry.laborCost != null ? (entry.laborCost | currency) : '—' }}</td>
                       <td class="px-3 py-2.5 text-right" (click)="$event.stopPropagation()">
                         <button type="button" (click)="deleteLaborEntryRow(entry)" class="text-rose-700 hover:text-rose-900" title="Delete entry">
                           <mat-icon class="!text-[16px]">delete</mat-icon>
@@ -242,7 +242,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
                     <td class="px-3 py-2.5">{{ t.vendorName || '—' }}</td>
                     <td class="px-3 py-2.5">{{ t.costCategory }}</td>
                     <td class="px-3 py-2.5 text-xs text-slate-500">{{ t.account || t.memo || '—' }}</td>
-                    <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ t.amount | currency }}</td>
+                    <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ t.amount | currency }}</td>
                     <td class="px-3 py-2.5 text-xs">{{ t.includeInWipActuals ? 'Included' : 'Excluded' }}</td>
                   </tr>
                 }
@@ -295,12 +295,12 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
                       <span class="text-[10px] text-amber-700 font-bold">Estimated</span>
                     }
                   </td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.budgetAmount | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.committedAmount | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono" [class.text-rose-700]="line.actualCost > 0">{{ line.actualCost | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.projectedCost | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ line.costToComplete | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono font-bold" [class.text-emerald-700]="line.variance > 0" [class.text-rose-700]="line.variance < 0">{{ line.variance | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ line.budgetAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ line.committedAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric" [class.text-rose-700]="line.actualCost > 0">{{ line.actualCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ line.projectedCost | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ line.costToComplete | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric font-bold" [class.text-emerald-700]="line.variance > 0" [class.text-rose-700]="line.variance < 0">{{ line.variance | currency }}</td>
                   <td class="px-3 py-2.5 text-xs">
                     <span class="px-2 py-0.5 rounded-full font-semibold"
                           [class.bg-emerald-100]="sourceBadge(line) === 'Budget Workbook'"
@@ -379,7 +379,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
                         <tr>
                           <td class="px-3 py-2">{{ sov.lineNumber }}</td>
                           <td class="px-3 py-2">{{ sov.description }}</td>
-                          <td class="px-3 py-2 text-right font-mono">{{ sov.scheduledValue | currency }}</td>
+                          <td class="px-3 py-2 text-right font-numeric">{{ sov.scheduledValue | currency }}</td>
                         </tr>
                       }
                     </tbody>
@@ -458,7 +458,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
               Optional: <code class="text-xs">description, budgetAmount, actualToDate, committedAmount, projectedFinalCost, varianceAmount, status, notes</code>.
             </p>
             <textarea [(ngModel)]="importText" rows="10" placeholder="costCode,category,description,budgetAmount&#10;01-100,Labor,Site supervision,50000&#10;01-200,Materials,Concrete,120000"
-                      class="w-full px-3 py-2 border rounded-lg text-xs font-mono"></textarea>
+                      class="w-full px-3 py-2 border rounded-lg text-xs font-numeric"></textarea>
             @if (importError()) {
               <p class="text-sm text-rose-700">{{ importError() }}</p>
             }
@@ -544,7 +544,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
               Optional: <code class="text-xs">classification, hourlyRate, laborCost, notes</code>. Dates must be <code class="text-xs">YYYY-MM-DD</code>.
             </p>
             <textarea [(ngModel)]="laborImportText" rows="10" placeholder="workDate,employeeName,classification,regularHours,overtimeHours,doubleTimeHours,hourlyRate&#10;2026-06-01,Jane Doe,Carpenter,8,0,0,32.50"
-                      class="w-full px-3 py-2 border rounded-lg text-xs font-mono"></textarea>
+                      class="w-full px-3 py-2 border rounded-lg text-xs font-numeric"></textarea>
             @if (laborImportError()) {
               <p class="text-sm text-rose-700">{{ laborImportError() }}</p>
             }

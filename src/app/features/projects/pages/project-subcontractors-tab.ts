@@ -66,14 +66,14 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                   <td class="px-4 py-3">
                     <span [class.text-rose-700]="ps.complianceStatus !== 'Complete'">{{ ps.complianceStatus }}</span>
                   </td>
-                  <td class="px-4 py-3 text-right font-mono">{{ ps.currentCommitmentAmount | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono text-blue-800">
+                  <td class="px-4 py-3 text-right font-numeric">{{ ps.currentCommitmentAmount | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric text-blue-800">
                     {{ (ps.importedCostToDate ?? 0) > 0 ? (ps.importedCostToDate | currency) : '—' }}
                   </td>
-                  <td class="px-4 py-3 text-right font-mono">{{ ps.invoicedToDate | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ ps.paidToDate | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono text-orange-700">{{ ps.openBalance | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ ps.retainageHeld | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ ps.invoicedToDate | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ ps.paidToDate | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric text-orange-700">{{ ps.openBalance | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ ps.retainageHeld | currency }}</td>
                   <td class="px-4 py-3">{{ waiverLabel(ps) }}</td>
                   <td class="px-4 py-3">{{ poLabel(ps.linkedPurchaseOrderId) }}</td>
                 </tr>
@@ -218,9 +218,9 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                       @for (inv of invoicesForSelected(); track inv.id) {
                         <tr class="border-b">
                           <td class="px-2 py-2">{{ inv.invoiceNumber }}</td>
-                          <td class="px-2 py-2 text-right font-mono">{{ inv.approvedAmount | currency }}</td>
-                          <td class="px-2 py-2 text-right font-mono">{{ inv.paidAmount | currency }}</td>
-                          <td class="px-2 py-2 text-right font-mono">{{ inv.openBalance | currency }}</td>
+                          <td class="px-2 py-2 text-right font-numeric">{{ inv.approvedAmount | currency }}</td>
+                          <td class="px-2 py-2 text-right font-numeric">{{ inv.paidAmount | currency }}</td>
+                          <td class="px-2 py-2 text-right font-numeric">{{ inv.openBalance | currency }}</td>
                           <td class="px-2 py-2">{{ inv.status }}</td>
                           <td class="px-2 py-2">{{ inv.lienWaiverStatus }}</td>
                           <td class="px-2 py-2">

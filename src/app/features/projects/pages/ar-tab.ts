@@ -81,12 +81,12 @@ import {
             <tbody class="divide-y divide-slate-100">
               @for (r of filteredRecords(); track r.id) {
                 <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
-                  <td class="px-3 py-2.5 font-mono font-bold">{{ r.invoiceNumber || '—' }}</td>
+                  <td class="px-3 py-2.5 font-numeric font-bold">{{ r.invoiceNumber || '—' }}</td>
                   <td class="px-3 py-2.5">{{ r.invoiceDate || '—' }}</td>
                   <td class="px-3 py-2.5">{{ r.dueDate || '—' }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ r.originalAmount | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ r.paidAmount ?? 0 | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ r.openBalance | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ r.originalAmount | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ r.paidAmount ?? 0 | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ r.openBalance | currency }}</td>
                   <td class="px-3 py-2.5">{{ r.agingBucket }}</td>
                   <td class="px-3 py-2.5 text-xs">{{ r.collectionStatus || 'NotStarted' }}</td>
                   <td class="px-3 py-2.5">
