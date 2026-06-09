@@ -156,11 +156,11 @@ interface ActivityDisplayRow {
 
 
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 p-4">
 
-          <h3 class="text-sm font-bold text-slate-900 mb-3">Project Information</h3>
+          <h3 class="text-sm font-bold text-slate-900 mb-2">Project Information</h3>
 
-          <div class="grid sm:grid-cols-2 gap-4">
+          <div class="grid sm:grid-cols-2 gap-3">
 
             @for (field of infoFields; track field.key) {
 
@@ -228,11 +228,11 @@ interface ActivityDisplayRow {
 
 
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 p-4">
 
-          <h3 class="text-sm font-bold text-slate-900 mb-3">Contacts</h3>
+          <h3 class="text-sm font-bold text-slate-900 mb-2">Contacts</h3>
 
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
 
             <div>
 
@@ -360,11 +360,11 @@ interface ActivityDisplayRow {
 
 
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 p-4">
 
-          <h3 class="text-sm font-bold text-slate-900 mb-3">Schedule</h3>
+          <h3 class="text-sm font-bold text-slate-900 mb-2">Schedule</h3>
 
-          <div class="grid sm:grid-cols-2 gap-4">
+          <div class="grid sm:grid-cols-2 gap-3">
 
             <div>
 
@@ -408,9 +408,9 @@ interface ActivityDisplayRow {
 
 
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 p-4">
 
-          <h3 class="text-sm font-bold text-slate-900 mb-3">Notes &amp; Scope</h3>
+          <h3 class="text-sm font-bold text-slate-900 mb-2">Notes &amp; Scope</h3>
 
           <div class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Scope Summary</div>
 
@@ -444,7 +444,7 @@ interface ActivityDisplayRow {
 
 
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 p-4">
 
           <div class="flex items-center justify-between gap-3 mb-3">
 

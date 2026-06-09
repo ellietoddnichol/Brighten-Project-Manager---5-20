@@ -148,7 +148,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   template: `
 
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
 
       <app-page-header
 
@@ -245,7 +245,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-3">
 
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
 
@@ -346,23 +346,23 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
                 <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                  <th class="px-4 py-3">Job #</th>
-                  <th class="px-4 py-3">Project</th>
-                  <th class="px-4 py-3">Customer</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3">Billing</th>
-                  <th class="px-4 py-3 text-right">Contract</th>
-                  <th class="px-4 py-3 text-right">Billed</th>
-                  <th class="px-4 py-3 text-right">Balance</th>
-                  <th class="px-4 py-3">Action</th>
+                  <th class="px-4 py-2">Job #</th>
+                  <th class="px-4 py-2">Project</th>
+                  <th class="px-4 py-2">Customer</th>
+                  <th class="px-4 py-2">Status</th>
+                  <th class="px-4 py-2">Billing</th>
+                  <th class="px-4 py-2 text-right">Contract</th>
+                  <th class="px-4 py-2 text-right">Billed</th>
+                  <th class="px-4 py-2 text-right">Balance</th>
+                  <th class="px-4 py-2">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of visibleListRows(); track row.project.id) {
                   <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
                       (click)="navigateToProject(row, $event)">
-                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
+                    <td class="px-4 py-2">
                       <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.project.projectName }}
                       </a>
@@ -376,17 +376,17 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                         </div>
                       }
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
+                    <td class="px-4 py-2">
                       <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2">
                       <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
+                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
+                    <td class="px-4 py-2">
                       <a [routerLink]="row.nextActionRoute"
                          class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
                         {{ row.nextActionLabel }}

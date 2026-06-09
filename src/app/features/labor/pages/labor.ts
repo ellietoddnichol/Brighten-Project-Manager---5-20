@@ -50,7 +50,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
         Read-only labor accrual from Google Sheets timekeeper rows
         (<strong>Approval Status = Approved</strong>).

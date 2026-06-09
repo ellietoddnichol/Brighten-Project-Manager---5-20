@@ -42,7 +42,7 @@ import { WIPRecord } from '@app/models/financial.types';
     EmptyStateComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="WIP"
         subtitle="Active jobs, over/under billing, projected margin, and closeout AR">

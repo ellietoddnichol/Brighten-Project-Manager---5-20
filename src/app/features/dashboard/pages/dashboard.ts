@@ -66,10 +66,9 @@ interface DashboardFinancialMetric {
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="Dashboard"
-        subtitle="Active jobs, billing follow-up, and review items for the office"
         [hasActions]="true">
         <a routerLink="/projects"
            class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
@@ -116,17 +115,17 @@ interface DashboardFinancialMetric {
         }
       </section>
 
-      <div class="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)] gap-6">
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+      <div class="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)] gap-4">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">
+            <h2 class="text-sm font-semibold text-slate-900">
               Daily Action Center
               @if (priorities().length) {
                 <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
               }
             </h2>
-            <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
+            
           </div>
           <a routerLink="/active-2026-control"
              class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
@@ -172,11 +171,11 @@ interface DashboardFinancialMetric {
         }
       </section>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">Billing Snapshot</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Recent Pay Apps, retainage, and A/R follow-up</p>
+            <h2 class="text-sm font-semibold text-slate-900">Billing Snapshot</h2>
+            
           </div>
           <a routerLink="/billing" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Review Billing</a>
         </div>
@@ -217,11 +216,11 @@ interface DashboardFinancialMetric {
       </section>
       </div>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">Active Projects</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
+            <h2 class="text-sm font-semibold text-slate-900">Active Projects</h2>
+            
           </div>
           <a routerLink="/active-2026-control"
              class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
@@ -233,41 +232,41 @@ interface DashboardFinancialMetric {
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
                 <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                  <th class="px-4 py-3">Job #</th>
-                  <th class="px-4 py-3">Project</th>
-                  <th class="px-4 py-3">Customer</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3">Billing Status</th>
-                  <th class="px-4 py-3 text-right">Contract</th>
-                  <th class="px-4 py-3 text-right">Billed</th>
-                  <th class="px-4 py-3 text-right">Balance</th>
-                  <th class="px-4 py-3">Foreman / PM</th>
-                  <th class="px-4 py-3">Action</th>
+                  <th class="px-4 py-2">Job #</th>
+                  <th class="px-4 py-2">Project</th>
+                  <th class="px-4 py-2">Customer</th>
+                  <th class="px-4 py-2">Status</th>
+                  <th class="px-4 py-2">Billing Status</th>
+                  <th class="px-4 py-2 text-right">Contract</th>
+                  <th class="px-4 py-2 text-right">Billed</th>
+                  <th class="px-4 py-2 text-right">Balance</th>
+                  <th class="px-4 py-2">Foreman / PM</th>
+                  <th class="px-4 py-2">Action</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of activeProjectRows(); track row.projectId) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
+                    <td class="px-4 py-2">
                       <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.projectName }}
                       </a>
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.customer || 'Not available' }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 text-xs text-slate-600 truncate max-w-[180px]">{{ row.customer || 'Not available' }}</td>
+                    <td class="px-4 py-2">
                       <app-status-chip [tone]="healthTone(row.healthStatus)">{{ row.status || row.healthStatus }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2">
                       <app-status-chip [tone]="billingStatusTone(row.billingStatus)">{{ row.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmt(row.contract2026) }}</td>
-                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmt(row.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right font-numeric text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2 text-right font-numeric text-xs">{{ fmt(row.contract2026) }}</td>
+                    <td class="px-4 py-2 text-right font-numeric text-xs">{{ fmt(row.billedToDate) }}</td>
+                    <td class="px-4 py-2 text-right font-numeric text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
+                    <td class="px-4 py-2">
                       <div class="text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</div>
                     </td>
-                    <td class="px-4 py-2.5">
+                    <td class="px-4 py-2">
                       <a [routerLink]="row.nextAction.route"
                          [queryParams]="row.nextAction.queryParams"
                          [fragment]="row.nextAction.fragment"
@@ -287,11 +286,11 @@ interface DashboardFinancialMetric {
         }
       </section>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">Financial Snapshot</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
+            <h2 class="text-sm font-semibold text-slate-900">Financial Snapshot</h2>
+            
           </div>
           <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
         </div>
@@ -313,10 +312,10 @@ interface DashboardFinancialMetric {
         </div>
       </section>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">Field Labor Hours</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Field Labor Hours</h2>
             <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
           </div>
           <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
@@ -326,16 +325,16 @@ interface DashboardFinancialMetric {
             <table class="min-w-full divide-y divide-slate-100 text-sm">
               <thead class="bg-slate-50 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
                 <tr>
-                  <th class="px-4 py-3">Job</th>
-                  <th class="px-4 py-3">Project</th>
-                  <th class="px-4 py-3 text-right">Hours</th>
-                  <th class="px-4 py-3 text-right">Crew</th>
+                  <th class="px-4 py-2">Job</th>
+                  <th class="px-4 py-2">Project</th>
+                  <th class="px-4 py-2 text-right">Hours</th>
+                  <th class="px-4 py-2 text-right">Crew</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of laborHoursRows(); track row.projectNumber) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
+                    <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
                     <td class="px-4 py-3 text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
                     <td class="px-4 py-3 text-right font-numeric font-semibold">{{ fmtHours(row.totalHours) }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">{{ row.employeeCount }}</td>

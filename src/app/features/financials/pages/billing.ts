@@ -33,7 +33,7 @@ import { Billing as BillingRecord } from '@app/models/types';
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <div class="rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
         {{ projectData.statusMessage() }}
       </div>

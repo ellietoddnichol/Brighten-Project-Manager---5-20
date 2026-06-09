@@ -115,7 +115,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
   template: `
 
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
 
       <app-page-header
 
