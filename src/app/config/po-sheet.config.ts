@@ -5,6 +5,6 @@ export const PO_SHEET = {
   /** Tab from the shared link (#gid=909735572) */
   primaryGid: 909735572,
   /** Used if metadata lookup fails */
-  fallbackSheetNames: ['PO_Log', 'Purchase Orders 2025'] as const,
+  fallbackSheetNames: ['PO_Log', 'Purchase Orders 2026', 'Purchase Orders 2025'] as const,
   syncIntervalMs: 5 * 60 * 1000,
 } as const;

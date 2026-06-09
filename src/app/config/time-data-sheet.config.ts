@@ -9,7 +9,7 @@ export const TIME_DATA_SHEET = {
     jobHours: 'JOB_HOURS',
     allEmployees: 'ALL_EMPLOYEES',
   },
-  /** Auto-sync only imports detail rows on/after this date to keep sync fast. */
-  autoSyncDetailFromDate: '2026-01-01',
+  /** Auto-sync only imports detail rows on/after this date to keep sync fast. Update each year. */
+  autoSyncDetailFromDate: '2026-04-01',
   syncIntervalMs: 5 * 60 * 1000,
 } as const;

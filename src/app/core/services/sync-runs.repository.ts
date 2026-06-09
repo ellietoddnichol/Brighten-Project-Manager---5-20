@@ -14,8 +14,7 @@ import { ImportRunSummary } from '@app/models/import.types';
 const RUNS_KEY = 'brighten.importRuns';
 
 /**
- * Sync/import run history — Firestore target with localStorage fallback.
- * TODO: remove localStorage once all clients read from Firestore.
+ * Sync/import run history — Firestore primary store, localStorage fallback for offline/unauthenticated reads.
  */
 @Injectable({ providedIn: 'root' })
 export class SyncRunsRepository {

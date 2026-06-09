@@ -120,7 +120,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus' | 'labor-hours';
                       </td>
                     </tr>
                   } @empty {
-                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 italic">No labor entries yet — add an entry or bulk import to seed labor data.</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400 italic">No labor entries yet — add an entry, bulk import, or use Settings → Sync Health to import from your Timelogs sheet.</td></tr>
                   }
                 </tbody>
               </table>

@@ -440,11 +440,11 @@ export class SyncHealthService {
 
         detail: budgetImported > 0
           ? `${budgetImported} budget workbook(s) imported to Firestore`
-          : 'Coming Soon — Next Phase (not started)',
+          : 'Not connected — budget workbook import is parked for Phase 2',
 
 
 
-        nextAction: budgetImported > 0 ? 'Review imported budgets' : 'Budget import — coming soon',
+        nextAction: budgetImported > 0 ? 'Review imported budgets' : 'Parked — enter budgets manually via project Budget tab',
 
 
 

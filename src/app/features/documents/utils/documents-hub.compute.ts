@@ -148,7 +148,10 @@ export function projectFileTimestamp(file: ProjectFile): number {
   const ts = file.uploadedAt ?? file.lastModifiedAt;
   if (!ts) return 0;
   try {
-    return typeof ts.toDate === 'function' ? ts.toDate().getTime() : new Date(ts).getTime();
+    const t = ts as { toDate?: () => Date } | string | number;
+    return typeof (t as { toDate?: () => Date }).toDate === 'function'
+      ? (t as { toDate: () => Date }).toDate().getTime()
+      : new Date(t as string | number).getTime();
   } catch {
     return 0;
   }
