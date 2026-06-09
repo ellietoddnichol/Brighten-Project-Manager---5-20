@@ -415,7 +415,7 @@ export class Dashboard {
   readonly skeletonSlots = [1, 2, 3, 4, 5];
 
   dashboardError = computed(() => this.projectsError() ?? this.billingError());
-  dashboardLoading = computed(() => !this.projectsReady() || (this.billingLoading() && !this.billingRecords().length && this.globalNeeds.active2026Rows().length > 0));
+  dashboardLoading = computed(() => !this.projectsReady());
 
   activeProjectRows = computed(() =>
     [...this.globalNeeds.active2026Rows()]
@@ -583,9 +583,15 @@ export class Dashboard {
   );
 
   constructor() {
+    // 8-second timeout ensures dashboard renders even if Firestore is slow or rules block the first snapshot
+    const timeout = setTimeout(() => {
+      if (!this.projectsReady()) this.projectsReady.set(true);
+    }, 8000);
+
     this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
-      next: () => this.projectsReady.set(true),
+      next: () => { clearTimeout(timeout); this.projectsReady.set(true); },
       error: (err) => {
+        clearTimeout(timeout);
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
       },
