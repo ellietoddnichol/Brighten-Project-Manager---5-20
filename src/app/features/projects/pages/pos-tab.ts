@@ -30,7 +30,7 @@ type PosSegment = 'pos' | 'subcontractors';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ProjectSubcontractorsTabComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
         <button type="button" (click)="segment.set('pos')"
                 class="px-4 py-2 text-sm font-semibold rounded-t-lg"
@@ -164,7 +164,7 @@ type PosSegment = 'pos' | 'subcontractors';
         <div class="fixed inset-0 z-40 bg-black/30" (click)="closeDrawer()"></div>
         <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
           <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h3 class="text-lg font-bold text-slate-900">{{ editingId() ? 'Edit PO' : 'New PO' }}</h3>
+            <h3 class="text-sm font-semibold text-slate-900">{{ editingId() ? 'Edit PO' : 'New PO' }}</h3>
             <button type="button" (click)="closeDrawer()" class="text-slate-500 hover:text-slate-800">
               <mat-icon>close</mat-icon>
             </button>

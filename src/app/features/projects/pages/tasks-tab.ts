@@ -20,7 +20,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
     <div class="space-y-4">
       @if (!simplified) {
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-lg font-bold text-slate-900">{{ openTasks().length }}</p></div>
+        <div class="bg-slate-50 p-3 rounded-md border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-base font-bold font-numeric text-slate-900">{{ openTasks().length }}</p></div>
         <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overdue</p><p class="stat-value text-rose-600">{{ overdueCount() }}</p></div>
         <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Complete</p><p class="stat-value text-emerald-600">{{ completeTasks().length }}</p></div>
       </div>

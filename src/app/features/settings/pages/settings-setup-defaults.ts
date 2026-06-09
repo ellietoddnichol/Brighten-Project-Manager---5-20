@@ -11,7 +11,7 @@ import {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section id="setup-defaults" class="space-y-6">
+    <section id="setup-defaults" class="space-y-4">
       <div>
         <h2 class="text-xl font-bold text-slate-900">Project Setup Defaults</h2>
         <p class="text-sm text-slate-500 mt-1 max-w-3xl">
@@ -20,7 +20,7 @@ import {
       </div>
 
       <div class="grid gap-4 lg:grid-cols-2">
-        <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <article class="bg-slate-50 rounded-xl border border-slate-200 p-5">
           <h3 class="text-sm font-bold text-slate-900 mb-3">Required field rules</h3>
           <dl class="space-y-2 text-sm">
             <div class="flex justify-between gap-4 py-1 border-b border-slate-50">
@@ -50,7 +50,7 @@ import {
           </dl>
         </article>
 
-        <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <article class="bg-slate-50 rounded-xl border border-slate-200 p-5">
           <h3 class="text-sm font-bold text-slate-900 mb-3">Prevailing wage & CPR</h3>
           <ul class="text-sm text-slate-600 space-y-2">
             <li>Prevailing Wage <strong>Yes</strong> → CPR Required <strong>Yes</strong> (automatic)</li>
@@ -59,7 +59,7 @@ import {
           </ul>
         </article>
 
-        <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 lg:col-span-2">
+        <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 lg:col-span-2">
           <h3 class="text-sm font-bold text-slate-900 mb-3">Default foreman rules</h3>
           <table class="w-full text-sm">
             <thead class="text-left text-[10px] uppercase text-slate-500 border-b">

@@ -122,7 +122,7 @@ interface ActivityDisplayRow {
 
     @if (project && !isOverheadJob(project)) {
 
-      <div class="p-5 space-y-6">
+      <div class="p-5 space-y-4">
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 

@@ -21,7 +21,7 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="flex flex-wrap gap-2 items-center">
         <button type="button" (click)="openAssign()" class="ml-auto bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
           Add Subcontractor
@@ -94,7 +94,7 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
           </div>
 
           @if (selected(); as ps) {
-            <div class="p-5 space-y-6">
+            <div class="p-5 space-y-4">
               <section>
                 <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Scope</h4>
                 <textarea [(ngModel)]="draft.scopeOfWork" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>

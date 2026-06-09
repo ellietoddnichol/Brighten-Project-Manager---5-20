@@ -118,7 +118,7 @@ import { ProjectLifecycleSnapshot } from '@app/models/project-lifecycle.types';
         </div>
       }
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         @for (item of filteredItems(); track item.id) {
           @if (item.kind === 'missing') {
             <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-amber-100 bg-amber-50/60">

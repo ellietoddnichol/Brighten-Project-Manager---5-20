@@ -14,7 +14,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
   standalone: true,
   imports: [CommonModule, RouterModule, MatIconModule, PageHeaderComponent],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto">
       <app-page-header title="Task Board" subtitle="Manually added tasks across active jobs." />
 
       <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -23,7 +23,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
         <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Groups</p><p class="text-2xl font-black text-slate-900">{{ taskGroups.length }}</p></div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead><tr class="text-[10px] uppercase text-slate-400 border-b">

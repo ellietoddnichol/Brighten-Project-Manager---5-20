@@ -259,13 +259,13 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
         @case ('overview') {
 
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
 
             <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
 
               <div>
 
-                <h2 class="text-lg font-bold text-slate-900">Money actions</h2>
+                <h2 class="text-sm font-semibold text-slate-900">Money actions</h2>
 
                 <p class="text-xs text-slate-500 mt-0.5">Margin, collections, billing, and source trust issues</p>
 
@@ -347,7 +347,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             </div>
 
-            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
               @for (row of filteredWipRows(); track row.record.projectId) {
 
@@ -443,7 +443,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             </div>
 
-            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
               @for (row of arJobRows(); track row.projectId) {
 
@@ -523,7 +523,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             </div>
 
-            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
               @for (row of billingRows(); track row.id) {
 
@@ -577,7 +577,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             </div>
 
-            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
               @for (row of filteredCommitmentRows(); track row.id) {
 
@@ -631,7 +631,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             @if (showBonuses()) {
 
-              <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+              <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
                 @for (row of bonusRows(); track row.record.id) {
 
@@ -691,7 +691,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
         @case ('sources') {
 
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
             @for (row of sourceRows(); track row.id) {
 

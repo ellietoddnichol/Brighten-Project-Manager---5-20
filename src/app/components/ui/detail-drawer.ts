@@ -21,7 +21,7 @@ import { MatIconModule } from '@angular/material/icon';
             <mat-icon>close</mat-icon>
           </button>
         </div>
-        <div class="flex-1 p-5 space-y-6">
+        <div class="flex-1 p-5 space-y-4">
           <ng-content />
         </div>
         @if (footerActionLabel) {

@@ -12,7 +12,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <!-- Stats -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div class="bg-white p-4 rounded-md shadow-sm border border-slate-200">
@@ -39,7 +39,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
       <!-- List -->
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">Schedule Milestones</h3>
+          <h3 class="text-sm font-semibold text-slate-900">Schedule Milestones</h3>
           <button (click)="showNewMS = true" class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold shadow-sm hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4">add</mat-icon> Add Milestone
           </button>

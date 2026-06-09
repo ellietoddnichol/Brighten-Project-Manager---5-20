@@ -29,7 +29,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-hidden-module-banner moduleId="certified-payroll" />
       @if (cpr.exportBanner()) {
         <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
@@ -85,7 +85,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
         </div>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
               <h2 class="text-sm font-bold text-slate-900">Prevailing Wage Projects</h2>
             </div>
@@ -105,7 +105,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
             </div>
           </div>
 
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
               <h2 class="text-sm font-bold text-slate-900">Recent Weekly Drafts</h2>
             </div>
@@ -127,7 +127,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
       }
 
       @if (activeTab() === 'tasks') {
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <table class="w-full text-left text-sm">
             <thead>
               <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
@@ -157,7 +157,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
       }
 
       @if (activeTab() === 'weeks') {
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <table class="w-full text-left text-sm">
             <thead>
               <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
@@ -191,7 +191,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
         </div>
 
         @if (reviewWeek()) {
-          <div class="mt-6 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="mt-6 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
               <h2 class="text-sm font-bold text-slate-900">Weekly Review · {{ reviewWeekLabel() }}</h2>
               <button type="button" (click)="reviewWeek.set(null)" class="text-slate-500 hover:text-slate-700"><mat-icon>close</mat-icon></button>
@@ -233,7 +233,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
       }
 
       @if (activeTab() === 'exceptions') {
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <table class="w-full text-left text-sm">
             <thead>
               <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">

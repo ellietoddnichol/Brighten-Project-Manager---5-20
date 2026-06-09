@@ -25,7 +25,7 @@ import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-modul
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink, HiddenModuleBannerComponent],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-hidden-module-banner moduleId="foreman-bonuses" />
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>

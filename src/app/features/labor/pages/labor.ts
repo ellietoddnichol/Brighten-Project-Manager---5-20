@@ -491,7 +491,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
             <mat-icon class="!text-[18px] align-middle">chevron_right</mat-icon>
           </button>
         </div>
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold">
