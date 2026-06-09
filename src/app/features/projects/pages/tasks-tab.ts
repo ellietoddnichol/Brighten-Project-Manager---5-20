@@ -18,46 +18,88 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
   template: `
     <div class="space-y-4">
       @if (!simplified) {
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-lg font-bold text-slate-900">{{ openTasks().length }}</p></div>
-        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overdue</p><p class="stat-value text-rose-600">{{ overdueCount() }}</p></div>
-        <div class="bg-white p-3 rounded-md shadow-sm border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Complete</p><p class="stat-value text-emerald-600">{{ completeTasks().length }}</p></div>
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white p-3 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Open tasks</p>
+          <p class="text-2xl font-bold text-slate-900 font-numeric">{{ openTasks().length }}</p>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Overdue</p>
+          <p class="text-2xl font-bold font-numeric" [class.text-rose-600]="overdueCount() > 0" [class.text-slate-900]="overdueCount() === 0">{{ overdueCount() }}</p>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Complete</p>
+          <p class="text-2xl font-bold text-emerald-600 font-numeric">{{ completeTasks().length }}</p>
+        </div>
       </div>
       }
 
-      <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
-        <div class="p-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-base font-bold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
-          <button (click)="openNew()" class="bg-slate-900 text-white px-3 py-1.5 rounded-md font-bold text-xs flex items-center gap-1.5">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+          <h3 class="text-sm font-semibold text-slate-900">{{ simplified ? 'Tasks' : 'Task Board' }}</h3>
+          <button (click)="openNew()"
+                  class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800 transition-colors">
             <mat-icon class="!text-[16px]">add</mat-icon> Add Task
           </button>
         </div>
 
+        @if (saveError()) {
+          <div class="mx-4 mt-3 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700">
+            {{ saveError() }}
+          </div>
+        }
+
         @if (showForm()) {
-          <div class="p-4 border-b border-slate-200 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div class="md:col-span-2"><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Title</label><input [(ngModel)]="draft.title" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Group</label>
-              <select [(ngModel)]="draft.taskGroup" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
+          <div class="p-4 border-b border-slate-100 bg-slate-50 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-slate-600 mb-1">Title</label>
+              <input [(ngModel)]="draft.title" placeholder="Task title"
+                     class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Group</label>
+              <select [(ngModel)]="draft.taskGroup"
+                      class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
                 @for (g of taskGroups; track g) { <option [value]="g">{{ g }}</option> }
               </select>
             </div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Assigned To</label><input [(ngModel)]="draft.assignedTo" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Due Date</label><input type="date" [(ngModel)]="draft.dueDate" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Priority</label>
-              <select [(ngModel)]="draft.priority" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-                <option value="Low">Low</option><option value="Medium">Medium</option>
-                <option value="High">High</option><option value="Critical">Critical</option>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Assigned To</label>
+              <input [(ngModel)]="draft.assignedTo" placeholder="Name"
+                     class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Due Date</label>
+              <input type="date" [(ngModel)]="draft.dueDate"
+                     class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Priority</label>
+              <select [(ngModel)]="draft.priority"
+                      class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
+                <option value="Low">Low</option>
+                <option value="Medium">Medium</option>
+                <option value="High">High</option>
+                <option value="Critical">Critical</option>
               </select>
             </div>
-            <div><label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
-              <select [(ngModel)]="draft.status" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
-                <option value="Not Started">Not Started</option><option value="In Progress">In Progress</option>
-                <option value="Waiting">Waiting</option><option value="Complete">Complete</option>
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Status</label>
+              <select [(ngModel)]="draft.status"
+                      class="w-full px-3 py-2 bg-white rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300">
+                <option value="Not Started">Not Started</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Waiting">Waiting</option>
+                <option value="Complete">Complete</option>
               </select>
             </div>
             <div class="col-span-full flex justify-end gap-2">
-              <button (click)="cancel()" class="px-4 py-2 rounded font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
-              <button (click)="save()" class="bg-emerald-600 text-white px-4 py-2 rounded font-bold hover:bg-emerald-700 text-sm">Save Task</button>
+              <button (click)="cancel()"
+                      class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200 transition-colors">Cancel</button>
+              <button (click)="save()" [disabled]="saving()"
+                      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 disabled:opacity-50 transition-colors">
+                {{ saving() ? 'Saving…' : 'Save Task' }}
+              </button>
             </div>
           </div>
         }
@@ -72,37 +114,50 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
               [nextAction]="task.status !== 'Complete' ? 'Close completed task' : undefined"
               [health]="isOverdue(task) ? 'Red' : task.priority === 'High' || task.priority === 'Critical' ? 'Yellow' : 'Neutral'" />
           } @empty {
-            <div class="px-4 py-6 text-center text-slate-400 italic">No tasks match this filter</div>
+            <div class="px-4 py-6 text-center text-slate-400 text-sm italic">No tasks match this filter</div>
           }
         } @else {
-        @for (group of groupedTasks(); track group.name) {
-          <div class="border-b border-slate-100 last:border-0">
-            <div class="px-3 py-2 bg-slate-50 text-xs font-bold uppercase tracking-widest text-slate-500">{{ group.name }} ({{ group.tasks.length }})</div>
-            @for (task of group.tasks; track task.id) {
-              <div class="px-3 py-2 flex items-center justify-between hover:bg-slate-50 border-b border-slate-50">
-                <div>
-                  <div class="font-medium text-slate-900">{{ task.title }}</div>
-                  <div class="text-xs text-slate-500">
-                    {{ task.assignedTo || 'Unassigned' }}
-                    @if (task.dueDate) { · Due {{ task.dueDate }} }
+          @for (group of groupedTasks(); track group.name) {
+            <div class="border-b border-slate-100 last:border-0">
+              <div class="px-4 py-2 bg-slate-50 text-xs font-medium text-slate-500">
+                {{ group.name }} <span class="text-slate-400">({{ group.tasks.length }})</span>
+              </div>
+              @for (task of group.tasks; track task.id) {
+                <div class="px-4 py-3 flex items-center justify-between hover:bg-slate-50/80 border-b border-slate-50 last:border-0">
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-slate-900">{{ task.title }}</div>
+                    <div class="text-xs text-slate-500 mt-0.5">
+                      {{ task.assignedTo || 'Unassigned' }}
+                      @if (task.dueDate) {
+                        · Due <span [class.text-rose-600]="isOverdue(task)">{{ task.dueDate }}</span>
+                      }
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 ml-3 shrink-0">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-medium"
+                          [class.text-amber-700]="task.status !== 'Complete'"
+                          [class.text-emerald-700]="task.status === 'Complete'">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                            [class.bg-amber-400]="task.status !== 'Complete'"
+                            [class.bg-emerald-500]="task.status === 'Complete'"></span>
+                      {{ task.status }}
+                    </span>
+                    @if (task.status !== 'Complete') {
+                      <button (click)="complete(task)"
+                              class="text-xs font-semibold text-slate-500 hover:text-emerald-700 transition-colors px-2 py-1 rounded hover:bg-emerald-50">
+                        Done
+                      </button>
+                    }
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded"
-                        [class.bg-amber-100]="task.status !== 'Complete'"
-                        [class.text-amber-700]="task.status !== 'Complete'"
-                        [class.bg-emerald-100]="task.status === 'Complete'"
-                        [class.text-emerald-700]="task.status === 'Complete'">{{ task.status }}</span>
-                  @if (task.status !== 'Complete') {
-                    <button (click)="complete(task)" class="text-xs font-bold text-emerald-600 hover:underline">Done</button>
-                  }
-                </div>
-              </div>
-            } @empty {
-              <div class="px-3 py-3 text-sm text-slate-400 italic">No tasks in this group</div>
-            }
-          </div>
-        }
+              } @empty {
+                <div class="px-4 py-3 text-sm text-slate-400 italic">No tasks in this group</div>
+              }
+            </div>
+          }
+          @if (groupedTasks().length === 0 && !showForm()) {
+            <div class="px-4 py-10 text-center text-slate-400 text-sm italic">No open tasks — add one above</div>
+          }
         }
       </div>
     </div>
@@ -148,6 +203,8 @@ export class TasksTabComponent {
   }
 
   showForm = signal(false);
+  saving = signal(false);
+  saveError = signal<string | null>(null);
   editingId: string | null = null;
   draft: Partial<ProjectTask> = this.reset();
 
@@ -158,26 +215,46 @@ export class TasksTabComponent {
   openNew() {
     this.draft = { ...this.reset(), projectId: this.project.id };
     this.editingId = null;
+    this.saveError.set(null);
     this.showForm.set(true);
   }
 
-  cancel() { this.showForm.set(false); }
+  cancel() {
+    this.showForm.set(false);
+    this.saveError.set(null);
+  }
 
   async save() {
-    const payload = { ...this.draft, projectId: this.project.id, source: 'manual' as const };
-    if (this.editingId) {
-      await firstValueFrom(this.data.updateProjectTask(this.editingId, payload));
-    } else {
-      await firstValueFrom(this.data.createProjectTask(payload));
+    if (!this.draft.title?.trim()) {
+      this.saveError.set('Task title is required.');
+      return;
     }
-    this.cancel();
+    const payload = { ...this.draft, projectId: this.project.id, source: 'manual' as const };
+    this.saving.set(true);
+    this.saveError.set(null);
+    try {
+      if (this.editingId) {
+        await firstValueFrom(this.data.updateProjectTask(this.editingId, payload));
+      } else {
+        await firstValueFrom(this.data.createProjectTask(payload));
+      }
+      this.cancel();
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Failed to save task. Check your connection and try again.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   async complete(task: ProjectTask) {
-    await firstValueFrom(this.data.updateProjectTask(task.id, {
-      status: 'Complete',
-      completedAt: new Date().toISOString(),
-    }));
+    try {
+      await firstValueFrom(this.data.updateProjectTask(task.id, {
+        status: 'Complete',
+        completedAt: new Date().toISOString(),
+      }));
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Failed to update task.');
+    }
   }
 
   isOverdue(task: ProjectTask): boolean {
