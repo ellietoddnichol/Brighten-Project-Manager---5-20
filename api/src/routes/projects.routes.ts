@@ -757,3 +757,89 @@ projectsRouter.delete('/projects/:id/labor/:entryId', async (req, res) => {
     res.status(400).json({ ok: false, error: message });
   }
 });
+
+/**
+ * Cross-project Timelogs import.
+ * Accepts rows from the Timelogs sheet (job number + labor fields), resolves each
+ * project by job number, and bulk-inserts all entries in a single transaction.
+ * Rows whose job number cannot be matched are skipped and returned in unmatchedJobs.
+ */
+projectsRouter.post('/labor/timelogs-import', async (req, res) => {
+  try {
+    const rawRows = (req.body as { rows?: unknown[] })?.rows;
+    if (!Array.isArray(rawRows) || rawRows.length === 0) {
+      res.status(400).json({ ok: false, error: 'Request body must include a non-empty "rows" array.' });
+      return;
+    }
+
+    interface TimelogRow {
+      jobId: string;
+      workDate: string;
+      employeeName: string;
+      classification?: string | null;
+      regularHours: number;
+      overtimeHours: number;
+      doubleTimeHours: number;
+      laborCost?: number | null;
+      notes?: string | null;
+    }
+
+    // Parse and validate each row
+    const parsed: TimelogRow[] = rawRows.map((r, i) => {
+      if (!r || typeof r !== 'object') throw new LaborEntryValidationError(`Row ${i + 1}: must be an object.`);
+      const row = r as Record<string, unknown>;
+      const jobId = typeof row.jobId === 'string' ? row.jobId.trim() : '';
+      if (!jobId) throw new LaborEntryValidationError(`Row ${i + 1}: "jobId" is required.`);
+      // Reuse existing labor validation for the labor fields
+      const entry = parseLaborEntryInput(row);
+      return { jobId, ...entry };
+    });
+
+    // Resolve project IDs (cache per jobId to avoid repeated queries)
+    const pool = getPool();
+    const projectIdCache = new Map<string, string | null>();
+    for (const row of parsed) {
+      if (!projectIdCache.has(row.jobId)) {
+        const job = normalizeJobNumber(row.jobId);
+        const pid = await resolveProjectId(pool, row.jobId, job);
+        projectIdCache.set(row.jobId, pid);
+      }
+    }
+
+    const unmatchedJobs = [...new Set(
+      [...projectIdCache.entries()].filter(([, pid]) => pid === null).map(([jid]) => jid),
+    )];
+
+    const matchedRows = parsed.filter(row => projectIdCache.get(row.jobId) !== null);
+    if (matchedRows.length === 0) {
+      res.status(207).json({ ok: false, imported: 0, skipped: parsed.length, unmatchedJobs,
+        error: `No rows matched a known project. Unmatched job IDs: ${unmatchedJobs.join(', ')}` });
+      return;
+    }
+
+    const imported = await withTransaction(async conn => {
+      let count = 0;
+      for (const row of matchedRows) {
+        const projectId = projectIdCache.get(row.jobId)!;
+        const { jobId: _jobId, ...entry } = row;
+        await insertLaborEntry(conn, projectId, entry);
+        count++;
+      }
+      return count;
+    });
+
+    res.status(201).json({
+      ok: true,
+      imported,
+      skipped: parsed.length - imported,
+      unmatchedJobs,
+    });
+  } catch (err) {
+    if (err instanceof LaborEntryValidationError) {
+      res.status(err.statusCode).json({ ok: false, error: err.message });
+      return;
+    }
+    const message = err instanceof Error ? err.message : 'Failed to import timelogs';
+    res.status(400).json({ ok: false, error: message });
+  }
+});
