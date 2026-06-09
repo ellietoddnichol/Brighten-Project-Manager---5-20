@@ -137,12 +137,12 @@ import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-modul
                     }
                   </td>
                   <td class="px-4 py-3">{{ row.reportPeriodEnd || '—' }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.laborSavings | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.foremanShareBonus | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.bonusAvailableToReceive | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.previouslyPaid | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono font-bold">{{ row.payThisTerm | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.remainingPotential | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.laborSavings | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.foremanShareBonus | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.bonusAvailableToReceive | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.previouslyPaid | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.payThisTerm | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.remainingPotential | currency }}</td>
                   <td class="px-4 py-3">
                     <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
                           [class.bg-amber-100]="row.status === 'NeedsReview' || row.status === 'MissingData'"

@@ -157,10 +157,10 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                     <td class="px-4 py-3">{{ row.workDate || '—' }}</td>
                     <td class="px-4 py-3 font-medium">{{ row.employeeName || '—' }}</td>
                     <td class="px-4 py-3">{{ row.jobIdLabel || '—' }}</td>
-                    <td class="px-4 py-3 font-mono text-xs">{{ row.laborCode || '—' }}</td>
+                    <td class="px-4 py-3 font-numeric text-xs">{{ row.laborCode || '—' }}</td>
                     <td class="px-4 py-3">{{ row.classification || '—' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
                     <td class="px-4 py-3">
                       @if (row.rateMissing) {
                         <app-status-chip tone="red">Missing</app-status-chip>
@@ -206,7 +206,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
           <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 mb-6">
             <div class="flex items-center justify-between text-sm mb-2">
               <span class="font-semibold text-slate-700">Labor budget consumed (to-date)</span>
-              <span class="font-mono font-bold"
+              <span class="font-numeric font-bold"
                     [class.text-rose-600]="budgetSummary().pctUsed > 1"
                     [class.text-emerald-600]="budgetSummary().pctUsed <= 1">
                 {{ fmtPct(budgetSummary().pctUsed) }}
@@ -266,13 +266,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                         <span class="ml-1 text-[10px] font-bold uppercase text-rose-600">Missing rate</span>
                       }
                     </td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.regularHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.overtimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.wageCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.fringeCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.regularHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.overtimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.wageCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.fringeCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
                   </tr>
                 } @empty {
                   <tr><td colspan="8" class="px-4 py-10 text-center text-slate-400 italic">No approved time for active jobs this period.</td></tr>
@@ -282,13 +282,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                 <tfoot class="bg-slate-50 border-t font-bold">
                   <tr>
                     <td class="px-4 py-3">Total</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ classTotals().regularHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ classTotals().overtimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ classTotals().doubleTimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ classTotals().totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(classTotals().wageCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(classTotals().fringeCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(classTotals().estimatedLaborTotal) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ classTotals().regularHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ classTotals().overtimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ classTotals().doubleTimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ classTotals().totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(classTotals().wageCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(classTotals().fringeCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(classTotals().estimatedLaborTotal) }}</td>
                   </tr>
                 </tfoot>
               }
@@ -321,7 +321,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                     <td class="px-4 py-3">{{ emp.status || '—' }}</td>
                     <td class="px-4 py-3">{{ emp.defaultClassification || '—' }}</td>
                     <td class="px-4 py-3">{{ employeeUnionArea(emp) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ emp.baseRate != null ? fmtMoney(emp.baseRate) + '/hr' : '—' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ emp.baseRate != null ? fmtMoney(emp.baseRate) + '/hr' : '—' }}</td>
                     <td class="px-4 py-3 text-center">{{ emp.fringeEligible === false ? 'No' : 'Yes' }}</td>
                     <td class="px-4 py-3">{{ emp.qboMatch || '—' }}</td>
                     <td class="px-4 py-3 text-center">
@@ -360,9 +360,9 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                   <tr class="hover:bg-slate-50">
                     <td class="px-4 py-3">{{ rate.unionArea }}</td>
                     <td class="px-4 py-3 font-medium">{{ rate.classification }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(rate.baseRate) }}/hr</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(rate.fringeRate) }}/hr</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ fmtMoney(rate.totalPackage) }}/hr</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(rate.baseRate) }}/hr</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(rate.fringeRate) }}/hr</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ fmtMoney(rate.totalPackage) }}/hr</td>
                     <td class="px-4 py-3">{{ rate.effectiveDate || '—' }}</td>
                     <td class="px-4 py-3 text-slate-500">{{ rate.source }}</td>
                   </tr>
@@ -431,7 +431,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                       [class.bg-amber-50]="row.unassigned || row.unmapped"
                       [class.bg-slate-50]="row.excluded && !row.unassigned && !row.unmapped">
                     <td class="px-4 py-3">
-                      <div class="font-mono font-semibold">{{ row.laborCode }}</div>
+                      <div class="font-numeric font-semibold">{{ row.laborCode }}</div>
                       @if (row.displayName && row.displayName !== row.laborCode) {
                         <div class="text-xs text-slate-500">{{ row.displayName }}</div>
                       }
@@ -446,13 +446,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                         <span class="text-amber-700 italic">Unmapped</span>
                       }
                     </td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.regularHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.overtimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.wageCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.fringeCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ fmtMoney(row.totalCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.regularHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.overtimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.doubleTimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.wageCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.fringeCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ fmtMoney(row.totalCost) }}</td>
                     <td class="px-4 py-3 text-right text-slate-500">{{ row.rowCount }}</td>
                   </tr>
                 } @empty {
@@ -463,13 +463,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                 <tfoot class="bg-slate-50 border-t font-bold">
                   <tr>
                     <td class="px-4 py-3" colspan="2">Total</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ laborCodeTotals().regularHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ laborCodeTotals().overtimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ laborCodeTotals().doubleTimeHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ laborCodeTotals().totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(laborCodeTotals().wageCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(laborCodeTotals().fringeCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(laborCodeTotals().totalCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ laborCodeTotals().regularHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ laborCodeTotals().overtimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ laborCodeTotals().doubleTimeHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ laborCodeTotals().totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(laborCodeTotals().wageCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(laborCodeTotals().fringeCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(laborCodeTotals().totalCost) }}</td>
                     <td class="px-4 py-3 text-right">{{ laborCodeTotals().rowCount }}</td>
                   </tr>
                 </tfoot>
@@ -512,20 +512,20 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
               <tbody class="divide-y divide-slate-100">
                 @for (row of accrualRows(); track row.id) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-3 font-mono">{{ row.month }}</td>
+                    <td class="px-4 py-3 font-numeric">{{ row.month }}</td>
                     <td class="px-4 py-3">
                       <div class="font-medium">J{{ row.projectNo }}</div>
                       @if (row.projectName) { <div class="text-xs text-slate-500">{{ row.projectName }}</div> }
                     </td>
                     <td class="px-4 py-3">{{ row.employeeName }}</td>
-                    <td class="px-4 py-3 font-mono text-xs">{{ row.laborCode || '—' }}</td>
+                    <td class="px-4 py-3 font-numeric text-xs">{{ row.laborCode || '—' }}</td>
                     <td class="px-4 py-3">{{ row.classification }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.totalHours | number:'1.1-1' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.wageCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ fmtMoney(row.fringeCost) }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-bold">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ row.qbActualLaborCost != null ? fmtMoney(row.qbActualLaborCost) : '—' }}</td>
-                    <td class="px-4 py-3 text-right font-mono" [class.text-amber-700]="(row.laborNotYetInQb ?? 0) > 0">
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.totalHours | number:'1.1-1' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.wageCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ fmtMoney(row.fringeCost) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-bold">{{ fmtMoney(row.estimatedLaborTotal) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ row.qbActualLaborCost != null ? fmtMoney(row.qbActualLaborCost) : '—' }}</td>
+                    <td class="px-4 py-3 text-right font-numeric" [class.text-amber-700]="(row.laborNotYetInQb ?? 0) > 0">
                       {{ row.laborNotYetInQb != null ? fmtMoney(row.laborNotYetInQb) : '—' }}
                     </td>
                   </tr>
@@ -548,7 +548,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
                 <div class="text-sm text-slate-600 mt-1">{{ ex.description }}</div>
               </div>
               @if (ex.estimatedCost) {
-                <div class="text-sm font-mono text-slate-700 shrink-0">{{ fmtMoney(ex.estimatedCost) }}</div>
+                <div class="text-sm font-numeric text-slate-700 shrink-0">{{ fmtMoney(ex.estimatedCost) }}</div>
               }
             </div>
           } @empty {

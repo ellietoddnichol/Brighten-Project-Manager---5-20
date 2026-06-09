@@ -169,9 +169,9 @@ interface PayAppSummaryCard {
                         @for (row of sql.costBreakdown.categories; track row.category) {
                           <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
                             <td class="px-3 py-2.5 font-semibold text-slate-900">{{ row.category }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.budget) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.actual) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmtNullable(row.remaining) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmtNullable(row.budget) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmtNullable(row.actual) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmtNullable(row.remaining) }}</td>
                           </tr>
                         }
                       </tbody>
@@ -319,10 +319,10 @@ interface PayAppSummaryCard {
                           }
                         </div>
                       </td>
-                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.totalCompletedStoredToDate) }}</td>
-                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700 font-semibold">{{ moneyNullable(payApp.currentPaymentDue) }}</td>
-                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.retainageAmount) }}</td>
-                      <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.balanceToFinish) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-numeric text-slate-700">{{ moneyNullable(payApp.totalCompletedStoredToDate) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-numeric text-slate-700 font-semibold">{{ moneyNullable(payApp.currentPaymentDue) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-numeric text-slate-700">{{ moneyNullable(payApp.retainageAmount) }}</td>
+                      <td class="px-3 py-2.5 align-top text-right text-xs font-numeric text-slate-700">{{ moneyNullable(payApp.balanceToFinish) }}</td>
                       <td class="px-3 py-2 align-top text-right font-semibold text-slate-700">{{ payApp.sovLineCount }}</td>
                       <td class="px-3 py-2 align-top">
                         <app-status-chip [tone]="recordNeedsReview(payApp) ? 'amber' : 'slate'" [label]="reviewIndicatorLabel(payApp)" />
@@ -427,17 +427,17 @@ interface PayAppSummaryCard {
                       <tbody class="divide-y divide-slate-100">
                         @for (line of detail.lines; track line.id) {
                           <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
-                            <td class="px-3 py-2.5 font-mono font-bold">{{ line.lineNumber || '' }}</td>
+                            <td class="px-3 py-2.5 font-numeric font-bold">{{ line.lineNumber || '' }}</td>
                             <td class="px-3 py-2.5">{{ line.costCode || '' }}</td>
                             <td class="px-3 py-2.5 font-medium text-slate-900">{{ line.description || '' }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.scheduledValue) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.workCompletedPrevious) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.workCompletedThisPeriod) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.materialsPresentlyStored) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.totalCompletedAndStored) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.scheduledValue) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.workCompletedPrevious) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.workCompletedThisPeriod) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.materialsPresentlyStored) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.totalCompletedAndStored) }}</td>
                             <td class="px-3 py-2.5 text-right">{{ percentCompleteLabel(line.percentComplete) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.balanceToFinish) }}</td>
-                            <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ moneyNullable(line.retainage) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.balanceToFinish) }}</td>
+                            <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ moneyNullable(line.retainage) }}</td>
                           </tr>
                         }
                       </tbody>

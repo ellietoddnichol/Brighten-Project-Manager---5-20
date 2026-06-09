@@ -174,7 +174,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
                 <tr class="hover:bg-slate-50">
                   <td class="px-5 py-3 text-slate-700">{{ projectLabel(week.projectId) }}</td>
                   <td class="px-5 py-3 font-medium">{{ week.weekEnding }}</td>
-                  <td class="px-5 py-3 text-right font-mono text-xs">{{ week.totalHours | number:'1.1-1' }}</td>
+                  <td class="px-5 py-3 text-right font-numeric text-xs">{{ week.totalHours | number:'1.1-1' }}</td>
                   <td class="px-5 py-3">{{ week.entryCount }}</td>
                   <td class="px-5 py-3"><app-status-chip [tone]="weekTone(week.status)">{{ week.status }}</app-status-chip></td>
                   <td class="px-5 py-3 text-right">
@@ -215,12 +215,12 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
                     <tr>
                       <td class="px-5 py-3 font-medium">{{ entry.employeeName }}</td>
                       <td class="px-5 py-3">{{ entry.classification }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.regularHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.overtimeHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.doubleTimeHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.baseRate | currency:'USD':'symbol':'1.2-2' }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.fringeRate | currency:'USD':'symbol':'1.2-2' }}</td>
-                      <td class="px-5 py-3 text-right font-mono text-xs">{{ entry.grossPackage | currency:'USD':'symbol':'1.0-0' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.regularHours | number:'1.1-1' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.overtimeHours | number:'1.1-1' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.doubleTimeHours | number:'1.1-1' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.baseRate | currency:'USD':'symbol':'1.2-2' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.fringeRate | currency:'USD':'symbol':'1.2-2' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.grossPackage | currency:'USD':'symbol':'1.0-0' }}</td>
                     </tr>
                   } @empty {
                     <tr><td colspan="8" class="px-5 py-10 text-center text-slate-400 italic">No entries for this week.</td></tr>
@@ -248,7 +248,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
               @for (ex of openExceptions(); track ex.id) {
                 <tr class="hover:bg-slate-50">
                   <td class="px-5 py-3 text-slate-700">{{ projectLabel(ex.projectId) }}</td>
-                  <td class="px-5 py-3 font-mono text-xs">{{ ex.type }}</td>
+                  <td class="px-5 py-3 font-numeric text-xs">{{ ex.type }}</td>
                   <td class="px-5 py-3 text-slate-700">{{ ex.message }}</td>
                   <td class="px-5 py-3 text-slate-500">{{ ex.employeeName || '—' }}</td>
                   <td class="px-5 py-3"><app-status-chip [tone]="ex.severity === 'error' ? 'red' : 'amber'">{{ ex.severity }}</app-status-chip></td>

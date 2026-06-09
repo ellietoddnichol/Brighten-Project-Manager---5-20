@@ -78,25 +78,25 @@ import { toSignal } from '@angular/core/rxjs-interop';
                   <td class="px-5 py-4 font-bold text-orange-600 sticky left-0 bg-white truncate max-w-[250px]" [title]="row.projectName">
                     {{ row.projectNumber }} - {{ row.projectName }}
                   </td>
-                  <td class="px-5 py-4 text-right font-mono">{{ row.estimatedCost | currency:'USD':'symbol':'1.0-0' }}</td>
-                  <td class="px-5 py-4 text-right font-mono">{{ row.actualCost | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-4 text-right font-numeric">{{ row.estimatedCost | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-4 text-right font-numeric">{{ row.actualCost | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-4 text-center font-bold">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px]"
                           [ngClass]="row.pctComplete >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
                       {{ row.pctComplete | number:'1.1-2' }}%
                     </span>
                   </td>
-                  <td class="px-5 py-4 text-right font-mono">{{ row.contractAmount | currency:'USD':'symbol':'1.0-0' }}</td>
-                  <td class="px-5 py-4 text-right font-mono text-slate-500">{{ row.earnedRev | currency:'USD':'symbol':'1.0-0' }}</td>
-                  <td class="px-5 py-4 text-right font-mono font-medium">{{ row.billedAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-4 text-right font-numeric">{{ row.contractAmount | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-4 text-right font-numeric text-slate-500">{{ row.earnedRev | currency:'USD':'symbol':'1.0-0' }}</td>
+                  <td class="px-5 py-4 text-right font-numeric font-medium">{{ row.billedAmount | currency:'USD':'symbol':'1.0-0' }}</td>
                   
                   <!-- Over/Under -->
-                  <td class="px-5 py-4 text-right font-mono font-bold" [ngClass]="row.overUnder < 0 ? 'text-amber-600' : 'text-slate-900'">
+                  <td class="px-5 py-4 text-right font-numeric font-bold" [ngClass]="row.overUnder < 0 ? 'text-amber-600' : 'text-slate-900'">
                     {{ row.overUnder | currency:'USD':'symbol':'1.0-0' }}
                   </td>
                   
                   <!-- Profit -->
-                  <td class="px-5 py-4 text-right font-mono font-bold" [ngClass]="row.profit < 0 ? 'text-rose-600' : 'text-emerald-600'">
+                  <td class="px-5 py-4 text-right font-numeric font-bold" [ngClass]="row.profit < 0 ? 'text-rose-600' : 'text-emerald-600'">
                     {{ row.profit | currency:'USD':'symbol':'1.0-0' }}
                   </td>
                   
@@ -110,14 +110,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
             <tfoot class="bg-slate-50 border-t-2 border-slate-200 font-bold text-slate-900">
               <tr>
                 <td class="px-5 py-4 sticky left-0 bg-slate-50 shadow-[1px_0_0_#e2e8f0]">TOTALS</td>
-                <td class="px-5 py-4 text-right font-mono">{{ totals().estCost | currency:'USD':'symbol':'1.0-0' }}</td>
-                <td class="px-5 py-4 text-right font-mono">{{ totals().actCost | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric">{{ totals().estCost | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric">{{ totals().actCost | currency:'USD':'symbol':'1.0-0' }}</td>
                 <td class="px-5 py-4 text-center"></td>
-                <td class="px-5 py-4 text-right font-mono">{{ totals().contract | currency:'USD':'symbol':'1.0-0' }}</td>
-                <td class="px-5 py-4 text-right font-mono text-slate-600">{{ totals().earnedRev | currency:'USD':'symbol':'1.0-0' }}</td>
-                <td class="px-5 py-4 text-right font-mono">{{ totals().billed | currency:'USD':'symbol':'1.0-0' }}</td>
-                <td class="px-5 py-4 text-right font-mono" [ngClass]="totals().overUnder < 0 ? 'text-amber-600' : ''">{{ totals().overUnder | currency:'USD':'symbol':'1.0-0' }}</td>
-                <td class="px-5 py-4 text-right font-mono text-emerald-600">{{ totals().profit | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric">{{ totals().contract | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric text-slate-600">{{ totals().earnedRev | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric">{{ totals().billed | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric" [ngClass]="totals().overUnder < 0 ? 'text-amber-600' : ''">{{ totals().overUnder | currency:'USD':'symbol':'1.0-0' }}</td>
+                <td class="px-5 py-4 text-right font-numeric text-emerald-600">{{ totals().profit | currency:'USD':'symbol':'1.0-0' }}</td>
                 <td class="px-5 py-4 text-right">{{ totals().margin | percent:'1.1-2' }}</td>
               </tr>
             </tfoot>

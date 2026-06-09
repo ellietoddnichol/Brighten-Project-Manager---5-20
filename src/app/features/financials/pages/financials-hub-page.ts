@@ -287,7 +287,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                         @if (row.jobNumber !== '—') {
 
-                          <span class="text-xs font-bold font-mono">{{ row.jobNumber }}</span>
+                          <span class="text-xs font-bold font-numeric">{{ row.jobNumber }}</span>
 
                           <span class="text-sm font-semibold text-slate-900 truncate max-w-[240px]">{{ row.projectName }}</span>
 
@@ -303,7 +303,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                       @if (row.amount > 0) {
 
-                        <p class="text-xs text-slate-500 mt-0.5 font-mono">{{ fmt(row.amount) }}</p>
+                        <p class="text-xs text-slate-500 mt-0.5 font-numeric">{{ fmt(row.amount) }}</p>
 
                       }
 
@@ -359,7 +359,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                       <div class="flex flex-wrap items-center gap-2 mb-1">
 
-                        <span class="text-xs font-bold font-mono">#{{ row.record.jobNumber }}</span>
+                        <span class="text-xs font-bold font-numeric">#{{ row.record.jobNumber }}</span>
 
                         <span class="text-sm font-bold text-slate-900">{{ row.record.projectName }}</span>
 
@@ -374,15 +374,15 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                       <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
 
-                        <span><span class="text-slate-400">Contract</span> <span class="font-mono font-semibold">{{ fmt(row.record.contractAmount) }}</span></span>
+                        <span><span class="text-slate-400">Contract</span> <span class="font-numeric font-semibold">{{ fmt(row.record.contractAmount) }}</span></span>
 
                         <span><span class="text-slate-400">Budget</span> <span class="font-semibold">{{ row.budgetBasisLabel }}</span></span>
 
-                        <span><span class="text-slate-400">Cost</span> <span class="font-mono font-semibold">{{ fmt(row.record.costToDate) }}</span></span>
+                        <span><span class="text-slate-400">Cost</span> <span class="font-numeric font-semibold">{{ fmt(row.record.costToDate) }}</span></span>
 
-                        <span><span class="text-slate-400">Margin</span> <span class="font-mono font-semibold" [class.text-rose-700]="row.record.forecastMargin < 20">{{ row.record.forecastMargin | number:'1.0-1' }}%</span></span>
+                        <span><span class="text-slate-400">Margin</span> <span class="font-numeric font-semibold" [class.text-rose-700]="row.record.forecastMargin < 20">{{ row.record.forecastMargin | number:'1.0-1' }}%</span></span>
 
-                        <span><span class="text-slate-400">O/U bill</span> <span class="font-mono font-semibold">{{ fmt(row.record.overUnderBilling) }}</span></span>
+                        <span><span class="text-slate-400">O/U bill</span> <span class="font-numeric font-semibold">{{ fmt(row.record.overUnderBilling) }}</span></span>
 
                       </div>
 
@@ -453,7 +453,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     <div class="flex flex-wrap items-center gap-2">
 
-                      <span class="text-xs font-bold font-mono">#{{ row.jobNumber }}</span>
+                      <span class="text-xs font-bold font-numeric">#{{ row.jobNumber }}</span>
 
                       <span class="text-sm font-semibold text-slate-900">{{ row.projectName }}</span>
 
@@ -461,7 +461,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     </div>
 
-                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs font-mono">
+                    <div class="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-xs font-numeric">
 
                       <span>Cur {{ fmt(row.current) }}</span>
 
@@ -533,7 +533,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     <div class="flex flex-wrap items-center gap-2">
 
-                      <span class="text-xs font-bold font-mono">#{{ row.jobNumber }}</span>
+                      <span class="text-xs font-bold font-numeric">#{{ row.jobNumber }}</span>
 
                       <span class="text-sm font-semibold text-slate-900">{{ row.projectName }}</span>
 
@@ -541,7 +541,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     </div>
 
-                    <p class="text-xs font-mono text-slate-500 mt-0.5">{{ fmt(row.amount) }} · {{ row.status }}</p>
+                    <p class="text-xs font-numeric text-slate-500 mt-0.5">{{ fmt(row.amount) }} · {{ row.status }}</p>
 
                   </a>
 
@@ -595,7 +595,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     <p class="text-xs text-slate-600 mt-0.5">{{ row.jobLabel }} · {{ row.status }}</p>
 
-                    <p class="text-xs font-mono text-slate-500 mt-0.5">{{ fmt(row.amount) }} · {{ row.source }} · {{ row.matchStatus }}</p>
+                    <p class="text-xs font-numeric text-slate-500 mt-0.5">{{ fmt(row.amount) }} · {{ row.source }} · {{ row.matchStatus }}</p>
 
                   </div>
 
@@ -643,13 +643,13 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                         <span class="text-sm font-semibold text-slate-900">{{ row.record.foremanName }}</span>
 
-                        <span class="text-xs font-mono">#{{ row.jobNumber }}</span>
+                        <span class="text-xs font-numeric">#{{ row.jobNumber }}</span>
 
                         <span class="text-xs text-slate-500">{{ row.projectName }}</span>
 
                       </div>
 
-                      <div class="flex flex-wrap gap-x-3 text-xs font-mono mt-1">
+                      <div class="flex flex-wrap gap-x-3 text-xs font-numeric mt-1">
 
                         <span>Budget {{ fmt(row.record.laborBudget) }}</span>
 

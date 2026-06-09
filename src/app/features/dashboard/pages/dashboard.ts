@@ -143,7 +143,7 @@ interface DashboardFinancialMetric {
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
                     @if (item.jobNumber) {
-                      <span class="text-xs font-mono font-bold text-slate-900">{{ item.jobNumber }}</span>
+                      <span class="text-xs font-numeric font-bold text-slate-900">{{ item.jobNumber }}</span>
                       @if (item.projectName) {
                         <span class="text-xs text-slate-500 truncate max-w-[240px]">{{ item.projectName }}</span>
                       }
@@ -194,7 +194,7 @@ interface DashboardFinancialMetric {
                  class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2">
-                    <span class="font-mono text-xs font-bold text-slate-900">{{ record.jobNumber }}</span>
+                    <span class="font-numeric text-xs font-bold text-slate-900">{{ record.jobNumber }}</span>
                     <span class="text-sm font-semibold text-slate-900 truncate max-w-[220px]">{{ record.projectName }}</span>
                     <app-status-chip [tone]="billingTone(record)">{{ billingLabel(record) }}</app-status-chip>
                   </div>
@@ -204,7 +204,7 @@ interface DashboardFinancialMetric {
                 </div>
                 <div class="text-right shrink-0">
                   <div class="text-xs text-slate-500">Current Due</div>
-                  <div class="text-xs font-mono text-slate-700 font-semibold">{{ currencyOrPending(record.currentPaymentDue) }}</div>
+                  <div class="text-xs font-numeric text-slate-700 font-semibold">{{ currencyOrPending(record.currentPaymentDue) }}</div>
                 </div>
               </a>
             }
@@ -248,7 +248,7 @@ interface DashboardFinancialMetric {
               <tbody class="divide-y divide-slate-100">
                 @for (row of activeProjectRows(); track row.projectId) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
+                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.projectName }}
@@ -261,9 +261,9 @@ interface DashboardFinancialMetric {
                     <td class="px-4 py-2.5">
                       <app-status-chip [tone]="billingStatusTone(row.billingStatus)">{{ row.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.contract2026) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmt(row.contract2026) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs">{{ fmt(row.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right font-numeric text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
                     <td class="px-4 py-2.5">
                       <div class="text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</div>
                     </td>
@@ -335,9 +335,9 @@ interface DashboardFinancialMetric {
               <tbody class="divide-y divide-slate-100">
                 @for (row of laborHoursRows(); track row.projectNumber) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
+                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
                     <td class="px-4 py-3 text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
-                    <td class="px-4 py-3 text-right font-mono font-semibold">{{ fmtHours(row.totalHours) }}</td>
+                    <td class="px-4 py-3 text-right font-numeric font-semibold">{{ fmtHours(row.totalHours) }}</td>
                     <td class="px-4 py-3 text-right text-slate-600">{{ row.employeeCount }}</td>
                   </tr>
                 }

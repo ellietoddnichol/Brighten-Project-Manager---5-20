@@ -245,7 +245,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-4">
 
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
 
@@ -327,7 +327,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
 
         @if (listLoading()) {
           <div class="p-4 space-y-3">
@@ -361,7 +361,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                 @for (row of visibleListRows(); track row.project.id) {
                   <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
                       (click)="navigateToProject(row, $event)">
-                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
+                    <td class="px-4 py-2.5 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.project.projectName }}
@@ -383,9 +383,9 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                     <td class="px-4 py-2.5">
                       <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
                     <td class="px-4 py-2.5">
                       <a [routerLink]="row.nextActionRoute"
                          class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
@@ -414,7 +414,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                     <div class="flex flex-wrap items-center gap-2 mb-1">
 
-                      <span class="text-xs font-mono font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
+                      <span class="text-xs font-numeric font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
 
                       <span class="text-sm font-semibold text-slate-900 min-w-0 truncate flex-1 group-hover:text-indigo-700">
 
@@ -440,15 +440,15 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
 
-                      <span><span class="text-slate-400">Contract</span> <span class="font-mono font-semibold">{{ fmt(row.financial.currentContractAmount) }}</span></span>
+                      <span><span class="text-slate-400">Contract</span> <span class="font-numeric font-semibold">{{ fmt(row.financial.currentContractAmount) }}</span></span>
 
-                      <span><span class="text-slate-400">Billed</span> <span class="font-mono font-semibold">{{ fmt(row.financial.billedToDate) }}</span></span>
+                      <span><span class="text-slate-400">Billed</span> <span class="font-numeric font-semibold">{{ fmt(row.financial.billedToDate) }}</span></span>
 
                       <span>
 
                         <span class="text-slate-400">{{ row.moneySecondaryLabel }}</span>
 
-                        <span class="font-mono font-semibold" [class.text-rose-700]="row.moneySecondaryAlert">{{ fmt(row.moneySecondaryValue) }}</span>
+                        <span class="font-numeric font-semibold" [class.text-rose-700]="row.moneySecondaryAlert">{{ fmt(row.moneySecondaryValue) }}</span>
 
                       </span>
 

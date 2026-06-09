@@ -150,7 +150,7 @@ type SubFilter =
                       <app-status-chip tone="green" label="Drive" />
                     }
                   </td>
-                  <td class="px-4 py-3 text-right text-xs font-mono text-slate-700">
+                  <td class="px-4 py-3 text-right text-xs font-numeric text-slate-700">
                     {{ row.sub.seededTotalCost != null ? (row.sub.seededTotalCost | currency) : '—' }}
                   </td>
                   <td class="px-4 py-3 text-right">{{ row.activeProjects }}</td>
@@ -223,8 +223,8 @@ type SubFilter =
                     <td class="px-4 py-3">{{ inv.subcontractorName }}</td>
                     <td class="px-4 py-3">{{ inv.projectName || inv.jobNumber || '—' }}</td>
                     <td class="px-4 py-3" [class.text-rose-700]="isOverdue(inv)">{{ inv.dueDate || '—' }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ inv.approvedAmount | currency }}</td>
-                    <td class="px-4 py-3 text-right font-mono">{{ inv.openBalance | currency }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ inv.approvedAmount | currency }}</td>
+                    <td class="px-4 py-3 text-right font-numeric">{{ inv.openBalance | currency }}</td>
                     <td class="px-4 py-3">{{ inv.status }}</td>
                     <td class="px-4 py-3">{{ inv.lienWaiverStatus }}</td>
                   </tr>

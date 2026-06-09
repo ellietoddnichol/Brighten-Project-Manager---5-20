@@ -65,18 +65,18 @@ import { ForemanBonusRecord } from '@app/models/foreman-bonus.types';
               @for (row of rows(); track row.id) {
                 <tr class="hover:bg-slate-50">
                   <td class="px-4 py-3 font-semibold">{{ row.foremanName }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.laborBudget | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.actualLaborCost | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.percentComplete * 100 | number:'1.0-2' }}%</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.currentLaborBudget | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono" [class.text-emerald-700]="row.laborSavings > 0">{{ row.laborSavings | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.bonusRate * 100 | number:'1.0-2' }}%</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.foremanSharePercent * 100 | number:'1.0-0' }}%</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.billingReleasePercent * 100 | number:'1.0-2' }}%</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.bonusAvailableToReceive | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.previouslyPaid | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono font-bold">{{ row.payThisTerm | currency }}</td>
-                  <td class="px-4 py-3 text-right font-mono">{{ row.remainingPotential | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.laborBudget | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.actualLaborCost | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.percentComplete * 100 | number:'1.0-2' }}%</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.currentLaborBudget | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric" [class.text-emerald-700]="row.laborSavings > 0">{{ row.laborSavings | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.bonusRate * 100 | number:'1.0-2' }}%</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.foremanSharePercent * 100 | number:'1.0-0' }}%</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.billingReleasePercent * 100 | number:'1.0-2' }}%</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.bonusAvailableToReceive | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.previouslyPaid | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.payThisTerm | currency }}</td>
+                  <td class="px-4 py-3 text-right font-numeric">{{ row.remainingPotential | currency }}</td>
                   <td class="px-4 py-3">
                     <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
                           [class.bg-amber-100]="row.status === 'NeedsReview' || row.status === 'MissingData'"

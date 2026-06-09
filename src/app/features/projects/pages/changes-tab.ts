@@ -256,7 +256,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               <tbody class="divide-y divide-slate-100">
                 @for (cr of projectCrsSorted(); track cr.id) {
                   <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
-                    <td class="px-3 py-2.5 font-mono font-bold">{{ crNumberFn(cr) || '—' }}</td>
+                    <td class="px-3 py-2.5 font-numeric font-bold">{{ crNumberFn(cr) || '—' }}</td>
                     <td class="px-3 py-2.5 max-w-xs truncate">
                       {{ cr.title || cr.description || '—' }}
                       @if (!isOpenChangeRequest(cr)) {
@@ -391,7 +391,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                 <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Description</label>
                 <textarea [(ngModel)]="draftCo.description" rows="2" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></textarea>
               </div>
-              <div class="text-right font-mono font-bold text-slate-900">Sell price: {{ draftCo.sellPrice | currency }}</div>
+              <div class="text-right font-numeric font-bold text-slate-900">Sell price: {{ draftCo.sellPrice | currency }}</div>
               <div class="flex justify-end gap-2">
                 <button type="button" (click)="cancelCoForm()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
                 <button type="button" (click)="saveCo()" class="bg-slate-900 hover:bg-slate-800 transition-colors text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
@@ -413,12 +413,12 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               <tbody class="divide-y divide-slate-100">
                 @for (co of projectCosSorted(); track co.id) {
                   <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700">
-                    <td class="px-3 py-2.5 font-mono font-bold">{{ coNumberFn(co) || '—' }}</td>
+                    <td class="px-3 py-2.5 font-numeric font-bold">{{ coNumberFn(co) || '—' }}</td>
                     <td class="px-3 py-2.5">{{ co.title }}</td>
                     <td class="px-3 py-2.5">
                       <app-status-chip [tone]="coStatusTone(co.status)" [label]="normalizeCoStatus(co.status)" />
                     </td>
-                    <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ displayCoAmount(co) | currency }}</td>
+                    <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ displayCoAmount(co) | currency }}</td>
                     <td class="px-5 py-3 text-right flex flex-wrap justify-end gap-1 items-center">
                       <button type="button" (click)="editCo(co)" class="text-slate-400 hover:text-slate-800"><mat-icon class="!text-[16px]">edit</mat-icon></button>
                       <button type="button" (click)="toggleCoDocs(co.id)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
@@ -470,7 +470,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                 <tbody class="divide-y divide-slate-100">
                   @for (cr of crsNeedsPricing(); track cr.id) {
                     <tr class="hover:bg-slate-50">
-                      <td class="px-5 py-3 font-mono">{{ crNumberFn(cr) }}</td>
+                      <td class="px-5 py-3 font-numeric">{{ crNumberFn(cr) }}</td>
                       <td class="px-5 py-3 truncate max-w-xs">{{ cr.title || cr.description }}</td>
                       <td class="px-5 py-3">{{ cr.status }}</td>
                       <td class="px-5 py-3 text-right space-x-1">
@@ -501,10 +501,10 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                 <tbody class="divide-y divide-slate-100">
                   @for (co of cosNeedsPricing(); track co.id) {
                     <tr class="hover:bg-slate-50">
-                      <td class="px-5 py-3 font-mono">{{ coNumberFn(co) }}</td>
+                      <td class="px-5 py-3 font-numeric">{{ coNumberFn(co) }}</td>
                       <td class="px-5 py-3">{{ co.title }}</td>
                       <td class="px-5 py-3">{{ normalizeCoStatus(co.status) }}</td>
-                      <td class="px-5 py-3 text-right font-mono">{{ coTotalAmountFn(co) | currency }}</td>
+                      <td class="px-5 py-3 text-right font-numeric">{{ coTotalAmountFn(co) | currency }}</td>
                       <td class="px-5 py-3 text-right space-x-1">
                         <button type="button" (click)="editCo(co)" class="text-xs font-bold text-slate-700 hover:underline">Edit</button>
                         <button type="button" (click)="toggleCoDocsPricing(co)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
@@ -537,9 +537,9 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               <tbody class="divide-y divide-slate-100">
                 @for (co of cosAwaitingApproval(); track co.id) {
                   <tr class="hover:bg-slate-50">
-                    <td class="px-5 py-3 font-mono">{{ coNumberFn(co) }}</td>
+                    <td class="px-5 py-3 font-numeric">{{ coNumberFn(co) }}</td>
                     <td class="px-5 py-3">{{ co.title }}</td>
-                    <td class="px-5 py-3 text-right font-mono">{{ coTotalAmountFn(co) | currency }}</td>
+                    <td class="px-5 py-3 text-right font-numeric">{{ coTotalAmountFn(co) | currency }}</td>
                     <td class="px-5 py-3 text-right space-x-1">
                       <button type="button" (click)="editCo(co)" class="text-xs font-bold text-slate-700 hover:underline">Edit</button>
                       <button type="button" (click)="toggleCoDocsApprove(co)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
@@ -575,9 +575,9 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
               <tbody class="divide-y divide-slate-100">
                 @for (co of cosApprovedUnbilled(); track co.id) {
                   <tr class="hover:bg-slate-50">
-                    <td class="px-5 py-3 font-mono">{{ coNumberFn(co) }}</td>
+                    <td class="px-5 py-3 font-numeric">{{ coNumberFn(co) }}</td>
                     <td class="px-5 py-3">{{ co.title }}</td>
-                    <td class="px-5 py-3 text-right font-mono">{{ coApprovedAmount(co) | currency }}</td>
+                    <td class="px-5 py-3 text-right font-numeric">{{ coApprovedAmount(co) | currency }}</td>
                     <td class="px-5 py-3 text-right">
                       <button type="button"
                               [disabled]="!pickDraftPayApp()"

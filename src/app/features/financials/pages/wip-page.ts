@@ -115,7 +115,7 @@ import { WIPRecord } from '@app/models/financial.types';
             <div class="flex flex-wrap items-start gap-4">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2 mb-1">
-                  <span class="text-xs font-bold font-mono text-slate-500">#{{ row.jobNumber }}</span>
+                  <span class="text-xs font-bold font-numeric text-slate-500">#{{ row.jobNumber }}</span>
                   <span class="text-sm font-bold text-slate-900">{{ row.projectName }}</span>
                   <app-status-chip tone="slate">{{ groupLabel(row.wipGroup) }}</app-status-chip>
                   @if (row.wipConfidence) {
@@ -123,23 +123,23 @@ import { WIPRecord } from '@app/models/financial.types';
                   }
                 </div>
                 <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-                  <span><span class="text-slate-400">Contract</span> <span class="font-mono font-semibold">{{ fmt(row.contractAmount) }}</span></span>
+                  <span><span class="text-slate-400">Contract</span> <span class="font-numeric font-semibold">{{ fmt(row.contractAmount) }}</span></span>
                   <span><span class="text-slate-400">Basis</span> <span class="font-semibold">{{ row.budgetBasisLabel }}</span></span>
-                  <span><span class="text-slate-400">EFC</span> <span class="font-mono font-semibold">{{ fmt(row.estimatedFinalCost) }}</span></span>
-                  <span><span class="text-slate-400">Actual</span> <span class="font-mono font-semibold">{{ fmt(row.costToDate) }}</span></span>
-                  <span><span class="text-slate-400">Billed</span> <span class="font-mono font-semibold">{{ fmt(row.billedToDate) }}</span></span>
-                  <span><span class="text-slate-400">Earned</span> <span class="font-mono font-semibold">{{ fmt(row.earnedRevenue) }}</span></span>
+                  <span><span class="text-slate-400">EFC</span> <span class="font-numeric font-semibold">{{ fmt(row.estimatedFinalCost) }}</span></span>
+                  <span><span class="text-slate-400">Actual</span> <span class="font-numeric font-semibold">{{ fmt(row.costToDate) }}</span></span>
+                  <span><span class="text-slate-400">Billed</span> <span class="font-numeric font-semibold">{{ fmt(row.billedToDate) }}</span></span>
+                  <span><span class="text-slate-400">Earned</span> <span class="font-numeric font-semibold">{{ fmt(row.earnedRevenue) }}</span></span>
                   <span><span class="text-slate-400">O/U</span>
-                    <span class="text-xs font-mono px-1.5 py-0.5 rounded"
+                    <span class="text-xs font-numeric px-1.5 py-0.5 rounded"
                           [class.text-rose-700]="row.overUnderBilling > 1000"
                           [class.bg-rose-50]="row.overUnderBilling > 1000"
                           [class.text-emerald-700]="row.overUnderBilling < -1000"
                           [class.bg-emerald-50]="row.overUnderBilling < -1000"
                           [class.text-slate-700]="Math.abs(row.overUnderBilling) <= 1000">{{ fmt(row.overUnderBilling) }}</span>
                   </span>
-                  <span><span class="text-slate-400">Margin</span> <span class="font-mono font-semibold" [class.text-rose-700]="row.forecastMargin < 20">{{ row.forecastMargin | number:'1.0-1' }}%</span></span>
+                  <span><span class="text-slate-400">Margin</span> <span class="font-numeric font-semibold" [class.text-rose-700]="row.forecastMargin < 20">{{ row.forecastMargin | number:'1.0-1' }}%</span></span>
                   @if (row.arBalance > 0) {
-                    <span><span class="text-slate-400">AR</span> <span class="font-mono font-semibold text-orange-700">{{ fmt(row.arBalance) }}</span></span>
+                    <span><span class="text-slate-400">AR</span> <span class="font-numeric font-semibold text-orange-700">{{ fmt(row.arBalance) }}</span></span>
                   }
                 </div>
                 @if (row.warningChips?.length) {
