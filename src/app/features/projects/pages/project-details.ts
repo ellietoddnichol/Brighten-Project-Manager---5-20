@@ -875,14 +875,32 @@ export class ProjectDetails implements OnInit {
       taxable: !this.editDraft.taxExempt,
     });
 
+    this.savingEdit.set(true);
+    this.saveEditError.set(null);
+
+    const saveViaFirestore = () => {
+      this.dataService.updateProject(this.projectId!, firestorePatch).subscribe({
+        next: (updated) => {
+          this.savingEdit.set(false);
+          this.showEditModal.set(false);
+          if (updated && isCertifiedPayrollProject(updated)) {
+            void this.certifiedPayroll.ensureComplianceForProject(updated);
+          }
+        },
+        error: () => {
+          this.savingEdit.set(false);
+          this.saveEditError.set('Failed to save project changes. Check your connection and try again.');
+        },
+      });
+    };
+
     if (apiConfig.useApiBackend && this.projectApi.isEnabled()) {
       const apiPatch = buildProjectApiUpdatePayload(current, this.editDraft);
       if (!hasApiUpdateFields(apiPatch)) {
-        this.showEditModal.set(false);
+        // No SQL-mapped fields changed — save Firestore-only fields and close
+        saveViaFirestore();
         return;
       }
-      this.savingEdit.set(true);
-      this.saveEditError.set(null);
       const apiProjectKey = current.projectNumber || this.projectId;
       void this.projectApi.updateProject(apiProjectKey, apiPatch).then((updated) => {
         this.savingEdit.set(false);
@@ -891,28 +909,20 @@ export class ProjectDetails implements OnInit {
           void this.certifiedPayroll.ensureComplianceForProject(updated);
         }
       }).catch((err: unknown) => {
-        this.savingEdit.set(false);
-        const message = err instanceof Error ? err.message : 'Failed to save project to Cloud SQL.';
-        this.saveEditError.set(message);
+        const message = err instanceof Error ? err.message : '';
+        // Network/connection errors: fall back to Firestore so the edit isn't lost
+        const isNetworkError = !message || /fetch|network|failed to fetch|ERR_|ECONNREFUSED|504|503/i.test(message);
+        if (isNetworkError) {
+          saveViaFirestore();
+        } else {
+          this.savingEdit.set(false);
+          this.saveEditError.set(message || 'Failed to save project to Cloud SQL.');
+        }
       });
       return;
     }
 
-    this.savingEdit.set(true);
-    this.saveEditError.set(null);
-    this.dataService.updateProject(this.projectId, firestorePatch).subscribe({
-      next: (updated) => {
-        this.savingEdit.set(false);
-        this.showEditModal.set(false);
-        if (updated && isCertifiedPayrollProject(updated)) {
-          void this.certifiedPayroll.ensureComplianceForProject(updated);
-        }
-      },
-      error: () => {
-        this.savingEdit.set(false);
-        this.saveEditError.set('Failed to save project changes to Firestore.');
-      },
-    });
+    saveViaFirestore();
   }
 
   saveDriveIdFromUtility(folderIdRaw: string): void {
