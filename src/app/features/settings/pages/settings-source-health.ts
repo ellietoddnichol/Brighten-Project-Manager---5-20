@@ -54,8 +54,10 @@ interface SourceCard {
                 </div>
                 <p class="text-xs text-slate-500 mt-1">{{ card.role }}</p>
               </div>
-              <span class="text-[10px] uppercase font-bold px-2 py-1 rounded-full"
-                    [class]="statusBadgeClass(card.status)">{{ card.statusLabel }}</span>
+              <span class="inline-flex items-center gap-1.5 text-xs font-medium" [class]="statusTextClass(card.status)">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="statusDotClass(card.status)"></span>
+                {{ card.statusLabel }}
+              </span>
             </div>
 
             <dl class="text-xs space-y-1 text-slate-600">
@@ -101,7 +103,12 @@ interface SourceCard {
               @for (row of syncHealth.rows(); track row.id) {
                 <tr class="border-b border-slate-50">
                   <td class="py-2 pr-3 font-medium">{{ row.label }}</td>
-                  <td class="py-2 pr-3 capitalize">{{ statusLabelFn(row.status) }}</td>
+                  <td class="py-2 pr-3">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-medium" [class]="statusTextClass(row.status)">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="statusDotClass(row.status)"></span>
+                      {{ statusLabelFn(row.status) }}
+                    </span>
+                  </td>
                   <td class="py-2 pr-3">{{ row.lastSync ? (row.lastSync | date:'short') : '—' }}</td>
                   <td class="py-2 font-mono">{{ row.rowsImported ?? '—' }}</td>
                 </tr>
@@ -238,12 +245,21 @@ export class SettingsSourceHealthComponent {
     }
   }
 
-  statusBadgeClass(status: SyncHealthStatus): string {
+  statusDotClass(status: SyncHealthStatus): string {
     switch (status) {
-      case 'connected': return 'bg-emerald-50 text-emerald-800';
-      case 'warning': return 'bg-amber-50 text-amber-800';
-      case 'error': return 'bg-rose-50 text-rose-800';
-      default: return 'bg-slate-100 text-slate-600';
+      case 'connected': return 'bg-emerald-500';
+      case 'warning': return 'bg-amber-400';
+      case 'error': return 'bg-rose-500';
+      default: return 'bg-slate-400';
+    }
+  }
+
+  statusTextClass(status: SyncHealthStatus): string {
+    switch (status) {
+      case 'connected': return 'text-emerald-700';
+      case 'warning': return 'text-amber-700';
+      case 'error': return 'text-rose-700';
+      default: return 'text-slate-500';
     }
   }
 

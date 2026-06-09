@@ -364,18 +364,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                         @for (chip of row.warnings; track chip.id) {
 
-                          <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-
-                                [class.bg-rose-100]="chip.kind === 'critical'"
-
-                                [class.text-rose-800]="chip.kind === 'critical'"
-
-                                [class.bg-amber-100]="chip.kind === 'setup'"
-
-                                [class.text-amber-800]="chip.kind === 'setup'">
-
+                          <span class="inline-flex items-center gap-1.5 text-xs font-medium"
+                                [class.text-rose-700]="chip.kind === 'critical'"
+                                [class.text-amber-700]="chip.kind === 'setup'">
+                            <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                                  [class.bg-rose-500]="chip.kind === 'critical'"
+                                  [class.bg-amber-400]="chip.kind === 'setup'"></span>
                             {{ chip.label }}
-
                           </span>
 
                         }
