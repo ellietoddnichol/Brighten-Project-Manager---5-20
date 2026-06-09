@@ -186,8 +186,8 @@ export interface Project {
   qboOtherCost?: number;
   qboCostDetailSyncedAt?: string;
 
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -207,8 +207,8 @@ export interface Employee {
   timeDataSheetSyncedAt?: string;
   timeDataSheetUrl?: string;
   source?: 'sheet' | 'manual';
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -233,8 +233,8 @@ export interface TimeEntry {
   timeDataSheetSyncedAt?: string;
   timeDataSheetUrl?: string;
   source?: 'sheet' | 'manual';
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -266,8 +266,8 @@ export interface ProjectBudgetLine {
   notes?: string;
   importSource?: 'job-cost-budget';
   importFile?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -306,8 +306,8 @@ export interface PO {
   poSheetSyncedAt?: string;
   poSheetUrl?: string;
   source?: 'sheet' | 'manual';
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -377,8 +377,8 @@ export interface ChangeOrder {
   notes?: string;
   linkedPoId?: string;
   linkedInvoiceId?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -392,8 +392,8 @@ export interface Task {
   status: 'Open' | 'Waiting' | 'Resolved' | 'Closed';
   relatedItem?: string;
   notes?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -445,8 +445,8 @@ export interface Billing {
   billingTypeLabel?: string;
   invoiceDate?: string;
   dueDate?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -466,8 +466,8 @@ export interface ScheduleMilestone {
   relatedIssueIds?: string[];
   relatedFileIds?: string[];
   notes?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -481,8 +481,8 @@ export interface Document {
   type: string;
   status: 'Not Required' | 'Needed' | 'Requested' | 'Received' | 'Submitted' | 'Approved' | 'Expired';
   ownerId?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 export type FolderMatchMethod = 'exact' | 'alias' | 'manual' | 'fallback' | 'missing';
@@ -509,8 +509,8 @@ export interface ProjectFolder {
   linkStatus?: FolderLinkStatus;
   lastScannedAt?: string;
   notes?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -534,8 +534,8 @@ export interface ProjectFile extends FirestoreAuditFields, FirestoreArchiveField
   fileType?: string;
   saveWarning?: string;
   uploadedBy?: string;
-  uploadedAt?: any;
-  lastModifiedAt?: any;
+  uploadedAt?: unknown;
+  lastModifiedAt?: unknown;
   notes?: string;
   ownerId?: string;
   photoCategory?: string;
@@ -582,8 +582,8 @@ export interface RequiredDocument {
   relatedFileId?: string;
   responsiblePerson?: string;
   notes?: string;
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: unknown;
+  updatedAt?: unknown;
   ownerId?: string;
 }
 
@@ -599,8 +599,8 @@ export interface ProjectIssue {
   dueDate?: string;
   relatedRecordType?: string;
   relatedRecordId?: string;
-  createdAt?: any;
-  resolvedAt?: any;
+  createdAt?: unknown;
+  resolvedAt?: unknown;
   notes?: string;
   ownerId?: string;
 }
@@ -619,8 +619,8 @@ export interface ProjectTask {
   systemTriggerKey?: string;
   relatedRecordType?: string;
   relatedRecordId?: string;
-  createdAt?: any;
-  completedAt?: any;
+  createdAt?: unknown;
+  completedAt?: unknown;
   notes?: string;
   ownerId?: string;
 }
@@ -634,6 +634,6 @@ export interface ActivityFeedItem {
   relatedRecordType?: string;
   relatedRecordId?: string;
   createdBy?: string;
-  createdAt?: any;
+  createdAt?: unknown;
 }
 

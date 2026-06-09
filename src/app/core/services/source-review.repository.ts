@@ -15,8 +15,8 @@ import { ImportException } from '@app/models/import.types';
 const STORAGE_KEY = 'brighten.importExceptions';
 
 /**
- * Import review exceptions — Firestore target with localStorage fallback.
- * TODO: remove localStorage once all clients read from Firestore.
+ * Import review exceptions — Firestore primary store, localStorage fallback for offline/unauthenticated reads.
+ * Dual-write keeps the two in sync; Firestore wins on conflict during hydration.
  */
 @Injectable({ providedIn: 'root' })
 export class SourceReviewRepository {

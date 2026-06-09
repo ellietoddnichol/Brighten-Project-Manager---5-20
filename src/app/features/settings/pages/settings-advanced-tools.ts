@@ -31,21 +31,21 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
       <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
         <h2 class="text-lg font-bold text-amber-950">Advanced / one-time tools</h2>
         <p class="text-sm text-amber-900/90 mt-1">
-          Do not run during normal daily use unless directed. 2026 baseline imports are archived here after verification.
+          Do not run during normal daily use unless directed. Baseline imports are archived here — run only if resetting or recovering data.
         </p>
       </div>
 
       <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
-        <h3 class="text-sm font-bold text-slate-900">Archived 2026 baseline imports</h3>
-        <p class="text-xs text-slate-500">Already applied for initial 2026 job setup. Re-run only if directed.</p>
+        <h3 class="text-sm font-bold text-slate-900">Archived baseline imports</h3>
+        <p class="text-xs text-slate-500">Already applied for initial job setup. Re-run only if directed or resetting data.</p>
         <div class="flex flex-wrap gap-2">
           <button type="button" (click)="runWipSetup()" [disabled]="wipSetup.running()"
                   class="text-xs font-semibold border border-slate-300 px-3 py-2 rounded-lg disabled:opacity-50">
-            {{ wipSetup.running() ? 'Applying…' : 'Import 2026 WIP Setup Baseline' }}
+            {{ wipSetup.running() ? 'Applying…' : 'Import WIP Setup Baseline' }}
           </button>
           <button type="button" (click)="runBillingSov()" [disabled]="billingSov.running()"
                   class="text-xs font-semibold border border-slate-300 px-3 py-2 rounded-lg disabled:opacity-50">
-            {{ billingSov.running() ? 'Importing…' : 'Import May 2026 Billing/SOV Baseline' }}
+            {{ billingSov.running() ? 'Importing…' : 'Import Billing/SOV Baseline' }}
           </button>
           <button type="button" (click)="runDriveSeed()" [disabled]="busy()"
                   class="text-xs font-semibold border border-slate-300 px-3 py-2 rounded-lg disabled:opacity-50">

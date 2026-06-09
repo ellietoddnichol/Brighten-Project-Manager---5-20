@@ -690,7 +690,7 @@ export class DataService {
     })());
   }
 
-  // TODO: project-file CRUD is migrating to ProjectFilesRepository — prefer that service for new code.
+  // Project-file CRUD: use ProjectFilesRepository for new code; DataService here is read-only legacy relay.
 
   getProjectFiles(): Observable<ProjectFile[]> { return this.projectFilesSubject.asObservable(); }
   projectFilesSnapshot(): ProjectFile[] { return this.projectFilesSubject.value; }

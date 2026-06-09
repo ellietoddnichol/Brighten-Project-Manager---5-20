@@ -169,8 +169,10 @@ export function buildProjectActivityFeed(
   });
 
   return feed.sort((a, b) => {
-    const aTime = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime();
-    const bTime = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime();
+    const aTs = a.createdAt as { seconds?: number } | string | number | null | undefined;
+    const bTs = b.createdAt as { seconds?: number } | string | number | null | undefined;
+    const aTime = aTs && typeof aTs === 'object' && aTs.seconds ? aTs.seconds * 1000 : new Date(aTs as string).getTime();
+    const bTime = bTs && typeof bTs === 'object' && bTs.seconds ? bTs.seconds * 1000 : new Date(bTs as string).getTime();
     return bTime - aTime;
   });
 }

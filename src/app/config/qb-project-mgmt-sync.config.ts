@@ -25,4 +25,4 @@ export const QB_PROJECT_MGMT_SYNC = {
 } as const;
 
 export const QB_DETAIL_COST_WARNING =
-  'QuickBooks summary sync is connected, but detailed job cost transaction sync is not available yet. Add a Bill Details or Project Cost Detail tab to import actual costs by vendor/account/job.';
+  'QuickBooks summary sync is connected, but no detailed job cost transaction tab was found. Add a "Bill Details" or "Project Cost Detail" tab to your QB sync workbook to import actual costs by vendor/account/job.';

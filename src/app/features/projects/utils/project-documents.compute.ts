@@ -243,7 +243,10 @@ function formatFileDate(file: ProjectFile): string | undefined {
   const ts = file.uploadedAt ?? file.lastModifiedAt;
   if (!ts) return undefined;
   try {
-    const d = typeof ts.toDate === 'function' ? ts.toDate() : new Date(ts);
+    const t = ts as { toDate?: () => Date } | string | number;
+    const d = typeof (t as { toDate?: () => Date }).toDate === 'function'
+      ? (t as { toDate: () => Date }).toDate()
+      : new Date(t as string | number);
     return d.toLocaleDateString();
   } catch {
     return undefined;

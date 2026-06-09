@@ -4,7 +4,16 @@ Release-candidate freeze. Goal: Ellie can deploy, sign in, open the 25 active jo
 
 **Mode:** Fix-only. No new features, tabs, modules, source systems, or automation.
 
-Last verified: 2026-05-28 · `npm test` 205 passing · `npm run build` passing.
+Last verified: 2026-06-09 · `npm test` 251 passing · `npm run build` passing.
+
+**What's changed since initial freeze (2026-05-28):**
+- Google Sheets API auth fixed (scope retry on 403 insufficient-scopes responses)
+- Google sign-in now requests Drive/Sheets scopes upfront — no separate "Re-authorize Drive" step needed
+- Google access token persisted in localStorage (survives tab/browser restart)
+- Budget lines: manual add/edit/delete/bulk-import via Cloud SQL
+- Labor entries: manual add/edit/delete/bulk-import via Cloud SQL
+- Timelogs → SQL sync: Settings → Sync Health → "Sync Now" reads Timelogs tab and imports to Cloud SQL
+- All stale config dates, "coming soon" labels, and year-specific wording cleaned up
 
 ---
 
