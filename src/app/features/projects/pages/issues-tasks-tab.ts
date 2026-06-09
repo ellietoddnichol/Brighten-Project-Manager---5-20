@@ -11,7 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       
       <!-- Stats -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -42,7 +42,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- Issues List -->
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">Project Issues</h3>
+          <h3 class="text-sm font-semibold text-slate-900">Project Issues</h3>
           <button (click)="showNewIssue = true" class="bg-white border text-rose-700 border-red-200 px-4 py-2 rounded-md font-bold shadow-sm hover:bg-red-50 transition-all text-sm flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4 text-rose-700">add</mat-icon> Log Issue
           </button>
@@ -169,7 +169,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- Tasks List -->
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-lg font-bold text-slate-900">Project Tasks</h3>
+          <h3 class="text-sm font-semibold text-slate-900">Project Tasks</h3>
           <button (click)="showNewTask = true" class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold shadow-sm hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4">add_task</mat-icon> Add Task
           </button>

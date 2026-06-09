@@ -112,7 +112,7 @@ type FileSortMode = 'modified' | 'name';
           </p>
         }
 
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
           @for (file of sortedFiles(); track file.id) {
             <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors"
                  [class.opacity-60]="file.archived">

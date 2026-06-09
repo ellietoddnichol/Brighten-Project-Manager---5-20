@@ -108,7 +108,7 @@ import { WIPRecord } from '@app/models/financial.types';
         <span class="text-xs text-slate-500">{{ filteredRows().length }} job(s) shown</span>
       </div>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
           <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'wip' }"
              class="block px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer">

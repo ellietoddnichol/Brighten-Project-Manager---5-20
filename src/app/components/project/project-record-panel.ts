@@ -175,7 +175,7 @@ type RecordTab = 'details' | 'financial' | 'change-orders' | 'budget-lines';
       }
 
       @if (activeTab() === 'financial') {
-        <form class="space-y-6" (submit)="saveFinancial(); $event.preventDefault()">
+        <form class="space-y-4" (submit)="saveFinancial(); $event.preventDefault()">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div class="bg-white p-4 rounded-xl border border-slate-200">
               <p class="text-[10px] font-bold text-slate-500 uppercase mb-1">Current contract</p>

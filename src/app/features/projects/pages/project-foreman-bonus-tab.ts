@@ -15,7 +15,7 @@ import { ForemanBonusRecord } from '@app/models/foreman-bonus.types';
     <div class="space-y-5">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 class="text-lg font-bold text-slate-900">Labor Bonus</h3>
+          <h3 class="text-sm font-semibold text-slate-900">Labor Bonus</h3>
           <p class="text-sm text-slate-500">Foreman labor savings bonus with work progress and billing release caps</p>
         </div>
         <button type="button" (click)="recalculate()"

@@ -20,7 +20,7 @@ import { SettingsImportReview } from './settings-import-review';
   standalone: true,
   imports: [CommonModule, RouterLink, SettingsSeedCompleteness, SettingsImportReview],
   template: `
-    <section id="review-center" class="space-y-6">
+    <section id="review-center" class="space-y-4">
       <div>
         <h2 class="text-xl font-bold text-slate-900">Review Center</h2>
         <p class="text-sm text-slate-500 mt-1 max-w-3xl">
@@ -49,7 +49,7 @@ import { SettingsImportReview } from './settings-import-review';
       </div>
 
       @if (filteredItems().length) {
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
+        <div class="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-100">
           @for (item of filteredItems(); track item.id) {
             <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
               <div class="min-w-0 flex-1">
@@ -90,7 +90,7 @@ import { SettingsImportReview } from './settings-import-review';
       }
 
       @if (activeFilter() === 'missingSetup' || activeFilter() === 'all') {
-        <details class="bg-white rounded-xl border border-slate-200 shadow-sm" [open]="activeFilter() === 'missingSetup'">
+        <details class="bg-slate-50 rounded-xl border border-slate-200" [open]="activeFilter() === 'missingSetup'">
           <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Setup completeness table</summary>
           <div class="px-2 pb-4">
             <app-settings-seed-completeness />
@@ -99,7 +99,7 @@ import { SettingsImportReview } from './settings-import-review';
       }
 
       @if (activeFilter() === 'syncErrors' || activeFilter() === 'dataConflict' || activeFilter() === 'billingReview') {
-        <details class="bg-white rounded-xl border border-slate-200 shadow-sm" [open]="true">
+        <details class="bg-slate-50 rounded-xl border border-slate-200" [open]="true">
           <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Import exceptions & run log</summary>
           <div class="px-2 pb-4">
             <app-settings-import-review [compactMode]="true" />

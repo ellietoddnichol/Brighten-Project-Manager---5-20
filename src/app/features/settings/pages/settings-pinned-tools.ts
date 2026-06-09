@@ -28,7 +28,7 @@ import { globalNavLabel } from '@shared/utils/global-enabled-modules.compute';
         </button>
       </div>
 
-      <div class="space-y-6">
+      <div class="space-y-4">
         @for (group of toolGroups; track group.label) {
           <div>
             <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">{{ group.label }}</h3>

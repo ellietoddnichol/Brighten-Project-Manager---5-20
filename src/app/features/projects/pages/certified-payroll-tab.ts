@@ -20,7 +20,7 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
       <app-empty-state icon="lock" title="Certified Payroll not enabled"
                        message="Enable Prevailing Wage or Certified Payroll Required on this project to activate compliance tracking." />
     } @else {
-      <div class="space-y-6">
+      <div class="space-y-4">
         @if (cpr.exportBanner()) {
           <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ cpr.exportBanner() }}</div>
         }

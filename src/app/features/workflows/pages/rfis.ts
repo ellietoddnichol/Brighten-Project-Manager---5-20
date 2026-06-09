@@ -12,10 +12,10 @@ import { resolveProjectLabel } from '@shared/utils/project';
   standalone: true,
   imports: [CommonModule, RouterModule, PageHeaderComponent, HiddenModuleBannerComponent],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto">
       <app-hidden-module-banner moduleId="rfis" />
       <app-page-header title="RFIs" subtitle="Requests for information across all projects." />
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         <table class="w-full text-sm">
           <thead><tr class="text-[10px] uppercase text-slate-400 border-b">
             <th class="px-5 py-3 text-left">RFI #</th><th class="px-5 py-3 text-left">Project</th>

@@ -33,7 +33,7 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto">
       <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
         {{ projectData.statusMessage() }}
       </div>
@@ -55,7 +55,7 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
         <app-stat-card label="Pending CO $" [value]="fmt(changeMetrics().pendingCoAmount)" icon="sync_alt" />
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mb-6">
         <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
           <h2 class="text-sm font-bold text-slate-900">Change Log / Proposals</h2>
         </div>
@@ -91,7 +91,7 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
         </div>
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 p-5">
         <h2 class="text-sm font-bold text-slate-900 mb-4">Change Order Status</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           @for (bucket of coBuckets(); track bucket.label) {

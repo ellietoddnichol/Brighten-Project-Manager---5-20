@@ -11,7 +11,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <div class="p-6 lg:p-8 flex-1 overflow-y-auto w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 flex-1 overflow-y-auto w-full max-w-[1440px] mx-auto space-y-4">
       <header class="flex justify-between items-center mb-8">
         <div>
           <h1 class="text-2xl font-bold text-slate-900 tracking-tight">WIP Report</h1>
@@ -54,7 +54,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- WIP TABLE -->
       <div class="bg-white rounded-md border border-slate-200 shadow-sm overflow-hidden">
         <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-          <h2 class="text-lg font-bold text-slate-900">Work In Progress by Project</h2>
+          <h2 class="text-sm font-semibold text-slate-900">Work In Progress by Project</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm whitespace-nowrap">
