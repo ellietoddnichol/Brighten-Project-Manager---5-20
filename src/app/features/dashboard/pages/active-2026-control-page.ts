@@ -246,7 +246,6 @@ export class Active2026ControlPage {
   readonly sortOptions: { id: ControlSortKey; label: string }[] = [
     { id: 'jobNumber', label: 'Job number' },
     { id: 'highestAr', label: 'Highest AR' },
-    { id: 'lowestMargin', label: 'Lowest margin' },
     { id: 'largestContract', label: 'Largest contract' },
     { id: 'largestCostOverrun', label: 'Largest cost overrun' },
     { id: 'mostMissing', label: 'Most missing items' },

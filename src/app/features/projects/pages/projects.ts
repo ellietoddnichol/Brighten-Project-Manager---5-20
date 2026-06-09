@@ -94,7 +94,6 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   { id: 'openAr', label: 'Open AR' },
 
-  { id: 'under20Margin', label: 'Under 20% margin' },
 
   { id: 'cprDecision', label: 'Missing wage order' },
 
