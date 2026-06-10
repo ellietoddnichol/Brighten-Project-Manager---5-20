@@ -506,11 +506,28 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                       <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
 
-                      @if (row.health !== 'Neutral') {
-
-                        <app-status-chip [tone]="healthTone(row.health)">{{ row.health }}</app-status-chip>
-
-                      }
+                      <div class="relative" (click)="$event.stopPropagation()">
+                        <button type="button"
+                                (click)="editingHealthId() === row.project.id ? editingHealthId.set(null) : editingHealthId.set(row.project.id)"
+                                class="w-3 h-3 rounded-full shrink-0 ring-2 ring-white hover:ring-slate-300 transition-all cursor-pointer"
+                                [class.bg-emerald-400]="row.health === 'Green'"
+                                [class.bg-amber-400]="row.health === 'Yellow'"
+                                [class.bg-rose-500]="row.health === 'Red'"
+                                [class.bg-slate-300]="row.health === 'Neutral'"
+                                [title]="'Health: ' + row.health + ' — click to change'"></button>
+                        @if (editingHealthId() === row.project.id) {
+                          <div class="absolute z-50 top-5 left-0 bg-white border border-slate-200 rounded-lg shadow-lg p-2 flex gap-2"
+                               (document:click)="editingHealthId.set(null)">
+                            @for (h of healthOptions; track h.value) {
+                              <button type="button"
+                                      (click)="updateProjectHealth(row.project.id, h.value); $event.stopPropagation()"
+                                      [title]="h.label"
+                                      class="w-5 h-5 rounded-full transition-all hover:scale-125"
+                                      [class]="h.color"></button>
+                            }
+                          </div>
+                        }
+                      </div>
 
                     </div>
 
@@ -628,26 +645,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         } @else {
 
-          <div class="p-8 text-center">
-            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 mb-4">
-              <mat-icon class="!text-[28px] text-slate-400">folder_off</mat-icon>
-            </div>
-            <h3 class="text-sm font-bold text-slate-700 mb-1">No projects match your filters</h3>
-            <p class="text-xs text-slate-500 mb-4">
-              @if (searchQuery()) {
-                No results for <span class="font-semibold">"{{ searchQuery() }}"</span>.
-                <button type="button" (click)="onSearch('')" class="text-indigo-600 underline ml-1">Clear search</button>
-              } @else {
-                Try adjusting your view or advanced filters.
-              }
-            </p>
-            @if (advancedFilterCount()) {
-              <button type="button" (click)="clearAdvancedFilters()"
-                      class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">
-                Clear {{ advancedFilterCount() }} advanced filter(s)
-              </button>
-            }
-          </div>
+          <app-empty-state
+            icon="folder_off"
+            title="No projects match your filters"
+            [message]="searchQuery() ? 'No results for &quot;' + searchQuery() + '&quot;. Try clearing the search.' : 'Try adjusting your view or advanced filters.'"
+            [actionLabel]="searchQuery() ? 'Clear search' : (advancedFilterCount() ? 'Clear ' + advancedFilterCount() + ' filter(s)' : undefined)"
+            (actionClick)="searchQuery() ? onSearch('') : clearAdvancedFilters()"
+          />
 
         }
 
@@ -1025,6 +1029,15 @@ export class Projects implements OnInit {
   showNewProject = signal(false);
 
   loading = signal(false);
+
+  editingHealthId = signal<string | null>(null);
+
+  readonly healthOptions = [
+    { value: 'Green', label: 'Green', color: 'bg-emerald-400' },
+    { value: 'Yellow', label: 'Yellow', color: 'bg-amber-400' },
+    { value: 'Red', label: 'Red', color: 'bg-rose-500' },
+    { value: 'Neutral', label: 'Neutral', color: 'bg-slate-300' },
+  ];
 
   savedViews = signal<SavedView[]>(this.loadSavedViews());
 
@@ -1505,6 +1518,11 @@ export class Projects implements OnInit {
   }
 
 
+
+  updateProjectHealth(projectId: string, health: string): void {
+    this.dataService.updateProject(projectId, { health: health as 'Green' | 'Yellow' | 'Red' | 'Neutral' }).subscribe();
+    this.editingHealthId.set(null);
+  }
 
   healthTone(health: string): StatusTone {
 

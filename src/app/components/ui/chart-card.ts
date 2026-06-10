@@ -6,9 +6,9 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
       <div class="px-5 py-3 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
-        <h3 class="text-sm font-bold text-slate-900">{{ title }}</h3>
+        <h3 class="text-sm font-semibold text-slate-900">{{ title }}</h3>
         @if (subtitle) {
           <span class="text-xs text-slate-500">{{ subtitle }}</span>
         }

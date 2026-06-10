@@ -36,6 +36,8 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
 
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 
+import { SparklineComponent } from '@app/components/charts/sparkline';
+
 import { downloadCsv } from '@shared/utils/csv-export';
 
 import {
@@ -108,6 +110,8 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
     StatusChipComponent,
 
     EmptyStateComponent,
+
+    SparklineComponent,
 
   ],
 
@@ -866,6 +870,28 @@ export class FinancialsHubPage {
 
 
   jobsUnderMargin = computed(() => countJobsUnderMargin(this.wipRecords()));
+
+  /** Top 8 active projects sorted by contract — used for sparkline data */
+  private top8Projects = computed(() =>
+    [...(this.projects() ?? [])]
+      .filter(p => p.status === 'Active')
+      .sort((a, b) => (b.contractAmount ?? 0) - (a.contractAmount ?? 0))
+      .slice(0, 8),
+  );
+
+  billedSparklineValues = computed(() =>
+    this.top8Projects().map(p => {
+      const fin = this.financialByProjectId().get(p.id);
+      return fin?.billedToDate ?? 0;
+    }),
+  );
+
+  contractSparklineValues = computed(() =>
+    this.top8Projects().map(p => {
+      const fin = this.financialByProjectId().get(p.id);
+      return fin?.currentContractAmount ?? p.contractAmount ?? 0;
+    }),
+  );
 
 
 
