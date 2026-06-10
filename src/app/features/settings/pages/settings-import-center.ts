@@ -16,7 +16,7 @@ import { SettingsDriveFolders } from './settings-drive-folders';
   standalone: true,
   imports: [CommonModule, RouterLink, SettingsLaborCodes, SettingsDriveFolders],
   template: `
-    <section id="import-center" class="space-y-6">
+    <section id="import-center" class="space-y-4">
       <div>
         <h2 class="text-xl font-bold text-slate-900">Import Center</h2>
         <p class="text-sm text-slate-500 mt-1 max-w-3xl">
@@ -27,7 +27,7 @@ import { SettingsDriveFolders } from './settings-drive-folders';
 
       <div class="grid gap-4 md:grid-cols-2">
         @for (action of actions; track action.id) {
-          <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
+          <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col gap-3">
             <div>
               <h3 class="text-sm font-bold text-slate-900">{{ action.title }}</h3>
               <p class="text-xs text-slate-500 mt-1">{{ action.when }}</p>
@@ -48,14 +48,14 @@ import { SettingsDriveFolders } from './settings-drive-folders';
         <p class="text-sm text-rose-700">{{ error() }}</p>
       }
 
-      <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <details class="bg-slate-50 rounded-xl border border-slate-200">
         <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Drive folder links</summary>
         <div class="px-2 pb-4">
           <app-settings-drive-folders />
         </div>
       </details>
 
-      <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
+      <details class="bg-slate-50 rounded-xl border border-slate-200">
         <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Labor code mapping</summary>
         <div class="px-2 pb-4">
           <app-settings-labor-codes />

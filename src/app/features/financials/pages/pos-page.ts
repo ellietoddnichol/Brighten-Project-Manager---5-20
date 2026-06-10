@@ -30,7 +30,7 @@ interface EnrichedPo extends PO {
     EmptyStateComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header title="Purchase Orders" subtitle="Purchase orders, attachments, and subcontractor costs" />
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -19,7 +19,7 @@ type LogFilter = 'all' | 'draft' | 'submitted' | 'void';
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, WorkflowDocumentsSectionComponent, RelatedRecordsSectionComponent, StatusChipComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
           <p class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Log missing today</p>

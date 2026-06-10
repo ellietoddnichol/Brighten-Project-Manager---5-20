@@ -11,13 +11,13 @@ import { LaborTimelogsSyncService } from '@core/services/labor-timelogs-sync.ser
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule, RouterLink],
   template: `
-    <section id="sync-health" class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
-      <h2 class="text-xl font-bold mb-1">Sync Health</h2>
+    <section id="sync-health" class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+      <h2 class="text-sm font-semibold text-slate-900 mb-1">Sync Health</h2>
       <p class="text-sm text-slate-500 mb-2">
         Phase Zero source-of-truth: Firestore is the normalized working database.
         Drive, Sheets, and QuickBooks remain live feeds.
       </p>
-      <p class="text-xs text-slate-400 mb-6">
+      <p class="text-xs text-slate-400 mb-4">
         See docs/data-storage-map.md for collection responsibilities.
       </p>
 
@@ -33,19 +33,19 @@ import { LaborTimelogsSyncService } from '@core/services/labor-timelogs-sync.ser
         <table class="w-full text-sm">
           <thead class="text-left text-[10px] uppercase tracking-widest text-slate-500 border-b border-slate-200">
             <tr>
-              <th class="py-3 pr-4">Source</th>
-              <th class="py-3 pr-4">Status</th>
-              <th class="py-3 pr-4">Last sync</th>
-              <th class="py-3 pr-4 text-right">Read</th>
-              <th class="py-3 pr-4 text-right">Imported</th>
-              <th class="py-3 pr-4">Warnings / errors</th>
-              <th class="py-3">Next action</th>
+              <th class="py-2 pr-4">Source</th>
+              <th class="py-2 pr-4">Status</th>
+              <th class="py-2 pr-4">Last sync</th>
+              <th class="py-2 pr-4 text-right">Read</th>
+              <th class="py-2 pr-4 text-right">Imported</th>
+              <th class="py-2 pr-4">Warnings / errors</th>
+              <th class="py-2">Next action</th>
             </tr>
           </thead>
           <tbody>
             @for (row of syncHealth.rows(); track row.id) {
               <tr class="border-b border-slate-100 align-top">
-                <td class="py-3 pr-4">
+                <td class="py-2 pr-4">
                   <div class="flex items-center gap-2 font-semibold text-slate-900">
                     <mat-icon class="!text-[16px]" [class]="statusClass(row.status)">{{ statusIcon(row.status) }}</mat-icon>
                     {{ row.label }}
@@ -54,13 +54,13 @@ import { LaborTimelogsSyncService } from '@core/services/labor-timelogs-sync.ser
                     <p class="text-xs text-slate-500 mt-1 max-w-xs">{{ row.detail }}</p>
                   }
                 </td>
-                <td class="py-3 pr-4 capitalize">{{ row.status.replace('_', ' ') }}</td>
-                <td class="py-3 pr-4 text-xs text-slate-500 whitespace-nowrap">
+                <td class="py-2 pr-4 capitalize">{{ row.status.replace('_', ' ') }}</td>
+                <td class="py-2 pr-4 text-xs text-slate-500 whitespace-nowrap">
                   {{ row.lastSync ? (row.lastSync | date:'medium') : '—' }}
                 </td>
-                <td class="py-3 pr-4 text-right font-mono">{{ row.rowsRead ?? '—' }}</td>
-                <td class="py-3 pr-4 text-right font-mono">{{ row.rowsImported ?? '—' }}</td>
-                <td class="py-3 pr-4 text-xs">
+                <td class="py-2 pr-4 text-right font-numeric">{{ row.rowsRead ?? '—' }}</td>
+                <td class="py-2 pr-4 text-right font-numeric">{{ row.rowsImported ?? '—' }}</td>
+                <td class="py-2 pr-4 text-xs">
                   @if (row.errors?.length) {
                     @for (e of row.errors; track e) {
                       <p class="text-rose-700">{{ e }}</p>
@@ -75,7 +75,7 @@ import { LaborTimelogsSyncService } from '@core/services/labor-timelogs-sync.ser
                     <span class="text-slate-400">—</span>
                   }
                 </td>
-                <td class="py-3 text-xs font-semibold text-indigo-700">{{ row.nextAction ?? '—' }}</td>
+                <td class="py-2 text-xs font-semibold text-indigo-700">{{ row.nextAction ?? '—' }}</td>
               </tr>
             }
           </tbody>
@@ -84,8 +84,8 @@ import { LaborTimelogsSyncService } from '@core/services/labor-timelogs-sync.ser
     </section>
 
     <!-- Labor Hours — Timelogs → SQL sync -->
-    <section class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm mb-6">
-      <h2 class="text-xl font-bold mb-1">Labor Hours — Timelogs Sync</h2>
+    <section class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+      <h2 class="text-sm font-semibold text-slate-900 mb-1">Labor Hours — Timelogs Sync</h2>
       <p class="text-sm text-slate-500 mb-4">
         Reads your <strong>Timelogs</strong> tab from the Master Time Sheet and imports
         all approved rows into Cloud SQL, matching each row to a project by job number.

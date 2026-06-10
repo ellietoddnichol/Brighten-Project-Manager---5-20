@@ -115,7 +115,7 @@ import {
         <span class="text-xs text-slate-500">{{ filteredRows().length }} job(s) shown</span>
       </div>
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
           <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
             <div class="flex flex-wrap items-start gap-4">

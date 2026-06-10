@@ -58,7 +58,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
     EmptyStateComponent, StatusChipComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="Active Jobs"
         [subtitle]="'Office view · ' + summary().activeJobs + ' in-progress jobs · 20% profit target'">
@@ -136,7 +136,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
         }
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         @if (displayRows().length) {
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm min-w-[1120px]">
@@ -202,7 +202,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
       <div class="fixed inset-0 z-40 bg-black/30" (click)="filterDrawerOpen.set(false)"></div>
       <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-sm bg-white shadow-xl overflow-y-auto flex flex-col">
         <div class="sticky top-0 bg-white border-b border-slate-200 px-5 py-4 flex items-center justify-between">
-          <h2 class="text-lg font-bold text-slate-900">Advanced Filters</h2>
+          <h2 class="text-sm font-semibold text-slate-900">Advanced Filters</h2>
           <button type="button" (click)="filterDrawerOpen.set(false)" class="text-slate-400 hover:text-slate-600">
             <mat-icon>close</mat-icon>
           </button>

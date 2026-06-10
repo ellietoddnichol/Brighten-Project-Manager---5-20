@@ -175,7 +175,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       </section>
 
       @for (group of payAppGroups(); track group.key) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-900">{{ group.label }}</h3>
             <span class="text-xs font-bold text-slate-500">{{ group.items.length }}</span>
@@ -246,7 +246,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       }
 
       @if (segment === 'sov') {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-900">Schedule of Values (G703)</h3>
             <span class="text-xs font-bold text-slate-500">{{ sovLines().length }} line(s)</span>
@@ -301,7 +301,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       }
 
       @if (segment === 'source') {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 bg-slate-50">
             <h3 class="text-sm font-bold text-slate-900">Source Files</h3>
           </div>

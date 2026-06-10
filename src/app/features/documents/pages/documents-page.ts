@@ -129,9 +129,9 @@ import {
 
       @switch (segment()) {
         @case ('overview') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100">
-              <h2 class="text-lg font-bold text-slate-900">Document actions</h2>
+              <h2 class="text-sm font-semibold text-slate-900">Document actions</h2>
               <p class="text-xs text-slate-500 mt-0.5">Missing docs, Drive setup, recent files, and source issues</p>
             </div>
             @if (overviewRows().length) {
@@ -167,7 +167,7 @@ import {
         }
 
         @case ('driveLinks') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of driveLinkRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'documents', view: 'drive-mapping' }" class="min-w-0 flex-1">
@@ -197,7 +197,7 @@ import {
         }
 
         @case ('needsReview') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of needsReviewRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <div class="min-w-0 flex-1">
@@ -223,7 +223,7 @@ import {
         }
 
         @default {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of fileRows(); track row.id) {
               <div class="px-5 py-3 hover:bg-slate-50 flex flex-wrap items-start gap-4"
                    [class.bg-amber-50/50]="row.item.kind === 'missing'">

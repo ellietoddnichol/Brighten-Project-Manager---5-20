@@ -44,11 +44,11 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ListRowComponent, StatusChipComponent, EmptyStateComponent],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (simplified && !showAllTools) {
         <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
-            <h3 class="text-lg font-bold text-slate-900">Changes</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Changes</h3>
             <button type="button" (click)="openNewCr()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
               <mat-icon class="!text-[18px]">add</mat-icon> New change request
             </button>
@@ -155,7 +155,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
       @if (viewTab() === 'log-cr') {
         <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
-            <h3 class="text-lg font-bold text-slate-900">Change request log</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Change request log</h3>
             <button type="button" (click)="openNewCr()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
               <mat-icon class="!text-[18px]">add</mat-icon> New change request
             </button>
@@ -323,7 +323,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
 
         <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
-            <h3 class="text-lg font-bold text-slate-900">Change order log</h3>
+            <h3 class="text-sm font-semibold text-slate-900">Change order log</h3>
             <button type="button" (click)="openNewCo()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
               <mat-icon class="!text-[18px]">add</mat-icon> New change order
             </button>
@@ -459,7 +459,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
       }
 
       @if (viewTab() === 'needs-pricing') {
-        <div class="space-y-6">
+        <div class="space-y-4">
           <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-900">Change requests · submitted / pricing</div>
             <div class="overflow-x-auto">

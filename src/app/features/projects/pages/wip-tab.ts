@@ -16,7 +16,7 @@ import { DataService } from '@core/services/data.service';
   standalone: true,
   imports: [CommonModule, FormsModule, MatIconModule],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (record(); as w) {
         <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">

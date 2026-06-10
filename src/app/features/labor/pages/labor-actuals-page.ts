@@ -37,7 +37,7 @@ interface LaborGroupRow {
   standalone: true,
   imports: [CommonModule, RouterLink, HiddenModuleBannerComponent, PageHeaderComponent],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-hidden-module-banner moduleId="labor-actuals" />
       <app-page-header title="Labor Actuals" subtitle="Approved time logs rolled into project labor cost and budget actuals">
         <button type="button" (click)="exportCsv()" class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">

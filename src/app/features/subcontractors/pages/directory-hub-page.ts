@@ -56,7 +56,7 @@ import {
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="Directory"
         subtitle="Companies, subcontractors, vendors, customers, and contacts"
@@ -111,10 +111,10 @@ import {
 
       @switch (segment()) {
         @case ('overview') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
             <div class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
               <div>
-                <h2 class="text-lg font-bold text-slate-900">Directory actions</h2>
+                <h2 class="text-sm font-semibold text-slate-900">Directory actions</h2>
                 <p class="text-xs text-slate-500 mt-0.5">Classification, compliance, active subs, and source issues</p>
               </div>
               <a routerLink="/subcontractors" class="text-xs font-bold text-indigo-700 hover:underline">Open full subcontractors view</a>
@@ -159,7 +159,7 @@ import {
               <app-segmented-control [options]="subFilterOptions()" [value]="subFilter()" (select)="setSubFilter($event)" />
               <a routerLink="/subcontractors" class="text-xs font-bold text-indigo-700 hover:underline">Open full subcontractors view</a>
             </div>
-            <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+            <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
               @for (row of filteredSubRows(); track row.id) {
                 <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
                   <div class="flex flex-wrap items-start gap-4">
@@ -203,7 +203,7 @@ import {
         }
 
         @case ('vendors') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of vendorRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <button type="button" (click)="selectSub(row.sub)" class="min-w-0 flex-1 text-left">
@@ -228,7 +228,7 @@ import {
         }
 
         @case ('customers') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of customerRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="row.route" class="min-w-0 flex-1">
@@ -256,7 +256,7 @@ import {
         }
 
         @case ('employees') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of contactRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <a [routerLink]="row.route" class="min-w-0 flex-1">
@@ -282,7 +282,7 @@ import {
         }
 
         @case ('needsReview') {
-          <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+          <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
             @for (row of needsReviewRows(); track row.id) {
               <div class="px-5 py-4 hover:bg-slate-50 flex flex-wrap items-start gap-4">
                 <div class="min-w-0 flex-1">

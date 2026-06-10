@@ -58,7 +58,7 @@ import { Billing as BillingRecord } from '@app/models/types';
         <app-stat-card label="Next Actions" [value]="actionCount()" icon="playlist_add_check" />
       </div>
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
           <h2 class="text-sm font-bold text-slate-900">Next billing actions</h2>
           <p class="text-xs text-slate-500 mt-0.5">Jobs needing billed, approved COs, draft pay apps, and open invoices</p>
@@ -75,7 +75,7 @@ import { Billing as BillingRecord } from '@app/models/types';
       </div>
 
       @if (draftInvoices().length) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-100 bg-amber-50 flex items-center gap-2">
             <h2 class="text-sm font-bold text-slate-900">Draft invoices</h2>
             <app-status-chip tone="amber" label="Draft" />
@@ -94,7 +94,7 @@ import { Billing as BillingRecord } from '@app/models/types';
         </section>
       }
 
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
         <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
           <h2 class="text-sm font-bold text-slate-900">Invoices / Pay Applications</h2>
         </div>
@@ -143,7 +143,7 @@ import { Billing as BillingRecord } from '@app/models/types';
       </div>
 
       @if (paidInvoices().length) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
           <button type="button" (click)="paidExpanded.set(!paidExpanded())"
                   class="w-full px-5 py-4 border-b border-slate-100 bg-slate-50 flex items-center justify-between hover:bg-slate-100 transition-colors">
             <div class="flex items-center gap-2">

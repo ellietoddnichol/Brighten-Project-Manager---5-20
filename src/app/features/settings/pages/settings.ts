@@ -45,7 +45,7 @@ import { AuthService } from '@core/services/auth.service';
     SettingsAdvancedToolsComponent,
   ],
   template: `
-    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
         title="Settings"
         subtitle="Control center — source health, review items, and active imports. Job setup lives in the app.">
@@ -70,7 +70,7 @@ import { AuthService } from '@core/services/auth.service';
       }
 
       @if (auth.user(); as profile) {
-        <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <article class="bg-slate-50 rounded-xl border border-slate-200 p-5">
           <h3 class="text-sm font-bold text-slate-900 mb-3">Profile</h3>
           <div class="flex flex-wrap items-center gap-4">
             @if (profile.photoURL) {

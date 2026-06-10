@@ -27,7 +27,7 @@ import {
     StatCardComponent, CompactStatStripComponent, SegmentedControlComponent,
   ],
   template: `
-    <div class="space-y-6">
+    <div class="space-y-4">
       @if (jobRow(); as row) {
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <app-stat-card label="Open AR" [value]="fmt(row.totalOpen)" [trend]="row.totalOpen > 0 ? 'Collections' : undefined" [trendPositive]="row.totalOpen === 0" />
