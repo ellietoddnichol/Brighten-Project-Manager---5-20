@@ -27,7 +27,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
   standalone: true,
   imports: [CommonModule, FormsModule, SettingsFeatureSetupComponent],
   template: `
-    <section id="advanced" class="space-y-4">
+    <section id="advanced" class="space-y-6">
       <div class="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4">
         <h2 class="text-lg font-bold text-amber-950">Advanced / one-time tools</h2>
         <p class="text-sm text-amber-900/90 mt-1">
@@ -35,7 +35,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
         </p>
       </div>
 
-      <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 space-y-3">
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-900">Archived baseline imports</h3>
         <p class="text-xs text-slate-500">Already applied for initial job setup. Re-run only if directed or resetting data.</p>
         <div class="flex flex-wrap gap-2">
@@ -69,7 +69,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
         }
       </article>
 
-      <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 space-y-3">
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-900">Manual sheet sync</h3>
         <div class="flex flex-wrap gap-2">
           <button type="button" (click)="syncMaster()" [disabled]="masterSync.syncing()"
@@ -81,7 +81,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
         </div>
       </article>
 
-      <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 space-y-3">
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-900">Webhook integration</h3>
         <p class="text-xs text-slate-500">
           Must match <code class="font-mono">DRIVE_WEBHOOK_CHANNEL_TOKEN</code> on the Cloud Run API.
@@ -103,7 +103,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
         }
       </article>
 
-      <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 space-y-3">
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-900">Optional financial workbook</h3>
         <input type="text" [(ngModel)]="workbookId" placeholder="Google Sheet ID (optional)"
                class="w-full px-3 py-2 bg-slate-50 rounded-lg border border-slate-200 text-sm font-mono" />
@@ -131,7 +131,7 @@ import { SettingsFeatureSetupComponent } from './settings-feature-setup';
         }
       </article>
 
-      <article class="bg-slate-50 rounded-xl border border-slate-200 p-5">
+      <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <app-settings-feature-setup />
       </article>
 

@@ -8,6 +8,7 @@ export type StatusTone = 'blue' | 'green' | 'amber' | 'red' | 'slate' | 'violet'
   standalone: true,
   imports: [CommonModule],
   template: `
+<<<<<<< HEAD
     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border"
           [ngClass]="toneClass()">
       @if (label) {
@@ -15,6 +16,12 @@ export type StatusTone = 'blue' | 'green' | 'amber' | 'red' | 'slate' | 'violet'
       } @else {
         <ng-content />
       }
+=======
+    <span class="inline-flex items-center gap-1.5 text-xs font-medium"
+          [ngClass]="textClass()">
+      <span class="w-1.5 h-1.5 rounded-full shrink-0" [ngClass]="dotClass()"></span>
+      <ng-content />
+>>>>>>> origin/claude/bold-hawking-ZZo7f
     </span>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -23,16 +30,29 @@ export class StatusChipComponent {
   @Input({ required: true }) tone: StatusTone = 'slate';
   @Input() label?: string;
 
-  toneClass(): Record<string, boolean> {
+  dotClass(): string {
     const map: Record<StatusTone, string> = {
-      blue: 'bg-blue-50 text-blue-700 border-blue-200',
-      green: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-      amber: 'bg-amber-50 text-amber-700 border-amber-200',
-      red: 'bg-rose-50 text-rose-700 border-rose-200',
-      slate: 'bg-slate-100 text-slate-600 border-slate-200',
-      violet: 'bg-violet-50 text-violet-700 border-violet-200',
-      orange: 'bg-orange-50 text-orange-700 border-orange-200',
+      blue:   'bg-blue-500',
+      green:  'bg-emerald-500',
+      amber:  'bg-amber-400',
+      red:    'bg-rose-500',
+      slate:  'bg-slate-400',
+      violet: 'bg-violet-500',
+      orange: 'bg-orange-400',
     };
-    return { [map[this.tone]]: true };
+    return map[this.tone];
+  }
+
+  textClass(): string {
+    const map: Record<StatusTone, string> = {
+      blue:   'text-blue-700',
+      green:  'text-emerald-700',
+      amber:  'text-amber-700',
+      red:    'text-rose-700',
+      slate:  'text-slate-500',
+      violet: 'text-violet-700',
+      orange: 'text-orange-700',
+    };
+    return map[this.tone];
   }
 }

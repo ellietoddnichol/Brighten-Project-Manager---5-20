@@ -211,13 +211,6 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
         </button>
 
-        <button type="button" (click)="setSegment('wip')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-
-          <app-stat-card label="Jobs Under 20%" [value]="jobsUnderMarginLabel()" icon="warning"
-
-                         [trend]="jobsUnderMargin() ? 'Review margin' : undefined" [trendPositive]="false" />
-
-        </button>
 
       </div>
 
@@ -969,7 +962,7 @@ export class FinancialsHubPage {
 
       label: o.label,
 
-      badge: o.id === 'under20' ? (this.jobsUnderMargin() || undefined) : undefined,
+      badge: undefined,
 
     })),
 

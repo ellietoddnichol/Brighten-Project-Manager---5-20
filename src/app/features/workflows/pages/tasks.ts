@@ -14,37 +14,65 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
   standalone: true,
   imports: [CommonModule, RouterModule, MatIconModule, PageHeaderComponent],
   template: `
-    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header title="Task Board" subtitle="Manually added tasks across active jobs." />
 
-      <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open</p><p class="text-2xl font-black text-slate-900">{{ openTasks().length }}</p></div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Overdue</p><p class="stat-value text-rose-600">{{ overdue().length }}</p></div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Groups</p><p class="text-2xl font-black text-slate-900">{{ taskGroups.length }}</p></div>
+      <div class="grid grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Open</p>
+          <p class="text-2xl font-bold text-slate-900 font-numeric">{{ openTasks().length }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Overdue</p>
+          <p class="text-2xl font-bold font-numeric" [class.text-rose-600]="overdue().length > 0" [class.text-slate-900]="overdue().length === 0">{{ overdue().length }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500 mb-1">Groups</p>
+          <p class="text-2xl font-bold text-slate-900 font-numeric">{{ taskGroups.length }}</p>
+        </div>
       </div>
 
-      <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+      <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
-            <thead><tr class="text-[10px] uppercase text-slate-400 border-b">
-              <th class="px-5 py-3 text-left">Task</th><th class="px-5 py-3 text-left">Project</th>
-              <th class="px-5 py-3 text-left">Group</th><th class="px-5 py-3 text-left">Assigned</th>
-              <th class="px-5 py-3 text-left">Due</th><th class="px-5 py-3 text-left">Status</th>
-            </tr></thead>
+            <thead>
+              <tr class="text-xs text-slate-500 border-b border-slate-100 bg-slate-50">
+                <th class="px-5 py-3 text-left font-medium">Task</th>
+                <th class="px-5 py-3 text-left font-medium">Project</th>
+                <th class="px-5 py-3 text-left font-medium">Group</th>
+                <th class="px-5 py-3 text-left font-medium">Assigned</th>
+                <th class="px-5 py-3 text-left font-medium">Due</th>
+                <th class="px-5 py-3 text-left font-medium">Status</th>
+              </tr>
+            </thead>
             <tbody class="divide-y divide-slate-100">
               @for (task of openTasks(); track task.id) {
-                <tr class="hover:bg-slate-50">
+                <tr class="hover:bg-slate-50/80">
                   <td class="px-5 py-3 font-medium">
-                    <a [routerLink]="['/projects', task.projectId]" [queryParams]="{ tab: 'tasks' }" class="text-blue-600 hover:underline">{{ task.title }}</a>
+                    <a [routerLink]="['/projects', task.projectId]" [queryParams]="{ tab: 'tasks' }"
+                       class="text-indigo-700 hover:underline">{{ task.title }}</a>
                   </td>
-                  <td class="px-5 py-3">{{ projectLabel(task.projectId) }}</td>
+                  <td class="px-5 py-3 text-slate-600">{{ projectLabel(task.projectId) }}</td>
                   <td class="px-5 py-3 text-slate-600">{{ task.taskGroup || '—' }}</td>
-                  <td class="px-5 py-3">{{ task.assignedTo || '—' }}</td>
+                  <td class="px-5 py-3 text-slate-600">{{ task.assignedTo || '—' }}</td>
                   <td class="px-5 py-3" [class.text-rose-600]="isOverdue(task)">{{ task.dueDate || '—' }}</td>
-                  <td class="px-5 py-3">{{ task.status }}</td>
+                  <td class="px-5 py-3">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-medium"
+                          [class.text-amber-700]="task.status !== 'Complete'"
+                          [class.text-emerald-700]="task.status === 'Complete'">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0"
+                            [class.bg-amber-400]="task.status !== 'Complete'"
+                            [class.bg-emerald-500]="task.status === 'Complete'"></span>
+                      {{ task.status }}
+                    </span>
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="6" class="px-5 py-12 text-center text-slate-400 italic">No open tasks</td></tr>
+                <tr>
+                  <td colspan="6" class="px-5 py-12 text-center text-slate-400 text-sm italic">
+                    No open tasks — add tasks from within a project
+                  </td>
+                </tr>
               }
             </tbody>
           </table>
