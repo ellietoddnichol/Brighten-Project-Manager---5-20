@@ -94,6 +94,35 @@ interface DashboardFinancialMetric {
   ],
   providers: [CurrencyPipe],
   template: `
+    <!-- Alert strip (full width, above page padding) -->
+    <div class="sticky top-0 z-10 w-full">
+      @if (alertStripItems().length === 0) {
+        <div class="flex items-center gap-2 px-4 py-2 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs font-medium">
+          <span class="text-base leading-none">🟢</span>
+          <span>All clear — no critical items today</span>
+        </div>
+      } @else {
+        <div class="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 overflow-x-auto">
+          <span class="text-xs font-bold text-amber-800 shrink-0">Action needed:</span>
+          @for (chip of alertStripItems(); track chip.label) {
+            <a [routerLink]="chip.route"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer"
+               [class.bg-rose-100]="chip.tone === 'rose'"
+               [class.text-rose-800]="chip.tone === 'rose'"
+               [class.border-rose-200]="chip.tone === 'rose'"
+               [class.hover:bg-rose-200]="chip.tone === 'rose'"
+               [class.bg-amber-100]="chip.tone === 'amber'"
+               [class.text-amber-800]="chip.tone === 'amber'"
+               [class.border-amber-200]="chip.tone === 'amber'"
+               [class.hover:bg-amber-200]="chip.tone === 'amber'">
+              <span>{{ chip.emoji }}</span>
+              {{ chip.label }}
+            </a>
+          }
+        </div>
+      }
+    </div>
+
     <div class="p-4 lg:p-6 max-w-[1440px] mx-auto space-y-4">
 
       <!-- Header -->
@@ -646,6 +675,31 @@ export class Dashboard {
       qbSyncWarning,
       unmatchedSourceCount: this.importReview.unresolvedCount(),
     });
+  });
+
+  alertStripItems = computed(() => {
+    const rows = this.globalNeeds.active2026Rows();
+    const chips: Array<{ label: string; emoji: string; tone: 'rose' | 'amber'; route: string }> = [];
+
+    const overdueAr = rows.filter(r => r.arBalance > 0).length;
+    if (overdueAr > 0) {
+      chips.push({ label: `${overdueAr} open A/R`, emoji: '🔴', tone: 'rose', route: '/ar' });
+    }
+
+    const reviewCount = rows.filter(r => r.needsReview || r.missingItemCount > 0 || r.reviewFlags?.length > 0).length;
+    if (reviewCount > 0) {
+      chips.push({ label: `${reviewCount} billing review`, emoji: '🟡', tone: 'amber', route: '/active-2026-control' });
+    }
+
+    const arOver60 = rows.filter(r => {
+      const daysBilled = r.billedToDate > 0 ? 1 : 0;
+      return daysBilled > 0 && r.arBalance > 0 && /60|90|past/i.test(r.billingStatus ?? '');
+    }).length;
+    if (arOver60 > 0) {
+      chips.push({ label: `${arOver60} AR past 60d`, emoji: '🟡', tone: 'amber', route: '/ar' });
+    }
+
+    return chips;
   });
 
   recentBillingRecords = computed(() =>

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, signal, Output, EventEmitter } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -118,6 +118,28 @@ const SIDEBAR_COLLAPSED_KEY = 'brighten-sidebar-collapsed';
         </button>
       </div>
 
+      <!-- Notifications bell -->
+      <div class="px-2 py-2 border-t border-slate-800">
+        <button type="button" (click)="openNotifications.emit()"
+                class="relative w-full flex items-center rounded-lg text-xs text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                [class.justify-center]="collapsed()"
+                [class.gap-2]="!collapsed()"
+                [class.px-3]="!collapsed()"
+                [class.py-2]="!collapsed()"
+                [class.p-2]="collapsed()"
+                title="Alerts &amp; Actions">
+          <mat-icon class="!text-[18px] shrink-0">notifications</mat-icon>
+          @if (!collapsed()) {
+            <span class="flex-1 text-left">Alerts</span>
+            @if (notificationCount() > 0) {
+              <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full bg-rose-500 text-white shrink-0">{{ notificationCount() }}</span>
+            }
+          } @else if (notificationCount() > 0) {
+            <span class="absolute top-0 right-0 text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full bg-rose-500 text-white">{{ notificationCount() }}</span>
+          }
+        </button>
+      </div>
+
       <!-- Settings + sync -->
       <div class="px-2 pb-2 border-t border-slate-800 pt-2 space-y-2">
         <a [routerLink]="settingsNav.route"
@@ -148,14 +170,50 @@ const SIDEBAR_COLLAPSED_KEY = 'brighten-sidebar-collapsed';
         }
       </div>
     </aside>
+
+    <!-- Mobile bottom tab bar -->
+    <nav class="fixed bottom-0 left-0 right-0 z-30 flex md:hidden bg-slate-900 border-t border-slate-700">
+      @for (tab of mobileTabs; track tab.route) {
+        <a [routerLink]="tab.route"
+           class="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-slate-400 hover:text-white transition-colors relative"
+           [class.text-white]="isMobileTabActive(tab.route)">
+          @if (isMobileTabActive(tab.route)) {
+            <span class="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-indigo-400 rounded-full"></span>
+          }
+          <mat-icon class="!text-[20px]">{{ tab.icon }}</mat-icon>
+          <span class="text-[10px] font-medium">{{ tab.label }}</span>
+        </a>
+      }
+    </nav>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SidebarComponent {
+  @Output() openNotifications = new EventEmitter<void>();
+
   private globalNeeds = inject(GlobalNeedsService);
   private router = inject(Router);
 
   readonly settingsNav = GLOBAL_SETTINGS_NAV;
+
+  readonly mobileTabs = [
+    { label: 'Dashboard', route: '/', icon: 'home' },
+    { label: 'Projects', route: '/projects', icon: 'folder' },
+    { label: 'Financials', route: '/financials', icon: 'payments' },
+    { label: 'Tasks', route: '/tasks', icon: 'assignment' },
+    { label: 'Settings', route: '/settings', icon: 'settings' },
+  ];
+
+  isMobileTabActive(route: string): boolean {
+    const path = this.currentPath() ?? '/';
+    if (route === '/') return path === '/';
+    return path.startsWith(route);
+  }
+
+  notificationCount = computed(() => {
+    const rows = this.globalNeeds.active2026Rows();
+    return rows.filter(r => r.arBalance > 0 || r.needsReview || r.missingItemCount > 0 || (r.reviewFlags?.length ?? 0) > 0).length;
+  });
 
   collapsed = signal<boolean>(this.loadCollapsed());
 

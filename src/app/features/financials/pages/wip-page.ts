@@ -162,6 +162,14 @@ import { WIPRecord } from '@app/models/financial.types';
                           [class.text-slate-700]="Math.abs(row.overUnderBilling) <= 1000">{{ fmt(row.overUnderBilling) }}</span>
                   </span>
                   <span><span class="text-slate-400">Margin</span> <span class="font-numeric font-semibold" [class.text-rose-700]="row.forecastMargin < 20">{{ row.forecastMargin | number:'1.0-1' }}%</span></span>
+                  <span class="flex items-center gap-1">
+                    <span class="text-slate-400">Billed vs Complete</span>
+                    <span class="font-numeric font-semibold text-xs px-1.5 py-0.5 rounded"
+                          [class.text-green-700]="billedVsCompleteDelta(row) >= 0"
+                          [class.bg-green-50]="billedVsCompleteDelta(row) >= 0"
+                          [class.text-rose-700]="billedVsCompleteDelta(row) < 0"
+                          [class.bg-rose-50]="billedVsCompleteDelta(row) < 0">{{ formatDelta(billedVsCompleteDelta(row)) }}</span>
+                  </span>
                   @if (row.arBalance > 0) {
                     <span><span class="text-slate-400">AR</span> <span class="font-numeric font-semibold text-orange-700">{{ fmt(row.arBalance) }}</span></span>
                   }
@@ -187,6 +195,21 @@ import { WIPRecord } from '@app/models/financial.types';
           </div>
         }
       </section>
+
+      <!-- Sticky summary footer -->
+      @if (filteredRows().length > 0) {
+        <div class="sticky bottom-0 bg-white border border-slate-200 rounded-xl shadow-lg px-5 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <span class="font-bold text-slate-600 shrink-0 flex items-center">Summary ({{ filteredRows().length }} jobs)</span>
+          <span><span class="text-slate-400">Total Contract</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalContract) }}</span></span>
+          <span><span class="text-slate-400">Total Billed</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalBilled) }}</span></span>
+          <span><span class="text-slate-400">Total Cost to Date</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalCost) }}</span></span>
+          <span><span class="text-slate-400">Avg Margin</span>
+            <span class="font-numeric font-semibold"
+                  [class.text-rose-700]="footerSummary().avgMargin < 20"
+                  [class.text-slate-900]="footerSummary().avgMargin >= 20">{{ footerSummary().avgMargin | number:'1.0-1' }}%</span>
+          </span>
+        </div>
+      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -317,4 +340,24 @@ export class WipPage {
     if (!estimatedFinalCost || estimatedFinalCost === 0) return 0;
     return Math.min(100, Math.max(0, (costToDate / estimatedFinalCost) * 100));
   }
+
+  billedVsCompleteDelta(row: WIPRecord): number {
+    const completePct = this.pctComplete(row.costToDate, row.estimatedFinalCost);
+    const billedPct = row.contractAmount > 0 ? Math.min(100, (row.billedToDate / row.contractAmount) * 100) : 0;
+    return billedPct - completePct;
+  }
+
+  formatDelta(delta: number): string {
+    const sign = delta >= 0 ? '+' : '';
+    return `${sign}${delta.toFixed(1)}%`;
+  }
+
+  footerSummary = computed(() => {
+    const rows = this.filteredRows();
+    const totalContract = rows.reduce((s, r) => s + (r.contractAmount ?? 0), 0);
+    const totalBilled = rows.reduce((s, r) => s + r.billedToDate, 0);
+    const totalCost = rows.reduce((s, r) => s + r.costToDate, 0);
+    const avgMargin = rows.length > 0 ? rows.reduce((s, r) => s + r.forecastMargin, 0) / rows.length : 0;
+    return { totalContract, totalBilled, totalCost, avgMargin };
+  });
 }
