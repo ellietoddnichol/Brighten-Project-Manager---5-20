@@ -81,9 +81,22 @@ import { WIPRecord } from '@app/models/financial.types';
                          />
         </button>
         <button type="button" (click)="setSegment('activeWip')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-          <app-stat-card label="Over / Under Billing" [value]="fmt(summary().overUnderBilling)" icon="compare_arrows"
-                         [trend]="summary().overUnderBilling > 0 ? 'Overbilled' : (summary().overUnderBilling < 0 ? 'Underbilled' : undefined)"
-                         [trendPositive]="Math.abs(summary().overUnderBilling) < 1000" />
+          <div class="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm h-full">
+            <div class="text-xs text-slate-500 font-medium mb-1">Over / Under Billing</div>
+            <div class="text-2xl font-bold font-numeric"
+                 [class.text-amber-600]="summary().overUnderBilling < 0"
+                 [class.text-rose-600]="summary().overUnderBilling > 0"
+                 [class.text-slate-800]="summary().overUnderBilling === 0">
+              {{ fmt(summary().overUnderBilling) }}
+            </div>
+            @if (summary().overUnderBilling !== 0) {
+              <div class="text-xs mt-1"
+                   [class.text-amber-500]="summary().overUnderBilling < 0"
+                   [class.text-rose-500]="summary().overUnderBilling > 0">
+                {{ summary().overUnderBilling < 0 ? 'Underbilled' : 'Overbilled' }}
+              </div>
+            }
+          </div>
         </button>
         <button type="button" (click)="setSegment('closeoutAr')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
           <app-stat-card label="Closeout AR" [value]="fmt(summary().closeoutAr)" icon="receipt_long"
@@ -110,8 +123,12 @@ import { WIPRecord } from '@app/models/financial.types';
       <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
           <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'wip' }"
-             class="block px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer">
-            <div class="flex flex-wrap items-start gap-4">
+             class="block pl-0 pr-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer border-l-4"
+             [class.border-l-emerald-500]="row.wipConfidence === 'Good'"
+             [class.border-l-amber-400]="row.wipConfidence === 'Estimated' || row.wipConfidence === 'NeedsSource'"
+             [class.border-l-rose-500]="row.wipConfidence === 'NeedsReview'"
+             [class.border-l-slate-300]="!row.wipConfidence">
+            <div class="flex flex-wrap items-start gap-4 pl-4">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2 mb-1">
                   <span class="text-xs font-bold font-numeric text-slate-500">#{{ row.jobNumber }}</span>
@@ -126,6 +143,14 @@ import { WIPRecord } from '@app/models/financial.types';
                   <span><span class="text-slate-400">Basis</span> <span class="font-semibold">{{ row.budgetBasisLabel }}</span></span>
                   <span><span class="text-slate-400">EFC</span> <span class="font-numeric font-semibold">{{ fmt(row.estimatedFinalCost) }}</span></span>
                   <span><span class="text-slate-400">Actual</span> <span class="font-numeric font-semibold">{{ fmt(row.costToDate) }}</span></span>
+                  <span class="flex items-center gap-1.5">
+                    <span class="text-slate-400">% Complete</span>
+                    <span class="font-numeric font-semibold">{{ pctComplete(row.costToDate, row.estimatedFinalCost) | number:'1.0-1' }}%</span>
+                    <span class="w-16 h-1 bg-slate-200 rounded-full overflow-hidden inline-block align-middle">
+                      <span class="h-full bg-indigo-500 block rounded-full"
+                            [style.width.%]="pctComplete(row.costToDate, row.estimatedFinalCost)"></span>
+                    </span>
+                  </span>
                   <span><span class="text-slate-400">Billed</span> <span class="font-numeric font-semibold">{{ fmt(row.billedToDate) }}</span></span>
                   <span><span class="text-slate-400">Earned</span> <span class="font-numeric font-semibold">{{ fmt(row.earnedRevenue) }}</span></span>
                   <span><span class="text-slate-400">O/U</span>
@@ -137,6 +162,14 @@ import { WIPRecord } from '@app/models/financial.types';
                           [class.text-slate-700]="Math.abs(row.overUnderBilling) <= 1000">{{ fmt(row.overUnderBilling) }}</span>
                   </span>
                   <span><span class="text-slate-400">Margin</span> <span class="font-numeric font-semibold" [class.text-rose-700]="row.forecastMargin < 20">{{ row.forecastMargin | number:'1.0-1' }}%</span></span>
+                  <span class="flex items-center gap-1">
+                    <span class="text-slate-400">Billed vs Complete</span>
+                    <span class="font-numeric font-semibold text-xs px-1.5 py-0.5 rounded"
+                          [class.text-green-700]="billedVsCompleteDelta(row) >= 0"
+                          [class.bg-green-50]="billedVsCompleteDelta(row) >= 0"
+                          [class.text-rose-700]="billedVsCompleteDelta(row) < 0"
+                          [class.bg-rose-50]="billedVsCompleteDelta(row) < 0">{{ formatDelta(billedVsCompleteDelta(row)) }}</span>
+                  </span>
                   @if (row.arBalance > 0) {
                     <span><span class="text-slate-400">AR</span> <span class="font-numeric font-semibold text-orange-700">{{ fmt(row.arBalance) }}</span></span>
                   }
@@ -144,7 +177,7 @@ import { WIPRecord } from '@app/models/financial.types';
                 @if (row.warningChips?.length) {
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     @for (chip of row.warningChips; track chip.label) {
-                      <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      <span class="text-xs font-medium px-2 py-0.5 rounded-full"
                             [class.bg-rose-100]="chip.tone === 'critical'"
                             [class.text-rose-800]="chip.tone === 'critical'"
                             [class.bg-amber-100]="chip.tone === 'amber'"
@@ -162,6 +195,21 @@ import { WIPRecord } from '@app/models/financial.types';
           </div>
         }
       </section>
+
+      <!-- Sticky summary footer -->
+      @if (filteredRows().length > 0) {
+        <div class="sticky bottom-0 bg-white border border-slate-200 rounded-xl shadow-lg px-5 py-3 flex flex-wrap gap-x-6 gap-y-2 text-xs">
+          <span class="font-bold text-slate-600 shrink-0 flex items-center">Summary ({{ filteredRows().length }} jobs)</span>
+          <span><span class="text-slate-400">Total Contract</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalContract) }}</span></span>
+          <span><span class="text-slate-400">Total Billed</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalBilled) }}</span></span>
+          <span><span class="text-slate-400">Total Cost to Date</span> <span class="font-numeric font-semibold text-slate-900">{{ fmt(footerSummary().totalCost) }}</span></span>
+          <span><span class="text-slate-400">Avg Margin</span>
+            <span class="font-numeric font-semibold"
+                  [class.text-rose-700]="footerSummary().avgMargin < 20"
+                  [class.text-slate-900]="footerSummary().avgMargin >= 20">{{ footerSummary().avgMargin | number:'1.0-1' }}%</span>
+          </span>
+        </div>
+      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -287,4 +335,29 @@ export class WipPage {
   exportCsv(): void {
     downloadCsv('wip-export.csv', WIP_HUB_CSV_HEADERS, wipHubCsvRows(this.filteredRows()));
   }
+
+  pctComplete(costToDate: number, estimatedFinalCost: number): number {
+    if (!estimatedFinalCost || estimatedFinalCost === 0) return 0;
+    return Math.min(100, Math.max(0, (costToDate / estimatedFinalCost) * 100));
+  }
+
+  billedVsCompleteDelta(row: WIPRecord): number {
+    const completePct = this.pctComplete(row.costToDate, row.estimatedFinalCost);
+    const billedPct = row.contractAmount > 0 ? Math.min(100, (row.billedToDate / row.contractAmount) * 100) : 0;
+    return billedPct - completePct;
+  }
+
+  formatDelta(delta: number): string {
+    const sign = delta >= 0 ? '+' : '';
+    return `${sign}${delta.toFixed(1)}%`;
+  }
+
+  footerSummary = computed(() => {
+    const rows = this.filteredRows();
+    const totalContract = rows.reduce((s, r) => s + (r.contractAmount ?? 0), 0);
+    const totalBilled = rows.reduce((s, r) => s + r.billedToDate, 0);
+    const totalCost = rows.reduce((s, r) => s + r.costToDate, 0);
+    const avgMargin = rows.length > 0 ? rows.reduce((s, r) => s + r.forecastMargin, 0) / rows.length : 0;
+    return { totalContract, totalBilled, totalCost, avgMargin };
+  });
 }

@@ -79,6 +79,49 @@ interface ActivityDisplayRow {
           }
         </div>
 
+        <!-- Billing & Cost Progress bars -->
+        <div class="space-y-3">
+          <!-- Billing Progress -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+            <div class="flex justify-between items-center text-xs">
+              <span class="font-semibold text-slate-700">Billing Progress</span>
+              <span class="font-numeric font-semibold text-slate-700">{{ billingProgressPct() }}%</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 rounded-full transition-all" [style.width.%]="billingProgressPct()"></div>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-slate-500">
+              <span>Billed: <span class="font-numeric font-semibold text-slate-700">{{ statValue(summary.billedToDate) }}</span></span>
+              <span class="text-slate-300">|</span>
+              <span>Remaining: <span class="font-numeric font-semibold text-slate-700">{{ statValue(summary.leftToBill) }}</span></span>
+              <span class="text-slate-300">|</span>
+              <span>Retainage: <span class="font-numeric font-semibold text-slate-700">{{ retainageLabel() }}</span></span>
+            </div>
+          </div>
+          <!-- Cost Burn (only when actualCost available) -->
+          @if (summary.actualCost > 0) {
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="font-semibold text-slate-700">Cost Burn</span>
+                <span class="font-numeric font-semibold" [class.text-rose-700]="costBurnRaw() > 100" [class.text-slate-700]="costBurnRaw() <= 100">
+                  {{ costBurnRaw() }}%{{ costBurnRaw() > 100 ? ' — over budget' : '' }}
+                </span>
+              </div>
+              <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all"
+                     [class.bg-amber-400]="costBurnRaw() <= 100"
+                     [class.bg-rose-500]="costBurnRaw() > 100"
+                     [style.width.%]="costBurnCapped()"></div>
+              </div>
+              <div class="flex items-center gap-4 text-xs text-slate-500">
+                <span>Actual: <span class="font-numeric font-semibold text-slate-700">{{ statValue(summary.actualCost) }}</span></span>
+                <span class="text-slate-300">|</span>
+                <span>Budget: <span class="font-numeric font-semibold text-slate-700">{{ statValue(summary.estimatedCost) }}</span></span>
+              </div>
+            </div>
+          }
+        </div>
+
         <!-- Unified info section: 2-col grid with dividers between groups -->
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-100">
           <!-- Project Information -->
@@ -430,6 +473,28 @@ export class ProjectOverviewPanelComponent implements OnChanges, OnDestroy {
     return new Intl.DateTimeFormat('en-US', {
       month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
     }).format(d);
+  }
+
+  billingProgressPct(): number {
+    const contract = this.summary.revisedContract;
+    if (!contract || contract <= 0) return 0;
+    return Math.min(100, Math.round((this.summary.billedToDate / contract) * 100));
+  }
+
+  retainageLabel(): string {
+    const pct = this.project.retainagePercent;
+    if (!pct || !this.summary.billedToDate) return '—';
+    return this.statValue(this.summary.billedToDate * (pct / 100));
+  }
+
+  costBurnRaw(): number {
+    const budget = this.summary.estimatedCost;
+    if (!budget || budget <= 0) return 0;
+    return Math.round((this.summary.actualCost / budget) * 100);
+  }
+
+  costBurnCapped(): number {
+    return Math.min(100, this.costBurnRaw());
   }
 
   onChip(id: string): void {

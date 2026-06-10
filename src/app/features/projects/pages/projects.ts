@@ -88,6 +88,36 @@ import {
 type LifecycleStatusFilter = 'active' | 'closed' | 'all';
 type ProjectsSortKey = 'name' | 'jobNumber' | 'updated';
 
+const SAVED_VIEWS_KEY = 'brighten-saved-views-v1';
+
+interface ActiveFilters {
+  view: string;
+  lifecycleFilter: LifecycleStatusFilter;
+  searchQuery: string;
+}
+
+interface SavedView {
+  id: string;
+  name: string;
+  filters: ActiveFilters;
+  deletable: boolean;
+}
+
+const DEFAULT_SAVED_VIEWS: SavedView[] = [
+  {
+    id: 'default-active',
+    name: 'All Active',
+    filters: { view: 'default', lifecycleFilter: 'active', searchQuery: '' },
+    deletable: false,
+  },
+  {
+    id: 'default-needs-review',
+    name: 'Needs Review',
+    filters: { view: 'needsReview', lifecycleFilter: 'active', searchQuery: '' },
+    deletable: false,
+  },
+];
+
 const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[] = [
 
   { id: 'missingContract', label: 'Missing contract' },
@@ -148,7 +178,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   template: `
 
-    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4 page-enter">
 
       <app-page-header
 
@@ -255,7 +285,14 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
             <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
                    placeholder="Search projects…"
-                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
+                   class="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
+
+            @if (searchQuery()) {
+              <button type="button" (click)="onSearch('')"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                <mat-icon class="!text-[16px]">close</mat-icon>
+              </button>
+            }
 
           </div>
 
@@ -282,6 +319,33 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
           </button>
 
         </div>
+
+        @if (savedViews().length || hasActiveFilters()) {
+          <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+            @for (view of savedViews(); track view.id) {
+              <button type="button" (click)="applySavedView(view)"
+                      class="text-xs font-medium px-3 py-1.5 rounded-full border cursor-pointer whitespace-nowrap shrink-0 transition-colors flex items-center gap-1"
+                      [class.border-indigo-500]="activeSavedViewId() === view.id"
+                      [class.bg-indigo-50]="activeSavedViewId() === view.id"
+                      [class.text-indigo-700]="activeSavedViewId() === view.id"
+                      [class.border-slate-200]="activeSavedViewId() !== view.id"
+                      [class.text-slate-600]="activeSavedViewId() !== view.id"
+                      [class.hover:border-slate-400]="activeSavedViewId() !== view.id">
+                {{ view.name }}
+                @if (view.deletable) {
+                  <span (click)="deleteSavedView(view.id, $event)" class="ml-1 hover:text-rose-600 transition-colors leading-none">×</span>
+                }
+              </button>
+            }
+            @if (hasActiveFilters()) {
+              <button type="button" (click)="saveCurrentView()"
+                      class="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 shrink-0 whitespace-nowrap transition-colors">
+                <mat-icon class="!text-[14px]">bookmark_border</mat-icon>
+                Save view
+              </button>
+            }
+          </div>
+        }
 
         <div class="flex flex-wrap items-center gap-2">
           @for (opt of lifecycleFilterOptions; track opt.id) {
@@ -345,7 +409,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
-                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                <tr class="sticky top-0 z-10 bg-white text-xs font-medium text-slate-500 border-b border-slate-100">
                   <th class="px-4 py-2">Job #</th>
                   <th class="px-4 py-2">Project</th>
                   <th class="px-4 py-2">Customer</th>
@@ -359,7 +423,14 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of visibleListRows(); track row.project.id) {
-                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
+                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer"
+                      [class.opacity-70]="row.quietRow"
+                      [class.border-l-4]="row.health !== 'Neutral'"
+                      [class.border-l-2]="row.health === 'Neutral'"
+                      [class.border-l-emerald-400]="row.health === 'Green'"
+                      [class.border-l-amber-400]="row.health === 'Yellow'"
+                      [class.border-l-rose-500]="row.health === 'Red'"
+                      [class.border-l-slate-200]="row.health === 'Neutral'"
                       (click)="navigateToProject(row, $event)">
                     <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
                     <td class="px-4 py-2">
@@ -384,7 +455,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                       <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
                     <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2 text-right">
+                      <span class="text-xs font-numeric text-slate-700 block">{{ fmt(row.financial.billedToDate) }}</span>
+                      <div class="mt-1 h-[4px] rounded-full bg-slate-100 overflow-hidden w-20 ml-auto">
+                        <div class="h-full rounded-full bg-emerald-400 transition-all"
+                             [style.width.%]="billedPct(row)"></div>
+                      </div>
+                    </td>
                     <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
                     <td class="px-4 py-2">
                       <a [routerLink]="row.nextActionRoute"
@@ -404,8 +481,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             @for (row of visibleListRows(); track row.project.id) {
 
               <div class="group px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
-
                    [class.opacity-70]="row.quietRow"
+                   [class.border-l-4]="row.health !== 'Neutral'"
+                   [class.border-l-2]="row.health === 'Neutral'"
+                   [class.border-l-emerald-400]="row.health === 'Green'"
+                   [class.border-l-amber-400]="row.health === 'Yellow'"
+                   [class.border-l-rose-500]="row.health === 'Red'"
+                   [class.border-l-slate-200]="row.health === 'Neutral'"
                    (click)="navigateToProject(row, $event)">
 
                 <div class="flex flex-wrap items-center gap-3 min-w-0 flex-1">
@@ -424,11 +506,28 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                       <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
 
-                      @if (row.health !== 'Neutral') {
-
-                        <app-status-chip [tone]="healthTone(row.health)">{{ row.health }}</app-status-chip>
-
-                      }
+                      <div class="relative" (click)="$event.stopPropagation()">
+                        <button type="button"
+                                (click)="editingHealthId() === row.project.id ? editingHealthId.set(null) : editingHealthId.set(row.project.id)"
+                                class="w-3 h-3 rounded-full shrink-0 ring-2 ring-white hover:ring-slate-300 transition-all cursor-pointer"
+                                [class.bg-emerald-400]="row.health === 'Green'"
+                                [class.bg-amber-400]="row.health === 'Yellow'"
+                                [class.bg-rose-500]="row.health === 'Red'"
+                                [class.bg-slate-300]="row.health === 'Neutral'"
+                                [title]="'Health: ' + row.health + ' — click to change'"></button>
+                        @if (editingHealthId() === row.project.id) {
+                          <div class="absolute z-50 top-5 left-0 bg-white border border-slate-200 rounded-lg shadow-lg p-2 flex gap-2"
+                               (document:click)="editingHealthId.set(null)">
+                            @for (h of healthOptions; track h.value) {
+                              <button type="button"
+                                      (click)="updateProjectHealth(row.project.id, h.value); $event.stopPropagation()"
+                                      [title]="h.label"
+                                      class="w-5 h-5 rounded-full transition-all hover:scale-125"
+                                      [class]="h.color"></button>
+                            }
+                          </div>
+                        }
+                      </div>
 
                     </div>
 
@@ -452,6 +551,11 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                       </span>
 
+                    </div>
+
+                    <div class="mt-2 h-[4px] rounded-full bg-slate-100 overflow-hidden max-w-[200px]">
+                      <div class="h-full rounded-full bg-emerald-400 transition-all"
+                           [style.width.%]="billedPct(row)"></div>
                     </div>
 
                     @if (row.warnings.length) {
@@ -541,11 +645,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         } @else {
 
-          <div class="p-5">
-
-            <app-empty-state icon="folder_off" title="No projects found" message="Try adjusting your search or filters." />
-
-          </div>
+          <app-empty-state
+            icon="folder_off"
+            title="No projects match your filters"
+            [message]="searchQuery() ? 'No results for &quot;' + searchQuery() + '&quot;. Try clearing the search.' : 'Try adjusting your view or advanced filters.'"
+            [actionLabel]="searchQuery() ? 'Clear search' : (advancedFilterCount() ? 'Clear ' + advancedFilterCount() + ' filter(s)' : undefined)"
+            (actionClick)="searchQuery() ? onSearch('') : clearAdvancedFilters()"
+          />
 
         }
 
@@ -561,67 +667,83 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         [subtitle]="quickViewSubtitle()"
 
-        footerActionLabel="Open full project"
-
-        (close)="quickViewRow.set(null)"
-
-        (footerAction)="openQuickViewProject()">
+        (close)="quickViewRow.set(null)">
 
         @if (quickViewRow(); as row) {
 
-          <app-drawer-section title="Summary">
-
-            <app-drawer-field label="Status" [value]="row.displayStatus" />
-
-            <app-drawer-field label="Profile" [value]="row.profileLabel" />
-
-            <app-drawer-field label="Health" [value]="row.health" [alert]="row.health === 'Red'" />
-
-            <app-drawer-field label="Next action" [value]="row.nextActionLabel" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Money">
-
-            <app-drawer-field label="Contract" [value]="fmt(row.financial.currentContractAmount)" [mono]="true" />
-
-            <app-drawer-field label="Billed to date" [value]="fmt(row.financial.billedToDate)" [mono]="true" />
-
-            <app-drawer-field label="Open AR" [value]="fmt(row.financial.arBalance)" [mono]="true" />
-
-            <app-drawer-field label="Left to bill" [value]="fmt(row.financial.leftToBill)" [mono]="true" />
-
-            <app-drawer-field label="Margin" [value]="row.financial.forecastMargin.toFixed(1) + '%'" [alert]="row.financial.forecastMargin < 20" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Setup">
-
-            <app-drawer-field label="Foreman" [value]="drawerForeman(row)" />
-
-            <app-drawer-field label="Address" [value]="row.project.address || '—'" />
-
-            <app-drawer-field label="County" [value]="row.project.county || '—'" />
-
-            <app-drawer-field label="Start" [value]="formatDate(row.lifecycle.derivedStartDate || row.project.startDate)" />
-
-            <app-drawer-field label="Target end" [value]="formatDate(row.project.targetCompletionDate)" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Drive">
-
-            <app-drawer-field label="Folder" [value]="row.driveLinked ? 'Linked' : 'Not linked'" [alert]="!row.driveLinked" />
-
-            @if (row.project.driveFolderUrl) {
-
-              <a [href]="row.project.driveFolderUrl" target="_blank" rel="noopener"
-
-                 class="text-sm font-semibold text-indigo-700 underline">Open Drive folder</a>
-
+          <!-- Status + health row -->
+          <div class="flex items-center gap-2 flex-wrap -mt-1 mb-1">
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full shrink-0"
+                    [class.bg-emerald-400]="row.health === 'Green'"
+                    [class.bg-amber-400]="row.health === 'Yellow'"
+                    [class.bg-rose-500]="row.health === 'Red'"
+                    [class.bg-slate-300]="row.health === 'Neutral'"></span>
+              {{ row.displayStatus }}
+            </span>
+            @if (row.health !== 'Neutral') {
+              <span class="text-xs text-slate-500">· {{ row.health }}</span>
             }
+          </div>
 
+          <!-- Key financials 2-col grid -->
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 rounded-xl p-4">
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Contract</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.currentContractAmount) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Billed</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.billedToDate) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Left to Bill</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.leftToBill) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">AR Balance</div>
+              <div class="font-numeric font-bold text-lg" [class.text-rose-700]="row.financial.arBalance > 0" [class.text-slate-900]="row.financial.arBalance <= 0">{{ fmt(row.financial.arBalance) }}</div>
+            </div>
+          </div>
+
+          <!-- Billing progress bar -->
+          <div>
+            <div class="flex justify-between text-xs text-slate-500 mb-1">
+              <span>Billing Progress</span>
+              <span class="font-numeric font-semibold text-slate-700">{{ billedPct(row) }}%</span>
+            </div>
+            <div class="w-full h-[6px] bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 rounded-full transition-all" [style.width.%]="billedPct(row)"></div>
+            </div>
+          </div>
+
+          <!-- People -->
+          <app-drawer-section title="Team">
+            <app-drawer-field label="Customer" [value]="row.project.customer || '—'" />
+            <app-drawer-field label="PM" [value]="row.project.projectManager || '—'" />
+            <app-drawer-field label="Superintendent" [value]="drawerForeman(row)" />
           </app-drawer-section>
+
+          <!-- Next action chip -->
+          @if (row.nextActionLabel) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500 shrink-0">Next:</span>
+              <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full">{{ row.nextActionLabel }}</span>
+            </div>
+          }
+
+          <!-- CTA buttons -->
+          <div class="flex gap-2 pt-2">
+            <button type="button" (click)="openQuickViewProject()"
+                    class="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">
+              Open Project →
+            </button>
+            <a [routerLink]="['/projects', row.project.id, 'billing']"
+               (click)="quickViewRow.set(null)"
+               class="flex-1 text-center bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+              Review Billing →
+            </a>
+          </div>
 
         }
 
@@ -751,7 +873,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
               <div>
 
-                <h2 class="text-base font-bold text-slate-900">New Project</h2>
+                <h2 class="text-sm font-semibold text-slate-900">New Project</h2>
 
                 <p class="text-slate-500 text-xs mt-0.5">Add a job to Brighten</p>
 
@@ -767,7 +889,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="num" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Project #</label>
+                  <label for="num" class="block text-xs text-slate-500 font-medium mb-1">Project #</label>
 
                   <input id="num" type="text" [(ngModel)]="newProject.projectNumber" name="num" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -775,7 +897,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="name" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Project Name</label>
+                  <label for="name" class="block text-xs text-slate-500 font-medium mb-1">Project Name</label>
 
                   <input id="name" type="text" [(ngModel)]="newProject.projectName" name="name" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -787,7 +909,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="cust" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Customer / GC</label>
+                  <label for="cust" class="block text-xs text-slate-500 font-medium mb-1">Customer / GC</label>
 
                   <input id="cust" type="text" [(ngModel)]="newProject.customer" name="cust" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -795,7 +917,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="status" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Status</label>
+                  <label for="status" class="block text-xs text-slate-500 font-medium mb-1">Status</label>
 
                   <select id="status" [(ngModel)]="newProject.status" name="status" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -813,7 +935,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
               <div>
 
-                <label for="address" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Site Address</label>
+                <label for="address" class="block text-xs text-slate-500 font-medium mb-1">Site Address</label>
 
                 <input id="address" type="text" [(ngModel)]="newProject.address" name="address" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -907,6 +1029,26 @@ export class Projects implements OnInit {
   showNewProject = signal(false);
 
   loading = signal(false);
+
+  editingHealthId = signal<string | null>(null);
+
+  readonly healthOptions = [
+    { value: 'Green', label: 'Green', color: 'bg-emerald-400' },
+    { value: 'Yellow', label: 'Yellow', color: 'bg-amber-400' },
+    { value: 'Red', label: 'Red', color: 'bg-rose-500' },
+    { value: 'Neutral', label: 'Neutral', color: 'bg-slate-300' },
+  ];
+
+  savedViews = signal<SavedView[]>(this.loadSavedViews());
+
+  activeSavedViewId = signal<string | null>(null);
+
+  hasActiveFilters = computed(() =>
+    this.searchQuery().trim() !== '' ||
+    this.lifecycleStatusFilter() !== 'active' ||
+    this.viewMode() !== 'default' ||
+    this.advancedFilterCount() > 0,
+  );
 
   syncing = signal(false);
 
@@ -1339,6 +1481,12 @@ export class Projects implements OnInit {
 
   }
 
+  billedPct(row: ProjectListRow): number {
+    const contract = row.financial.currentContractAmount;
+    if (!contract || contract <= 0) return 0;
+    return Math.min(100, Math.round((row.financial.billedToDate / contract) * 100));
+  }
+
   warningRoute(row: ProjectListRow, chip: ProjectListWarning): string[] {
     const pid = row.project.id;
     if (chip.id === 'source-review') return ['/settings'];
@@ -1370,6 +1518,11 @@ export class Projects implements OnInit {
   }
 
 
+
+  updateProjectHealth(projectId: string, health: string): void {
+    this.dataService.updateProject(projectId, { health: health as 'Green' | 'Yellow' | 'Red' | 'Neutral' }).subscribe();
+    this.editingHealthId.set(null);
+  }
 
   healthTone(health: string): StatusTone {
 
@@ -1582,6 +1735,60 @@ export class Projects implements OnInit {
   }
 
 
+
+  private loadSavedViews(): SavedView[] {
+    const defaults = DEFAULT_SAVED_VIEWS;
+    try {
+      const raw = localStorage.getItem(SAVED_VIEWS_KEY);
+      const user: SavedView[] = raw ? (JSON.parse(raw) as SavedView[]) : [];
+      return [...defaults, ...user];
+    } catch {
+      return defaults;
+    }
+  }
+
+  private persistSavedViews(views: SavedView[]): void {
+    try {
+      const user = views.filter(v => v.deletable);
+      localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(user));
+    } catch { /* ignore */ }
+  }
+
+  saveCurrentView(): void {
+    const name = window.prompt('Name this view:');
+    if (!name?.trim()) return;
+    const view: SavedView = {
+      id: `view-${Date.now()}`,
+      name: name.trim(),
+      filters: {
+        view: this.viewMode(),
+        lifecycleFilter: this.lifecycleStatusFilter(),
+        searchQuery: this.searchQuery(),
+      },
+      deletable: true,
+    };
+    const updated = [...this.savedViews(), view];
+    this.savedViews.set(updated);
+    this.persistSavedViews(updated);
+    this.activeSavedViewId.set(view.id);
+  }
+
+  applySavedView(view: SavedView): void {
+    this.activeSavedViewId.set(view.id);
+    const f = view.filters;
+    this.searchQuery.set(f.searchQuery);
+    this.lifecycleStatusFilter.set(f.lifecycleFilter);
+    this.setView(f.view as import('@app/models/project-lifecycle.types').ProjectsListView);
+    this.visibleCount.set(25);
+  }
+
+  deleteSavedView(id: string, event: Event): void {
+    event.stopPropagation();
+    const updated = this.savedViews().filter(v => v.id !== id);
+    this.savedViews.set(updated);
+    this.persistSavedViews(updated);
+    if (this.activeSavedViewId() === id) this.activeSavedViewId.set(null);
+  }
 
   createProject(event: Event): void {
 

@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
+import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { DataService } from '@core/services/data.service';
 import { PROJECT_TASK_GROUPS } from '@app/models/project-controls.types';
 import { resolveProjectLabel } from '@shared/utils/project';
@@ -12,7 +13,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule, PageHeaderComponent],
+  imports: [CommonModule, RouterModule, MatIconModule, PageHeaderComponent, EmptyStateComponent],
   template: `
     <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header title="Task Board" subtitle="Manually added tasks across active jobs." />
@@ -69,8 +70,8 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="6" class="px-5 py-12 text-center text-slate-400 text-sm italic">
-                    No open tasks — add tasks from within a project
+                  <td colspan="6">
+                    <app-empty-state icon="task_alt" title="No open tasks" message="Add tasks from within a project." actionLabel="Go to Projects" actionRoute="/projects" />
                   </td>
                 </tr>
               }

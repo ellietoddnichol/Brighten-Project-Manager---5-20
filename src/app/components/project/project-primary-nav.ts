@@ -15,16 +15,16 @@ interface PrimaryNavItem {
   standalone: true,
   imports: [CommonModule, MatIconModule],
   template: `
-    <nav class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1">
+    <nav class="flex gap-0 overflow-x-auto whitespace-nowrap border-b border-slate-200 bg-white sticky top-0 z-10">
       @for (item of items; track item.id) {
         <button type="button"
                 (click)="sectionChange.emit(item.id)"
-                class="px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors shrink-0"
-                [class.bg-slate-900]="active === item.id"
-                [class.text-white]="active === item.id"
+                class="px-4 py-2.5 text-sm font-semibold transition-colors shrink-0 border-b-2"
+                [class.border-b-indigo-500]="active === item.id"
+                [class.text-indigo-700]="active === item.id"
+                [class.border-b-transparent]="active !== item.id"
                 [class.text-slate-500]="active !== item.id"
-                [class.hover:text-slate-900]="active !== item.id"
-                [class.hover:bg-slate-50]="active !== item.id">
+                [class.hover:text-slate-900]="active !== item.id">
           <span class="flex items-center gap-1.5">
             <mat-icon class="!text-[16px]">{{ item.icon }}</mat-icon>
             {{ item.label }}

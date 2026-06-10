@@ -94,6 +94,35 @@ interface DashboardFinancialMetric {
   ],
   providers: [CurrencyPipe],
   template: `
+    <!-- Alert strip (full width, above page padding) -->
+    <div class="sticky top-0 z-10 w-full">
+      @if (alertStripItems().length === 0) {
+        <div class="flex items-center gap-2 px-4 py-2 bg-emerald-50 border-b border-emerald-200 text-emerald-800 text-xs font-medium">
+          <span class="text-base leading-none">🟢</span>
+          <span>All clear — no critical items today</span>
+        </div>
+      } @else {
+        <div class="flex items-center gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200 overflow-x-auto">
+          <span class="text-xs font-bold text-amber-800 shrink-0">Action needed:</span>
+          @for (chip of alertStripItems(); track chip.label) {
+            <a [routerLink]="chip.route"
+               class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors cursor-pointer"
+               [class.bg-rose-100]="chip.tone === 'rose'"
+               [class.text-rose-800]="chip.tone === 'rose'"
+               [class.border-rose-200]="chip.tone === 'rose'"
+               [class.hover:bg-rose-200]="chip.tone === 'rose'"
+               [class.bg-amber-100]="chip.tone === 'amber'"
+               [class.text-amber-800]="chip.tone === 'amber'"
+               [class.border-amber-200]="chip.tone === 'amber'"
+               [class.hover:bg-amber-200]="chip.tone === 'amber'">
+              <span>{{ chip.emoji }}</span>
+              {{ chip.label }}
+            </a>
+          }
+        </div>
+      }
+    </div>
+
     <div class="p-4 lg:p-6 max-w-[1440px] mx-auto space-y-4">
 
       <!-- Header -->
@@ -182,13 +211,13 @@ interface DashboardFinancialMetric {
       }
 
       @if (dashboardLoading()) {
-        <div class="animate-pulse space-y-4">
+        <div class="space-y-4">
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             @for (i of skeletonSlots; track i) {
-              <div class="rounded-xl border border-slate-200 bg-slate-100 h-24"></div>
+              <div class="skeleton rounded-xl border border-slate-200 h-24"></div>
             }
           </div>
-          <div class="rounded-xl border border-slate-200 bg-slate-100 h-48"></div>
+          <div class="skeleton rounded-xl border border-slate-200 h-48"></div>
         </div>
       } @else {
 
@@ -210,17 +239,19 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Financial Snapshot</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Financial Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
           </div>
           <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y divide-slate-100">
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 p-4">
           @for (item of financialSnapshot(); track item.label) {
-            <div class="p-4 min-w-0">
-              <div class="text-xs text-slate-500 font-medium">{{ item.label }}</div>
-              <div class="text-lg font-bold text-slate-950 mt-1 truncate">{{ item.value }}</div>
-              <div class="text-xs text-slate-500 mt-1 truncate">{{ item.subtext }}</div>
+            <div class="bg-white border border-slate-200 p-4 rounded-xl min-w-0">
+              <div class="text-xs text-slate-500 font-medium mb-1">{{ item.label }}</div>
+              <div class="text-xl font-bold font-numeric truncate"
+                   [class.text-slate-900]="!isAmberFinancialMetric(item)"
+                   [class.text-amber-600]="isAmberFinancialMetric(item)">{{ item.value }}</div>
+              <div class="text-xs text-slate-400 mt-1 truncate">{{ item.subtext }}</div>
             </div>
           }
         </div>
@@ -246,7 +277,7 @@ interface DashboardFinancialMetric {
       @if (widgetVisible('billing-pipeline')) {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900">Billing Pipeline</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Billing Pipeline</h2>
             <p class="text-xs text-slate-500 mt-0.5">Top 10 projects by contract value — billed vs remaining</p>
           </div>
           <div class="p-4 h-72">
@@ -263,7 +294,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">A/R Tracker</h2>
+              <h2 class="text-sm font-semibold text-slate-900">A/R Tracker</h2>
               <p class="text-xs text-slate-500 mt-0.5">Top projects by open accounts receivable</p>
             </div>
             <a routerLink="/ar" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View A/R</a>
@@ -299,7 +330,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Field Labor Hours</h2>
+              <h2 class="text-sm font-semibold text-slate-900">Field Labor Hours</h2>
               <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
             </div>
             <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
@@ -340,10 +371,12 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">
-                Today's Priorities
+              <h2 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                Daily Action Center
                 @if (priorities().length) {
-                  <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
+                  <span class="text-xs font-bold text-white bg-rose-500 px-2 py-0.5 rounded-full">{{ priorities().length }}</span>
+                } @else {
+                  <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">All clear</span>
                 }
               </h2>
               <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
@@ -358,35 +391,46 @@ interface DashboardFinancialMetric {
                 <a [routerLink]="item.route"
                    [queryParams]="item.queryParams"
                    [fragment]="item.fragment"
-                   class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
-                  <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                      @if (item.jobNumber) {
-                        <span class="text-xs font-mono font-bold text-slate-900">{{ item.jobNumber }}</span>
-                        @if (item.projectName) {
-                          <span class="text-xs text-slate-500 truncate max-w-[240px]">{{ item.projectName }}</span>
+                   class="flex items-stretch hover:bg-slate-50 transition-colors">
+                  <div class="w-1 shrink-0"
+                       [class.bg-rose-500]="item.severity === 'error'"
+                       [class.bg-amber-400]="item.severity !== 'error'"></div>
+                  <div class="px-4 py-3 flex flex-wrap items-center gap-3 flex-1 min-w-0">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex flex-wrap items-center gap-2">
+                        @if (item.jobNumber) {
+                          <span class="font-numeric font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded text-xs">{{ item.jobNumber }}</span>
+                          @if (item.projectName) {
+                            <span class="text-xs text-slate-600 truncate max-w-[240px]">{{ item.projectName }}</span>
+                          }
+                        } @else {
+                          <span class="text-sm font-semibold text-slate-900">{{ priorityIssueLabel(item.issue) }}</span>
                         }
-                      } @else {
-                        <span class="text-sm font-semibold text-slate-900">{{ priorityIssueLabel(item.issue) }}</span>
+                        <app-status-chip [tone]="item.severity === 'error' ? 'red' : 'amber'">
+                          {{ item.severity === 'error' ? 'Review Needed' : 'Follow Up' }}
+                        </app-status-chip>
+                        <span class="text-xs text-slate-400 font-medium">{{ sourceLabel(item.source) }}</span>
+                      </div>
+                      @if (item.jobNumber) {
+                        <p class="text-xs text-slate-500 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
                       }
-                      <app-status-chip [tone]="item.severity === 'error' ? 'red' : 'amber'">
-                        {{ item.severity === 'error' ? 'Review Needed' : 'Follow Up' }}
-                      </app-status-chip>
-                      <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ sourceLabel(item.source) }}</span>
                     </div>
-                    @if (item.jobNumber) {
-                      <p class="text-sm text-slate-600 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
-                    }
+                    <span class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
+                      {{ priorityActionLabel(item.nextActionLabel) }}
+                    </span>
                   </div>
-                  <span class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
-                    {{ priorityActionLabel(item.nextActionLabel) }}
-                  </span>
                 </a>
               }
             </div>
           } @else {
-            <div class="p-5">
-              <app-empty-state title="No urgent priorities" message="You're caught up for now." />
+            <div class="py-12 flex flex-col items-center gap-3 text-center px-6">
+              <div class="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center">
+                <mat-icon class="!text-[36px] text-emerald-500">check_circle</mat-icon>
+              </div>
+              <div>
+                <div class="text-base font-semibold text-slate-900">All caught up</div>
+                <div class="text-sm text-slate-500 mt-1">No urgent items today — great work!</div>
+              </div>
             </div>
           }
         </section>
@@ -397,7 +441,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Active Projects</h2>
+              <h2 class="text-sm font-semibold text-slate-900">Active Projects</h2>
               <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
             </div>
             <a routerLink="/active-2026-control" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
@@ -468,7 +512,7 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Billing Snapshot</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Billing Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Recent Pay Apps, retainage, and A/R follow-up</p>
           </div>
           <a routerLink="/billing" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Review Billing</a>
@@ -631,6 +675,31 @@ export class Dashboard {
       qbSyncWarning,
       unmatchedSourceCount: this.importReview.unresolvedCount(),
     });
+  });
+
+  alertStripItems = computed(() => {
+    const rows = this.globalNeeds.active2026Rows();
+    const chips: Array<{ label: string; emoji: string; tone: 'rose' | 'amber'; route: string }> = [];
+
+    const overdueAr = rows.filter(r => r.arBalance > 0).length;
+    if (overdueAr > 0) {
+      chips.push({ label: `${overdueAr} open A/R`, emoji: '🔴', tone: 'rose', route: '/ar' });
+    }
+
+    const reviewCount = rows.filter(r => r.needsReview || r.missingItemCount > 0 || r.reviewFlags?.length > 0).length;
+    if (reviewCount > 0) {
+      chips.push({ label: `${reviewCount} billing review`, emoji: '🟡', tone: 'amber', route: '/active-2026-control' });
+    }
+
+    const arOver60 = rows.filter(r => {
+      const daysBilled = r.billedToDate > 0 ? 1 : 0;
+      return daysBilled > 0 && r.arBalance > 0 && /60|90|past/i.test(r.billingStatus ?? '');
+    }).length;
+    if (arOver60 > 0) {
+      chips.push({ label: `${arOver60} AR past 60d`, emoji: '🟡', tone: 'amber', route: '/ar' });
+    }
+
+    return chips;
   });
 
   recentBillingRecords = computed(() =>
@@ -917,6 +986,10 @@ export class Dashboard {
       default:
         return label;
     }
+  }
+
+  isAmberFinancialMetric(item: DashboardFinancialMetric): boolean {
+    return (item.label === 'Waiting on A/R' || item.label === 'Open Current Due') && item.value !== '$0' && item.value !== 'Pending';
   }
 
   foremanPmLabel(row: Active2026ControlRow): string {

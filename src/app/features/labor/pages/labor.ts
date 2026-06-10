@@ -104,7 +104,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
 
       @if (activeTab() === 'overview') {
         <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-          <app-stat-card label="Approved Hrs (Month)" [value]="fmtHours(kpis().approvedHoursThisMonth)" icon="schedule" />
+          <app-stat-card
+            label="Approved Hrs (Month)"
+            [value]="fmtHours(kpis().approvedHoursThisMonth)"
+            icon="schedule"
+            [trend]="hoursTrend()"
+            [trendValue]="hoursTrendLabel()"
+            [trendPositive]="true" />
           <app-stat-card label="Est. Wage Cost" [value]="fmtMoney(kpis().estimatedWageCost)" icon="payments" />
           <app-stat-card label="Est. Fringe Cost" [value]="fmtMoney(kpis().estimatedFringeCost)" icon="health_and_safety" />
           <app-stat-card label="Est. Total Labor" [value]="fmtMoney(kpis().estimatedTotalLabor)" icon="engineering" />
@@ -133,13 +139,13 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
           </app-chart-card>
         </div>
 
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
-            <h3 class="font-bold text-slate-900">Recent Approved Time</h3>
+            <h3 class="font-semibold text-slate-900">Recent Approved Time</h3>
           </div>
-          <div class="overflow-x-auto">
+          <div class="overflow-x-auto max-h-[480px]">
             <table class="w-full text-sm">
-              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold sticky top-0 z-10">
                 <tr>
                   <th class="px-4 py-3 text-left">Date</th>
                   <th class="px-4 py-3 text-left">Employee</th>
@@ -153,7 +159,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of recentEntries(); track row.id) {
-                  <tr class="hover:bg-slate-50">
+                  <tr class="hover:bg-slate-50 flex-row">
                     <td class="px-4 py-3">{{ row.workDate || '—' }}</td>
                     <td class="px-4 py-3 font-medium">{{ row.employeeName || '—' }}</td>
                     <td class="px-4 py-3">{{ row.jobIdLabel || '—' }}</td>
@@ -203,7 +209,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
         </div>
 
         @if (budgetSummary().totalLaborBudget > 0) {
-          <div class="bg-white rounded-lg border border-slate-200 shadow-sm p-5 mb-6">
+          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
             <div class="flex items-center justify-between text-sm mb-2">
               <span class="font-semibold text-slate-700">Labor budget consumed (to-date)</span>
               <span class="font-numeric font-bold"
@@ -232,10 +238,10 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
           </div>
         }
 
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 class="font-bold text-slate-900">Estimated Labor by Classification</h3>
+              <h3 class="font-semibold text-slate-900">Estimated Labor by Classification</h3>
               <p class="text-xs text-slate-500">Wages (reg + OT + DT) plus union fringe · {{ classMonthLabel() }}</p>
             </div>
             <button type="button" (click)="exportByClass()"
@@ -298,7 +304,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
       }
 
       @if (activeTab() === 'employees') {
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold">
@@ -341,7 +347,7 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
       }
 
       @if (activeTab() === 'rates') {
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-sm">
               <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] tracking-widest font-bold">
@@ -398,10 +404,10 @@ type LaborTab = 'overview' | 'byClass' | 'employees' | 'rates' | 'accrual' | 'la
           }
         </div>
 
-        <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 class="font-bold text-slate-900">Hours by Labor Code</h3>
+              <h3 class="font-semibold text-slate-900">Hours by Labor Code</h3>
               <p class="text-xs text-slate-500">Mapped categories drive WIP, bonus, certified payroll, and work comp rules</p>
             </div>
             <div class="text-sm text-slate-600">
@@ -617,6 +623,34 @@ export class Labor {
   ];
 
   kpis = this.laborData.overviewKpis;
+
+  private lastMonthKey = computed(() => {
+    const now = new Date();
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  lastMonthHours = computed(() => {
+    const key = this.lastMonthKey();
+    return this.laborData.normalizedEntries()
+      .filter(e => e.month === key)
+      .reduce((sum, e) => sum + e.totalHours, 0);
+  });
+
+  hoursTrend = computed<'up' | 'down' | 'neutral'>(() => {
+    const thisMonth = this.kpis().approvedHoursThisMonth;
+    const last = this.lastMonthHours();
+    if (!last) return 'neutral';
+    return thisMonth >= last ? 'up' : 'down';
+  });
+
+  hoursTrendLabel = computed(() => {
+    const thisMonth = this.kpis().approvedHoursThisMonth;
+    const last = this.lastMonthHours();
+    if (!last) return '';
+    const pct = Math.round(Math.abs((thisMonth - last) / last) * 100);
+    return `${pct}% vs last month`;
+  });
 
   recentEntries = computed(() =>
     [...this.laborData.normalizedEntries()]

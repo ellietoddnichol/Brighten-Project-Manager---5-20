@@ -51,11 +51,40 @@ import { Billing as BillingRecord } from '@app/models/types';
         </a>
       </app-page-header>
 
+      <!-- Current Due Banner -->
+      @if (currentDueTotal() > 0) {
+        <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-4 flex items-center justify-between">
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wide text-indigo-500 mb-0.5">Current Due</div>
+            <div class="text-2xl font-bold font-numeric text-indigo-900">{{ fmt(currentDueTotal()) }}</div>
+            <div class="text-xs text-indigo-600 mt-0.5">Sum of open pay app current payment amounts</div>
+          </div>
+          <mat-icon class="!text-[36px] text-indigo-300">request_quote</mat-icon>
+        </div>
+      }
+
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Total Billed" [value]="fmt(metrics()?.billedToDate ?? 0)" icon="receipt_long" />
         <app-stat-card label="Open AR" [value]="fmt(metrics()?.openAR ?? 0)" icon="account_balance_wallet" />
         <app-stat-card label="Left to Bill" [value]="fmt(metrics()?.leftToBill ?? 0)" icon="pending_actions" />
         <app-stat-card label="Next Actions" [value]="actionCount()" icon="playlist_add_check" />
+      </div>
+
+      <!-- Status filter chips -->
+      <div class="flex flex-wrap items-center gap-2">
+        @for (chip of statusFilterOptions; track chip.value) {
+          <button type="button" (click)="toggleStatusFilter(chip.value)"
+                  class="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-150"
+                  [class.bg-slate-900]="activeStatusFilter() === chip.value"
+                  [class.text-white]="activeStatusFilter() === chip.value"
+                  [class.border-slate-900]="activeStatusFilter() === chip.value"
+                  [class.bg-white]="activeStatusFilter() !== chip.value"
+                  [class.text-slate-600]="activeStatusFilter() !== chip.value"
+                  [class.border-slate-200]="activeStatusFilter() !== chip.value"
+                  [class.hover:bg-slate-100]="activeStatusFilter() !== chip.value">
+            {{ chip.label }}
+          </button>
+        }
       </div>
 
       <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
@@ -112,14 +141,19 @@ import { Billing as BillingRecord } from '@app/models/types';
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              @for (row of openInvoices(); track row.id) {
-                <tr class="hover:bg-slate-50 transition-colors">
+              @for (row of filteredInvoices(); track row.id) {
+                <tr class="hover:bg-slate-50 transition-colors border-l-4"
+                    [class.border-l-slate-300]="row.status === 'Draft'"
+                    [class.border-l-amber-400]="row.status === 'Submitted'"
+                    [class.border-l-emerald-500]="row.status === 'Approved'"
+                    [class.border-l-blue-500]="row.status === 'Invoiced'"
+                    [class.border-l-transparent]="row.status !== 'Draft' && row.status !== 'Submitted' && row.status !== 'Approved' && row.status !== 'Invoiced'">
                   <td class="px-5 py-3">
                     <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
                        class="text-xs font-numeric font-bold text-indigo-700">{{ row.payAppNumber || '—' }}</a>
                   </td>
                   <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
-                  <td class="px-5 py-3 text-slate-500">{{ row.billingPeriod || '—' }}</td>
+                  <td class="px-5 py-3 text-slate-500 font-numeric">{{ row.billingPeriod || '—' }}</td>
                   <td class="px-5 py-3 text-right text-xs font-numeric text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-3 text-right text-xs font-numeric text-slate-700">{{ row.amountPaid | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-3">
@@ -229,6 +263,15 @@ export class Billing {
   createDrawerOpen = signal(false);
   paidExpanded = signal(false);
   saving = signal(false);
+  activeStatusFilter = signal<string | null>(null);
+
+  readonly statusFilterOptions: { label: string; value: string }[] = [
+    { label: 'All', value: '' },
+    { label: 'Draft', value: 'Draft' },
+    { label: 'Submitted', value: 'Submitted' },
+    { label: 'Approved', value: 'Approved' },
+    { label: 'Invoiced', value: 'Invoiced' },
+  ];
   invoiceDraft = {
     projectId: '',
     invoiceNumber: '',
@@ -262,6 +305,16 @@ export class Billing {
   draftInvoices = computed(() => this.invoiceRows().filter(r => r.status === 'Draft'));
   openInvoices = computed(() => this.invoiceRows().filter(r => r.status !== 'Draft' && r.status !== 'Paid'));
   paidInvoices = computed(() => this.invoiceRows().filter(r => r.status === 'Paid'));
+
+  filteredInvoices = computed(() => {
+    const filter = this.activeStatusFilter();
+    if (!filter) return this.openInvoices();
+    return this.openInvoices().filter(r => r.status === filter);
+  });
+
+  currentDueTotal = computed(() =>
+    this.openInvoices().reduce((sum, r) => sum + (r.currentApplication ?? 0), 0),
+  );
 
   billingActions = computed(() => {
     const projects = this.projectData.projects();
@@ -317,6 +370,10 @@ export class Billing {
 
   fmt(value: number): string {
     return this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
+  }
+
+  toggleStatusFilter(value: string): void {
+    this.activeStatusFilter.set(value || null);
   }
 
   refreshWorkbook(): void {
