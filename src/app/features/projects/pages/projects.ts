@@ -663,67 +663,83 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         [subtitle]="quickViewSubtitle()"
 
-        footerActionLabel="Open full project"
-
-        (close)="quickViewRow.set(null)"
-
-        (footerAction)="openQuickViewProject()">
+        (close)="quickViewRow.set(null)">
 
         @if (quickViewRow(); as row) {
 
-          <app-drawer-section title="Summary">
-
-            <app-drawer-field label="Status" [value]="row.displayStatus" />
-
-            <app-drawer-field label="Profile" [value]="row.profileLabel" />
-
-            <app-drawer-field label="Health" [value]="row.health" [alert]="row.health === 'Red'" />
-
-            <app-drawer-field label="Next action" [value]="row.nextActionLabel" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Money">
-
-            <app-drawer-field label="Contract" [value]="fmt(row.financial.currentContractAmount)" [mono]="true" />
-
-            <app-drawer-field label="Billed to date" [value]="fmt(row.financial.billedToDate)" [mono]="true" />
-
-            <app-drawer-field label="Open AR" [value]="fmt(row.financial.arBalance)" [mono]="true" />
-
-            <app-drawer-field label="Left to bill" [value]="fmt(row.financial.leftToBill)" [mono]="true" />
-
-            <app-drawer-field label="Margin" [value]="row.financial.forecastMargin.toFixed(1) + '%'" [alert]="row.financial.forecastMargin < 20" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Setup">
-
-            <app-drawer-field label="Foreman" [value]="drawerForeman(row)" />
-
-            <app-drawer-field label="Address" [value]="row.project.address || '—'" />
-
-            <app-drawer-field label="County" [value]="row.project.county || '—'" />
-
-            <app-drawer-field label="Start" [value]="formatDate(row.lifecycle.derivedStartDate || row.project.startDate)" />
-
-            <app-drawer-field label="Target end" [value]="formatDate(row.project.targetCompletionDate)" />
-
-          </app-drawer-section>
-
-          <app-drawer-section title="Drive">
-
-            <app-drawer-field label="Folder" [value]="row.driveLinked ? 'Linked' : 'Not linked'" [alert]="!row.driveLinked" />
-
-            @if (row.project.driveFolderUrl) {
-
-              <a [href]="row.project.driveFolderUrl" target="_blank" rel="noopener"
-
-                 class="text-sm font-semibold text-indigo-700 underline">Open Drive folder</a>
-
+          <!-- Status + health row -->
+          <div class="flex items-center gap-2 flex-wrap -mt-1 mb-1">
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold">
+              <span class="w-2 h-2 rounded-full shrink-0"
+                    [class.bg-emerald-400]="row.health === 'Green'"
+                    [class.bg-amber-400]="row.health === 'Yellow'"
+                    [class.bg-rose-500]="row.health === 'Red'"
+                    [class.bg-slate-300]="row.health === 'Neutral'"></span>
+              {{ row.displayStatus }}
+            </span>
+            @if (row.health !== 'Neutral') {
+              <span class="text-xs text-slate-500">· {{ row.health }}</span>
             }
+          </div>
 
+          <!-- Key financials 2-col grid -->
+          <div class="grid grid-cols-2 gap-3 bg-slate-50 rounded-xl p-4">
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Contract</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.currentContractAmount) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Billed</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.billedToDate) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">Left to Bill</div>
+              <div class="font-numeric font-bold text-lg text-slate-900">{{ fmt(row.financial.leftToBill) }}</div>
+            </div>
+            <div>
+              <div class="text-xs text-slate-500 mb-0.5">AR Balance</div>
+              <div class="font-numeric font-bold text-lg" [class.text-rose-700]="row.financial.arBalance > 0" [class.text-slate-900]="row.financial.arBalance <= 0">{{ fmt(row.financial.arBalance) }}</div>
+            </div>
+          </div>
+
+          <!-- Billing progress bar -->
+          <div>
+            <div class="flex justify-between text-xs text-slate-500 mb-1">
+              <span>Billing Progress</span>
+              <span class="font-numeric font-semibold text-slate-700">{{ billedPct(row) }}%</span>
+            </div>
+            <div class="w-full h-[6px] bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 rounded-full transition-all" [style.width.%]="billedPct(row)"></div>
+            </div>
+          </div>
+
+          <!-- People -->
+          <app-drawer-section title="Team">
+            <app-drawer-field label="Customer" [value]="row.project.customer || '—'" />
+            <app-drawer-field label="PM" [value]="row.project.projectManager || '—'" />
+            <app-drawer-field label="Superintendent" [value]="drawerForeman(row)" />
           </app-drawer-section>
+
+          <!-- Next action chip -->
+          @if (row.nextActionLabel) {
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-slate-500 shrink-0">Next:</span>
+              <span class="text-xs font-semibold bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full">{{ row.nextActionLabel }}</span>
+            </div>
+          }
+
+          <!-- CTA buttons -->
+          <div class="flex gap-2 pt-2">
+            <button type="button" (click)="openQuickViewProject()"
+                    class="flex-1 bg-slate-900 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">
+              Open Project →
+            </button>
+            <a [routerLink]="['/projects', row.project.id, 'billing']"
+               (click)="quickViewRow.set(null)"
+               class="flex-1 text-center bg-white border border-slate-200 text-slate-700 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
+              Review Billing →
+            </a>
+          </div>
 
         }
 

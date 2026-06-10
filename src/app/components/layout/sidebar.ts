@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, computed } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { Router, NavigationEnd } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
@@ -19,27 +19,51 @@ import { GlobalModuleBadge } from '@app/models/global-enabled-modules.types';
 type NavRow = GlobalNavItemConfig & { badge?: GlobalModuleBadge };
 type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
 
+const SIDEBAR_COLLAPSED_KEY = 'brighten-sidebar-collapsed';
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
   imports: [CommonModule, RouterLink, MatIconModule],
   template: `
-    <aside class="w-56 bg-slate-900 flex flex-col z-20 shrink-0 h-full">
-      <div class="px-4 py-4 flex items-center gap-2.5 border-b border-slate-800">
-        <div class="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center font-bold text-sm text-white">B</div>
-        <div class="min-w-0">
-          <div class="text-sm font-semibold text-white truncate">Brighten</div>
-          <div class="text-[10px] text-slate-400 truncate">Project Manager</div>
-        </div>
+    <aside class="bg-slate-900 flex flex-col z-20 shrink-0 h-full transition-all duration-200"
+           [class.w-14]="collapsed()"
+           [class.w-56]="!collapsed()">
+
+      <!-- Header with collapse toggle -->
+      <div class="px-2 py-4 flex items-center border-b border-slate-800 relative"
+           [class.justify-center]="collapsed()"
+           [class.gap-2.5]="!collapsed()"
+           [class.px-4]="!collapsed()">
+        <div class="w-8 h-8 bg-slate-700 rounded-lg flex items-center justify-center font-bold text-sm text-white shrink-0">B</div>
+        @if (!collapsed()) {
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold text-white truncate">Brighten</div>
+            <div class="text-[10px] text-slate-400 truncate">Project Manager</div>
+          </div>
+          <button type="button" (click)="toggleCollapse()"
+                  class="shrink-0 text-slate-400 hover:text-white transition-colors"
+                  title="Collapse sidebar">
+            <mat-icon class="!text-[18px]">chevron_left</mat-icon>
+          </button>
+        } @else {
+          <button type="button" (click)="toggleCollapse()"
+                  class="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-600 transition-colors shadow z-10"
+                  title="Expand sidebar">
+            <mat-icon class="!text-[14px]">chevron_right</mat-icon>
+          </button>
+        }
       </div>
 
       <nav class="flex-1 px-2 py-3 overflow-y-auto">
         <div class="space-y-4">
           @for (group of navGroups(); track group.id) {
             <section>
-              <div class="px-3 mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                {{ group.label }}
-              </div>
+              @if (!collapsed()) {
+                <div class="px-3 mb-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                  {{ group.label }}
+                </div>
+              }
               <div class="space-y-0.5">
                 @for (item of group.items; track item.id) {
                   <a [routerLink]="item.route"
@@ -49,11 +73,22 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
                      [class.border-l-indigo-400]="isActive(item)"
                      [class.text-slate-400]="!isActive(item)"
                      [class.border-l-transparent]="!isActive(item)"
+                     [class.justify-center]="collapsed()"
+                     [class.px-0]="collapsed()"
+                     [title]="collapsed() ? item.label : ''"
                      class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-all duration-150 text-sm min-w-0 border-l-2">
                     <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ item.icon }}</mat-icon>
-                    <span class="truncate flex-1">{{ item.label }}</span>
-                    @if (item.badge; as badge) {
-                      <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full shrink-0"
+                    @if (!collapsed()) {
+                      <span class="truncate flex-1">{{ item.label }}</span>
+                      @if (item.badge; as badge) {
+                        <span class="text-[10px] font-bold min-w-[1.25rem] text-center px-1 py-0.5 rounded-full shrink-0"
+                              [class.bg-rose-500]="badge.tone === 'urgent'"
+                              [class.text-white]="badge.tone === 'urgent'"
+                              [class.bg-amber-500]="badge.tone === 'review'"
+                              [class.text-white]="badge.tone === 'review'">{{ badge.count }}</span>
+                      }
+                    } @else if (item.badge; as badge) {
+                      <span class="absolute top-0 right-0 text-[8px] font-bold w-3.5 h-3.5 flex items-center justify-center rounded-full"
                             [class.bg-rose-500]="badge.tone === 'urgent'"
                             [class.text-white]="badge.tone === 'urgent'"
                             [class.bg-amber-500]="badge.tone === 'review'"
@@ -67,14 +102,23 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
         </div>
       </nav>
 
-      <div class="px-3 py-2">
-        <button class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 hover:bg-slate-800 transition-colors">
-          <mat-icon class="!text-[14px]">search</mat-icon>
-          <span>Search</span>
-          <span class="ml-auto font-mono bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded text-[10px]">⌘K</span>
+      <!-- Search / ⌘K -->
+      <div class="px-2 py-2">
+        <button class="w-full flex items-center rounded-lg text-xs text-slate-500 hover:bg-slate-800 transition-colors"
+                [class.justify-center]="collapsed()"
+                [class.gap-2]="!collapsed()"
+                [class.px-3]="!collapsed()"
+                [class.py-2]="!collapsed()"
+                [class.p-2]="collapsed()">
+          <mat-icon class="!text-[14px] shrink-0">search</mat-icon>
+          @if (!collapsed()) {
+            <span>Search</span>
+            <span class="ml-auto font-mono bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded text-[10px]">⌘K</span>
+          }
         </button>
       </div>
 
+      <!-- Settings + sync -->
       <div class="px-2 pb-2 border-t border-slate-800 pt-2 space-y-2">
         <a [routerLink]="settingsNav.route"
            [class.bg-slate-700]="isActive(settingsNav)"
@@ -83,14 +127,25 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
            [class.border-l-indigo-400]="isActive(settingsNav)"
            [class.text-slate-400]="!isActive(settingsNav)"
            [class.border-l-transparent]="!isActive(settingsNav)"
+           [class.justify-center]="collapsed()"
+           [class.px-0]="collapsed()"
+           [title]="collapsed() ? settingsNav.label : ''"
            class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-all duration-150 text-sm border-l-2">
           <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ settingsNav.icon }}</mat-icon>
-          <span class="truncate flex-1">{{ settingsNav.label }}</span>
+          @if (!collapsed()) {
+            <span class="truncate flex-1">{{ settingsNav.label }}</span>
+          }
         </a>
-        <div class="px-3 py-1.5 flex items-center gap-2 text-[10px] text-slate-500">
-          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></span>
-          <span>Cloud sync active</span>
-        </div>
+        @if (!collapsed()) {
+          <div class="px-3 py-1.5 flex items-center gap-2 text-[10px] text-slate-500">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></span>
+            <span>Cloud sync active</span>
+          </div>
+        } @else {
+          <div class="flex justify-center py-1">
+            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full" title="Cloud sync active"></span>
+          </div>
+        }
       </div>
     </aside>
   `,
@@ -101,6 +156,8 @@ export class SidebarComponent {
   private router = inject(Router);
 
   readonly settingsNav = GLOBAL_SETTINGS_NAV;
+
+  collapsed = signal<boolean>(this.loadCollapsed());
 
   private currentPath = toSignal(
     this.router.events.pipe(
@@ -129,5 +186,21 @@ export class SidebarComponent {
 
   isActive(item: GlobalNavItemConfig): boolean {
     return item.isActive(this.currentPath() ?? '/');
+  }
+
+  toggleCollapse(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+    } catch { /* ignore */ }
+  }
+
+  private loadCollapsed(): boolean {
+    try {
+      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch {
+      return false;
+    }
   }
 }
