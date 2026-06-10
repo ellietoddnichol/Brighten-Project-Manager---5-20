@@ -14,12 +14,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from './sidebar';
 import { TopHeaderComponent } from './top-header';
 import { CommandPaletteComponent } from '@app/components/ui/command-palette';
+import { KeyboardShortcutsModalComponent } from '@app/components/ui/keyboard-shortcuts-modal';
 import { DataService } from '@core/services/data.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopHeaderComponent, CommandPaletteComponent],
+  imports: [RouterOutlet, SidebarComponent, TopHeaderComponent, CommandPaletteComponent, KeyboardShortcutsModalComponent],
   template: `
     <div class="flex h-screen bg-slate-100 text-slate-900 font-sans overflow-hidden">
       <app-sidebar />
@@ -36,6 +37,11 @@ import { DataService } from '@core/services/data.service';
       [projects]="projects() ?? []"
       (close)="paletteOpen.set(false)"
     />
+
+    <app-keyboard-shortcuts-modal
+      [open]="shortcutsOpen()"
+      (close)="shortcutsOpen.set(false)"
+    />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -47,6 +53,7 @@ export class AppShellComponent {
   private dataService = inject(DataService);
 
   readonly paletteOpen = signal(false);
+  readonly shortcutsOpen = signal(false);
   readonly projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
 
   @HostListener('window:keydown', ['$event'])
@@ -54,6 +61,18 @@ export class AppShellComponent {
     if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
       event.preventDefault();
       this.paletteOpen.update(v => !v);
+      return;
+    }
+    if (
+      event.key === '?' &&
+      !(event.target instanceof HTMLInputElement) &&
+      !(event.target instanceof HTMLTextAreaElement)
+    ) {
+      event.preventDefault();
+      this.shortcutsOpen.update(v => !v);
+    }
+    if (event.key === 'Escape') {
+      this.shortcutsOpen.set(false);
     }
   }
 }

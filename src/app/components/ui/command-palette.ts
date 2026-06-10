@@ -19,34 +19,70 @@ import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { Project } from '@app/models/types';
 
+const RECENTS_KEY = 'brighten-recent-nav';
+const MAX_RECENTS = 5;
+
 interface PaletteResult {
   id: string;
-  group: 'pages' | 'projects' | 'actions';
+  group: 'recent' | 'pages' | 'projects' | 'actions';
   label: string;
   sublabel?: string;
   icon: string;
   route: string;
   queryParams?: Record<string, string>;
   isComingSoon?: boolean;
+  /** Breadcrumb path hint shown on the right */
+  pathHint?: string;
+  /** Status dot color for projects */
+  statusDot?: 'green' | 'amber' | 'rose';
+  /** Contract value for project results */
+  contractValue?: number;
 }
 
 const PAGE_RESULTS: PaletteResult[] = [
-  { id: 'page-dashboard',      group: 'pages', label: 'Dashboard',      icon: 'dashboard',     route: '/' },
-  { id: 'page-projects',       group: 'pages', label: 'Projects',       icon: 'folder',        route: '/projects' },
-  { id: 'page-billing',        group: 'pages', label: 'Billing',        icon: 'receipt_long',  route: '/billing' },
-  { id: 'page-financials',     group: 'pages', label: 'Financials',     icon: 'bar_chart',     route: '/financials' },
-  { id: 'page-wip',            group: 'pages', label: 'WIP',            icon: 'construction',  route: '/financials/wip' },
-  { id: 'page-ar',             group: 'pages', label: 'AR',             icon: 'account_balance',route: '/ar' },
-  { id: 'page-labor',          group: 'pages', label: 'Labor',          icon: 'people',        route: '/labor' },
-  { id: 'page-documents',      group: 'pages', label: 'Documents',      icon: 'description',   route: '/documents' },
-  { id: 'page-settings',       group: 'pages', label: 'Settings',       icon: 'settings',      route: '/settings/source-health' },
+  { id: 'page-dashboard',      group: 'pages', label: 'Dashboard',      icon: 'dashboard',     route: '/',                            pathHint: 'Home' },
+  { id: 'page-projects',       group: 'pages', label: 'Projects',       icon: 'folder',        route: '/projects',                    pathHint: 'Projects' },
+  { id: 'page-billing',        group: 'pages', label: 'Billing',        icon: 'receipt_long',  route: '/billing',                     pathHint: 'Billing' },
+  { id: 'page-financials',     group: 'pages', label: 'Financials',     icon: 'bar_chart',     route: '/financials',                  pathHint: 'Financials' },
+  { id: 'page-wip',            group: 'pages', label: 'WIP',            icon: 'construction',  route: '/financials/wip',              pathHint: 'Financials › WIP' },
+  { id: 'page-ar',             group: 'pages', label: 'AR',             icon: 'account_balance',route: '/ar',                         pathHint: 'AR' },
+  { id: 'page-labor',          group: 'pages', label: 'Labor',          icon: 'people',        route: '/labor',                       pathHint: 'Labor' },
+  { id: 'page-documents',      group: 'pages', label: 'Documents',      icon: 'description',   route: '/documents',                   pathHint: 'Documents' },
+  { id: 'page-settings',       group: 'pages', label: 'Settings',       icon: 'settings',      route: '/settings/source-health',      pathHint: 'Settings' },
 ];
 
 const ACTION_RESULTS: PaletteResult[] = [
-  { id: 'action-new-project',    group: 'actions', label: 'New Project',         icon: 'add_circle',   route: '/projects', queryParams: { new: '1' } },
-  { id: 'action-export-csv',     group: 'actions', label: 'Export CSV',          icon: 'download',     route: '',          isComingSoon: true },
-  { id: 'action-source-health',  group: 'actions', label: 'Go to Source Health', icon: 'health_and_safety', route: '/settings/source-health' },
+  { id: 'action-new-project',    group: 'actions', label: 'New Project',         icon: 'add_circle',        route: '/projects', queryParams: { new: '1' },  pathHint: 'Projects › New' },
+  { id: 'action-export-csv',     group: 'actions', label: 'Export CSV',          icon: 'download',          route: '',          isComingSoon: true,          pathHint: 'Actions' },
+  { id: 'action-source-health',  group: 'actions', label: 'Go to Source Health', icon: 'health_and_safety', route: '/settings/source-health',               pathHint: 'Settings › Source Health' },
 ];
+
+function loadRecents(): PaletteResult[] {
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as PaletteResult[];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecent(item: PaletteResult): void {
+  try {
+    const existing = loadRecents().filter(r => r.id !== item.id);
+    const updated = [{ ...item, group: 'recent' as const }, ...existing].slice(0, MAX_RECENTS);
+    localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore
+  }
+}
+
+function statusDotForProject(project: Project): 'green' | 'amber' | 'rose' {
+  const s = project.status;
+  if (s === 'Active') return 'green';
+  if (s === 'Closeout' || s === 'Setup Needed' || s === 'Awarded') return 'amber';
+  return 'rose';
+}
 
 @Component({
   selector: 'app-command-palette',
@@ -101,8 +137,17 @@ const ACTION_RESULTS: PaletteResult[] = [
                     (click)="execute(item)"
                     (mouseenter)="setSelectedId(item.id)"
                   >
-                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                    <!-- Icon or status dot -->
+                    <div class="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0 relative">
                       <mat-icon class="!text-[16px]">{{ item.icon }}</mat-icon>
+                      @if (item.statusDot) {
+                        <span
+                          class="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white"
+                          [class.bg-green-500]="item.statusDot === 'green'"
+                          [class.bg-amber-400]="item.statusDot === 'amber'"
+                          [class.bg-rose-500]="item.statusDot === 'rose'"
+                        ></span>
+                      }
                     </div>
                     <div class="flex-1 min-w-0">
                       <div class="text-sm font-medium text-slate-900 truncate">{{ item.label }}</div>
@@ -110,6 +155,14 @@ const ACTION_RESULTS: PaletteResult[] = [
                         <div class="text-xs text-slate-500 truncate">{{ item.sublabel }}</div>
                       }
                     </div>
+                    <!-- Contract value for projects -->
+                    @if (item.contractValue != null) {
+                      <span class="text-xs text-slate-400 font-numeric shrink-0">{{ fmtCurrency(item.contractValue) }}</span>
+                    }
+                    <!-- Path hint -->
+                    @if (item.pathHint && !item.contractValue) {
+                      <span class="text-[10px] text-slate-400 shrink-0 hidden sm:block">{{ item.pathHint }}</span>
+                    }
                     @if (item.isComingSoon) {
                       <span class="text-[10px] text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">soon</span>
                     } @else if (isSelected(item)) {
@@ -141,12 +194,14 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
 
   readonly query = signal('');
   private selectedId = signal<string | null>(null);
+  private recents = signal<PaletteResult[]>([]);
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['open']) {
       if (this.open) {
         this.query.set('');
         this.selectedId.set(null);
+        this.recents.set(loadRecents());
         // Focus after render
         setTimeout(() => this.searchInput?.nativeElement?.focus(), 0);
       }
@@ -155,19 +210,26 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
 
   ngAfterViewInit(): void {
     if (this.open) {
+      this.recents.set(loadRecents());
       setTimeout(() => this.searchInput?.nativeElement?.focus(), 0);
     }
   }
 
   readonly flatResults = computed((): PaletteResult[] => {
     const q = this.query().toLowerCase().trim();
-    const pages = q
-      ? PAGE_RESULTS.filter(p => p.label.toLowerCase().includes(q))
-      : PAGE_RESULTS;
+
+    if (!q) {
+      // Show recents first when query is empty
+      const recentItems = this.recents().map(r => ({ ...r, group: 'recent' as const }));
+      const pages = PAGE_RESULTS;
+      const actions = ACTION_RESULTS;
+      return [...recentItems, ...pages, ...actions];
+    }
+
+    const pages = PAGE_RESULTS.filter(p => p.label.toLowerCase().includes(q));
 
     const projectResults: PaletteResult[] = this.projects
       .filter(p =>
-        !q ||
         p.projectName?.toLowerCase().includes(q) ||
         p.projectNumber?.toLowerCase().includes(q) ||
         p.customer?.toLowerCase().includes(q),
@@ -180,11 +242,12 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
         sublabel: p.customer,
         icon: 'work',
         route: `/projects/${p.id}`,
+        pathHint: `Projects › #${p.projectNumber}`,
+        statusDot: statusDotForProject(p),
+        contractValue: p.originalContractAmount,
       }));
 
-    const actions = q
-      ? ACTION_RESULTS.filter(a => a.label.toLowerCase().includes(q))
-      : ACTION_RESULTS;
+    const actions = ACTION_RESULTS.filter(a => a.label.toLowerCase().includes(q));
 
     return [...pages, ...projectResults, ...actions];
   });
@@ -192,9 +255,11 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
   readonly groupedResults = computed(() => {
     const results = this.flatResults();
     const groups: Array<{ name: string; items: PaletteResult[] }> = [];
+    const recentItems = results.filter(r => r.group === 'recent');
     const pageItems = results.filter(r => r.group === 'pages');
     const projectItems = results.filter(r => r.group === 'projects');
     const actionItems = results.filter(r => r.group === 'actions');
+    if (recentItems.length) groups.push({ name: 'Recent', items: recentItems });
     if (pageItems.length) groups.push({ name: 'Pages', items: pageItems });
     if (projectItems.length) groups.push({ name: 'Projects', items: projectItems });
     if (actionItems.length) groups.push({ name: 'Actions', items: actionItems });
@@ -227,6 +292,10 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
     if (event.target === event.currentTarget) {
       this.close.emit();
     }
+  }
+
+  fmtCurrency(n: number): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -270,6 +339,7 @@ export class CommandPaletteComponent implements OnChanges, AfterViewInit {
       return;
     }
     if (item.route) {
+      saveRecent(item);
       void this.router.navigate([item.route], item.queryParams ? { queryParams: item.queryParams } : {});
     }
     this.close.emit();

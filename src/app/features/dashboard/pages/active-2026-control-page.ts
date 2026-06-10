@@ -77,11 +77,6 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
               <span class="ml-1 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full">{{ activeFilters().size }}</span>
             }
           </button>
-          <select [(ngModel)]="sortKey" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white hover:bg-slate-50 transition-colors">
-            @for (opt of sortOptions; track opt.id) {
-              <option [value]="opt.id">{{ opt.label }}</option>
-            }
-          </select>
           <button type="button" (click)="exportCsv()"
                   class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shrink-0 hover:bg-slate-800 transition-colors">
             Export CSV
@@ -122,6 +117,29 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
         <app-stat-card label="Left to Bill" [value]="fmtCurrency(summary().leftToBillTotal)" icon="payments" />
       </div>
 
+      <!-- Summary strip -->
+      <div class="bg-white border border-slate-200 rounded-xl px-5 py-3 flex flex-wrap items-center gap-6">
+        <div class="flex flex-col">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Jobs</span>
+          <span class="font-numeric font-bold text-slate-900 text-sm">{{ summary().activeJobs }}</span>
+        </div>
+        <div class="w-px h-8 bg-slate-100 hidden sm:block"></div>
+        <div class="flex flex-col">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Contract</span>
+          <span class="font-numeric font-bold text-slate-900 text-sm">{{ fmtCurrency(summary().currentContractTotal) }}</span>
+        </div>
+        <div class="w-px h-8 bg-slate-100 hidden sm:block"></div>
+        <div class="flex flex-col">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Total Billed</span>
+          <span class="font-numeric font-bold text-slate-900 text-sm">{{ fmtCurrency(summary().billedToDateTotal) }}</span>
+        </div>
+        <div class="w-px h-8 bg-slate-100 hidden sm:block"></div>
+        <div class="flex flex-col">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Open AR</span>
+          <span class="font-numeric font-bold text-slate-900 text-sm">{{ fmtCurrency(summary().openArTotal) }}</span>
+        </div>
+      </div>
+
       <app-compact-stat-strip [stats]="compactStats()" />
 
       <div class="flex flex-wrap items-center justify-between gap-3">
@@ -129,11 +147,28 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
           [options]="segmentOptions()"
           [value]="activeSegment()"
           (select)="onSegmentSelect($event)" />
-        @if (activeFilters().size) {
-          <button type="button" (click)="clearFilters()" class="text-xs font-semibold text-slate-600 underline">
-            Clear {{ activeFilters().size }} advanced filter(s)
-          </button>
-        }
+        <div class="flex items-center gap-2 flex-wrap">
+          <!-- Search bar matching projects list style -->
+          <div class="relative min-w-[220px]">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
+            <input type="text"
+                   [ngModel]="searchQuery()"
+                   (ngModelChange)="searchQuery.set($event)"
+                   placeholder="Search jobs…"
+                   class="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white" />
+            @if (searchQuery()) {
+              <button type="button" (click)="searchQuery.set('')"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                <mat-icon class="!text-[16px]">close</mat-icon>
+              </button>
+            }
+          </div>
+          @if (activeFilters().size) {
+            <button type="button" (click)="clearFilters()" class="text-xs font-semibold text-slate-600 underline">
+              Clear {{ activeFilters().size }} advanced filter(s)
+            </button>
+          }
+        </div>
       </div>
 
       <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
@@ -142,14 +177,14 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
                 <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                  <th class="px-4 py-3">Job #</th>
-                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3 cursor-pointer select-none hover:text-slate-600 transition-colors" (click)="toggleSort('jobNumber')">Job #{{ sortIndicator('jobNumber') }}</th>
+                  <th class="px-4 py-3 cursor-pointer select-none hover:text-slate-600 transition-colors" (click)="toggleSort('projectName')">Project{{ sortIndicator('projectName') }}</th>
                   <th class="px-4 py-3">Customer</th>
                   <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3">Billing</th>
-                  <th class="px-4 py-3 text-right">Contract</th>
+                  <th class="px-4 py-3 cursor-pointer select-none hover:text-slate-600 transition-colors" (click)="toggleSort('nextBilling')">Billing{{ sortIndicator('nextBilling') }}</th>
+                  <th class="px-4 py-3 text-right cursor-pointer select-none hover:text-slate-600 transition-colors" (click)="toggleSort('largestContract')">Contract{{ sortIndicator('largestContract') }}</th>
                   <th class="px-4 py-3 text-right">Billed</th>
-                  <th class="px-4 py-3 text-right">Balance</th>
+                  <th class="px-4 py-3 text-right cursor-pointer select-none hover:text-slate-600 transition-colors" (click)="toggleSort('highestAr')">Balance{{ sortIndicator('highestAr') }}</th>
                   <th class="px-4 py-3">Foreman / PM</th>
                   <th class="px-4 py-3">Action</th>
                 </tr>
@@ -303,7 +338,9 @@ export class Active2026ControlPage {
   readonly filterOptions = CONTROL_FILTER_OPTIONS;
   readonly rowWarningChips = rowWarningChips;
 
-  sortKey: ControlSortKey = 'jobNumber';
+  sortKey = signal<ControlSortKey>('jobNumber');
+  sortDir = signal<'asc' | 'desc'>('asc');
+  searchQuery = signal('');
   activeFilters = signal<Set<ControlFilterId>>(new Set());
   activeSegment = signal<ControlSegmentId>('activeJobs');
   selectedRow = signal<Active2026ControlRow | null>(null);
@@ -381,7 +418,16 @@ export class Active2026ControlPage {
     if (filters.size) {
       rows = rows.filter(row => [...filters].every(f => matchesControlFilter(row, f)));
     }
-    return sortControlRows(rows, this.sortKey);
+    const q = this.searchQuery().trim().toLowerCase();
+    if (q) {
+      rows = rows.filter(row =>
+        row.jobNumber?.toLowerCase().includes(q) ||
+        row.projectName?.toLowerCase().includes(q) ||
+        row.customer?.toLowerCase().includes(q),
+      );
+    }
+    const sorted = sortControlRows(rows, this.sortKey());
+    return this.sortDir() === 'desc' ? [...sorted].reverse() : sorted;
   });
 
   segmentOptions = computed(() => {
@@ -426,6 +472,20 @@ export class Active2026ControlPage {
       { label: 'AR', value: this.fmtCurrency(row.arBalance) },
       { label: 'Margin', value: `${row.projectedMarginPct.toFixed(1)}%`, alert: row.projectedMarginPct < this.profitTargetPct },
     ];
+  }
+
+  toggleSort(key: ControlSortKey): void {
+    if (this.sortKey() === key) {
+      this.sortDir.update(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortKey.set(key);
+      this.sortDir.set('asc');
+    }
+  }
+
+  sortIndicator(key: ControlSortKey): string {
+    if (this.sortKey() !== key) return '';
+    return this.sortDir() === 'asc' ? ' ▲' : ' ▼';
   }
 
   onSegmentSelect(seg: ControlSegmentId): void {
