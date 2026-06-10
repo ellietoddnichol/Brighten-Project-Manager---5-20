@@ -18,6 +18,14 @@ body {
   @apply antialiased;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: fadeIn 0.18s ease-out;
+}
+
 .project-detail-density {
   --pd-card-pad: 0.75rem;
   --pd-card-pad-lg: 1rem;
