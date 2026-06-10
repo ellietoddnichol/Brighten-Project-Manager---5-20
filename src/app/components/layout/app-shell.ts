@@ -1,13 +1,25 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  HostListener,
+  inject,
+  signal,
+} from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { User } from 'firebase/auth';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { SidebarComponent } from './sidebar';
 import { TopHeaderComponent } from './top-header';
+import { CommandPaletteComponent } from '@app/components/ui/command-palette';
+import { DataService } from '@core/services/data.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopHeaderComponent],
+  imports: [RouterOutlet, SidebarComponent, TopHeaderComponent, CommandPaletteComponent],
   template: `
     <div class="flex h-screen bg-slate-100 text-slate-900 font-sans overflow-hidden">
       <app-sidebar />
@@ -18,6 +30,12 @@ import { TopHeaderComponent } from './top-header';
         </main>
       </div>
     </div>
+
+    <app-command-palette
+      [open]="paletteOpen()"
+      [projects]="projects() ?? []"
+      (close)="paletteOpen.set(false)"
+    />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -25,4 +43,17 @@ export class AppShellComponent {
   @Input() user: User | null = null;
   @Input() today = new Date();
   @Output() logout = new EventEmitter<void>();
+
+  private dataService = inject(DataService);
+
+  readonly paletteOpen = signal(false);
+  readonly projects = toSignal(this.dataService.getProjects(), { initialValue: [] });
+
+  @HostListener('window:keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+      event.preventDefault();
+      this.paletteOpen.update(v => !v);
+    }
+  }
 }

@@ -67,6 +67,14 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
         </div>
       </nav>
 
+      <div class="px-3 py-2">
+        <button class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-slate-500 hover:bg-slate-800 transition-colors">
+          <mat-icon class="!text-[14px]">search</mat-icon>
+          <span>Search</span>
+          <span class="ml-auto font-mono bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded text-[10px]">⌘K</span>
+        </button>
+      </div>
+
       <div class="px-2 pb-2 border-t border-slate-800 pt-2 space-y-2">
         <a [routerLink]="settingsNav.route"
            [class.bg-slate-700]="isActive(settingsNav)"
