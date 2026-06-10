@@ -235,7 +235,6 @@ export function buildWipWarningChips(
   };
 
   if (reviewFlags.includes('Missing contract amount')) push('Missing contract', 'critical');
-  if (reviewFlags.includes('Projected margin under 20%')) push('Margin under 20%', 'critical');
   if (reviewFlags.includes('Actual cost exceeds budget')) push('Cost exceeds budget', 'critical');
   if (reviewFlags.includes('Billed over contract')) push('Billed over contract', 'critical');
   if (reviewFlags.includes('Closed job in Active WIP')) push('Closed in Active WIP', 'critical');
@@ -328,7 +327,6 @@ export function deriveWipNextAction(
   if (labels.has('Missing QB cost detail')) return 'Add Project Cost Detail tab';
   if (labels.has('Missing AR Aging Summary')) return 'Re-sync QuickBooks';
   if (labels.has('Labor actuals not synced')) return 'Re-sync labor actuals';
-  if (labels.has('Margin under 20%')) return 'Review margin under 20%';
   if (labels.has('Review over/under billing') || labels.has('Overbilled vs earned')) {
     return 'Review overbilling/underbilling';
   }
