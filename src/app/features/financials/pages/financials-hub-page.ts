@@ -553,9 +553,23 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
 
-              <app-stat-card label="Total Billed" [value]="fmt(metrics().billedToDate)" />
+              <div class="relative">
+                <app-stat-card label="Total Billed" [value]="fmt(metrics().billedToDate)" />
+                @if (billedSparklineValues().length >= 2) {
+                  <div class="absolute bottom-3 right-3 opacity-60">
+                    <app-sparkline [values]="billedSparklineValues()" [width]="80" [height]="24" />
+                  </div>
+                }
+              </div>
 
-              <app-stat-card label="Left to Bill" [value]="fmt(metrics().leftToBill)" />
+              <div class="relative">
+                <app-stat-card label="Left to Bill" [value]="fmt(metrics().leftToBill)" />
+                @if (contractSparklineValues().length >= 2) {
+                  <div class="absolute bottom-3 right-3 opacity-60">
+                    <app-sparkline [values]="contractSparklineValues()" [width]="80" [height]="24" />
+                  </div>
+                }
+              </div>
 
               <app-stat-card label="Approved COs not billed" [value]="fmt(metrics().approvedUnbilledCOAmount)" />
 
@@ -872,25 +886,21 @@ export class FinancialsHubPage {
   jobsUnderMargin = computed(() => countJobsUnderMargin(this.wipRecords()));
 
   /** Top 8 active projects sorted by contract — used for sparkline data */
-  private top8Projects = computed(() =>
-    [...(this.projects() ?? [])]
-      .filter(p => p.status === 'Active')
-      .sort((a, b) => (b.contractAmount ?? 0) - (a.contractAmount ?? 0))
-      .slice(0, 8),
-  );
+  private top8ProjectFinancials = computed(() => {
+    const fin = this.financialByProjectId();
+    return [...(this.projects() ?? [])]
+      .map(p => fin.get(p.id))
+      .filter((f): f is NonNullable<typeof f> => !!f && (f.currentContractAmount ?? 0) > 0)
+      .sort((a, b) => (b.currentContractAmount ?? 0) - (a.currentContractAmount ?? 0))
+      .slice(0, 8);
+  });
 
   billedSparklineValues = computed(() =>
-    this.top8Projects().map(p => {
-      const fin = this.financialByProjectId().get(p.id);
-      return fin?.billedToDate ?? 0;
-    }),
+    this.top8ProjectFinancials().map(f => f.billedToDate ?? 0),
   );
 
   contractSparklineValues = computed(() =>
-    this.top8Projects().map(p => {
-      const fin = this.financialByProjectId().get(p.id);
-      return fin?.currentContractAmount ?? p.contractAmount ?? 0;
-    }),
+    this.top8ProjectFinancials().map(f => f.currentContractAmount ?? 0),
   );
 
 
