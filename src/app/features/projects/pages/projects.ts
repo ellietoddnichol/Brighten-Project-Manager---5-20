@@ -88,6 +88,36 @@ import {
 type LifecycleStatusFilter = 'active' | 'closed' | 'all';
 type ProjectsSortKey = 'name' | 'jobNumber' | 'updated';
 
+const SAVED_VIEWS_KEY = 'brighten-saved-views-v1';
+
+interface ActiveFilters {
+  view: string;
+  lifecycleFilter: LifecycleStatusFilter;
+  searchQuery: string;
+}
+
+interface SavedView {
+  id: string;
+  name: string;
+  filters: ActiveFilters;
+  deletable: boolean;
+}
+
+const DEFAULT_SAVED_VIEWS: SavedView[] = [
+  {
+    id: 'default-active',
+    name: 'All Active',
+    filters: { view: 'default', lifecycleFilter: 'active', searchQuery: '' },
+    deletable: false,
+  },
+  {
+    id: 'default-needs-review',
+    name: 'Needs Review',
+    filters: { view: 'needsReview', lifecycleFilter: 'active', searchQuery: '' },
+    deletable: false,
+  },
+];
+
 const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[] = [
 
   { id: 'missingContract', label: 'Missing contract' },
@@ -290,6 +320,33 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         </div>
 
+        @if (savedViews().length || hasActiveFilters()) {
+          <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+            @for (view of savedViews(); track view.id) {
+              <button type="button" (click)="applySavedView(view)"
+                      class="text-xs font-medium px-3 py-1.5 rounded-full border cursor-pointer whitespace-nowrap shrink-0 transition-colors flex items-center gap-1"
+                      [class.border-indigo-500]="activeSavedViewId() === view.id"
+                      [class.bg-indigo-50]="activeSavedViewId() === view.id"
+                      [class.text-indigo-700]="activeSavedViewId() === view.id"
+                      [class.border-slate-200]="activeSavedViewId() !== view.id"
+                      [class.text-slate-600]="activeSavedViewId() !== view.id"
+                      [class.hover:border-slate-400]="activeSavedViewId() !== view.id">
+                {{ view.name }}
+                @if (view.deletable) {
+                  <span (click)="deleteSavedView(view.id, $event)" class="ml-1 hover:text-rose-600 transition-colors leading-none">×</span>
+                }
+              </button>
+            }
+            @if (hasActiveFilters()) {
+              <button type="button" (click)="saveCurrentView()"
+                      class="text-xs text-slate-500 hover:text-slate-900 flex items-center gap-1 shrink-0 whitespace-nowrap transition-colors">
+                <mat-icon class="!text-[14px]">bookmark_border</mat-icon>
+                Save view
+              </button>
+            }
+          </div>
+        }
+
         <div class="flex flex-wrap items-center gap-2">
           @for (opt of lifecycleFilterOptions; track opt.id) {
             <button type="button" (click)="setLifecycleFilter(opt.id)"
@@ -352,7 +409,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
-                <tr class="sticky top-0 z-10 bg-white text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                <tr class="sticky top-0 z-10 bg-white text-xs font-medium text-slate-500 border-b border-slate-100">
                   <th class="px-4 py-2">Job #</th>
                   <th class="px-4 py-2">Project</th>
                   <th class="px-4 py-2">Customer</th>
@@ -796,7 +853,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
               <div>
 
-                <h2 class="text-base font-bold text-slate-900">New Project</h2>
+                <h2 class="text-sm font-semibold text-slate-900">New Project</h2>
 
                 <p class="text-slate-500 text-xs mt-0.5">Add a job to Brighten</p>
 
@@ -812,7 +869,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="num" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Project #</label>
+                  <label for="num" class="block text-xs text-slate-500 font-medium mb-1">Project #</label>
 
                   <input id="num" type="text" [(ngModel)]="newProject.projectNumber" name="num" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -820,7 +877,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="name" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Project Name</label>
+                  <label for="name" class="block text-xs text-slate-500 font-medium mb-1">Project Name</label>
 
                   <input id="name" type="text" [(ngModel)]="newProject.projectName" name="name" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -832,7 +889,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="cust" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Customer / GC</label>
+                  <label for="cust" class="block text-xs text-slate-500 font-medium mb-1">Customer / GC</label>
 
                   <input id="cust" type="text" [(ngModel)]="newProject.customer" name="cust" required class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -840,7 +897,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                 <div>
 
-                  <label for="status" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Status</label>
+                  <label for="status" class="block text-xs text-slate-500 font-medium mb-1">Status</label>
 
                   <select id="status" [(ngModel)]="newProject.status" name="status" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -858,7 +915,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
               <div>
 
-                <label for="address" class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Site Address</label>
+                <label for="address" class="block text-xs text-slate-500 font-medium mb-1">Site Address</label>
 
                 <input id="address" type="text" [(ngModel)]="newProject.address" name="address" class="w-full px-3 py-2 rounded-lg border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 text-sm">
 
@@ -952,6 +1009,17 @@ export class Projects implements OnInit {
   showNewProject = signal(false);
 
   loading = signal(false);
+
+  savedViews = signal<SavedView[]>(this.loadSavedViews());
+
+  activeSavedViewId = signal<string | null>(null);
+
+  hasActiveFilters = computed(() =>
+    this.searchQuery().trim() !== '' ||
+    this.lifecycleStatusFilter() !== 'active' ||
+    this.viewMode() !== 'default' ||
+    this.advancedFilterCount() > 0,
+  );
 
   syncing = signal(false);
 
@@ -1633,6 +1701,60 @@ export class Projects implements OnInit {
   }
 
 
+
+  private loadSavedViews(): SavedView[] {
+    const defaults = DEFAULT_SAVED_VIEWS;
+    try {
+      const raw = localStorage.getItem(SAVED_VIEWS_KEY);
+      const user: SavedView[] = raw ? (JSON.parse(raw) as SavedView[]) : [];
+      return [...defaults, ...user];
+    } catch {
+      return defaults;
+    }
+  }
+
+  private persistSavedViews(views: SavedView[]): void {
+    try {
+      const user = views.filter(v => v.deletable);
+      localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(user));
+    } catch { /* ignore */ }
+  }
+
+  saveCurrentView(): void {
+    const name = window.prompt('Name this view:');
+    if (!name?.trim()) return;
+    const view: SavedView = {
+      id: `view-${Date.now()}`,
+      name: name.trim(),
+      filters: {
+        view: this.viewMode(),
+        lifecycleFilter: this.lifecycleStatusFilter(),
+        searchQuery: this.searchQuery(),
+      },
+      deletable: true,
+    };
+    const updated = [...this.savedViews(), view];
+    this.savedViews.set(updated);
+    this.persistSavedViews(updated);
+    this.activeSavedViewId.set(view.id);
+  }
+
+  applySavedView(view: SavedView): void {
+    this.activeSavedViewId.set(view.id);
+    const f = view.filters;
+    this.searchQuery.set(f.searchQuery);
+    this.lifecycleStatusFilter.set(f.lifecycleFilter);
+    this.setView(f.view as import('@app/models/project-lifecycle.types').ProjectsListView);
+    this.visibleCount.set(25);
+  }
+
+  deleteSavedView(id: string, event: Event): void {
+    event.stopPropagation();
+    const updated = this.savedViews().filter(v => v.id !== id);
+    this.savedViews.set(updated);
+    this.persistSavedViews(updated);
+    if (this.activeSavedViewId() === id) this.activeSavedViewId.set(null);
+  }
 
   createProject(event: Event): void {
 

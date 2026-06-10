@@ -82,7 +82,7 @@ import { WIPRecord } from '@app/models/financial.types';
         </button>
         <button type="button" (click)="setSegment('activeWip')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
           <div class="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm h-full">
-            <div class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Over / Under Billing</div>
+            <div class="text-xs text-slate-500 font-medium mb-1">Over / Under Billing</div>
             <div class="text-2xl font-bold font-numeric"
                  [class.text-amber-600]="summary().overUnderBilling < 0"
                  [class.text-rose-600]="summary().overUnderBilling > 0"
@@ -169,7 +169,7 @@ import { WIPRecord } from '@app/models/financial.types';
                 @if (row.warningChips?.length) {
                   <div class="flex flex-wrap gap-1.5 mt-2">
                     @for (chip of row.warningChips; track chip.label) {
-                      <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                      <span class="text-xs font-medium px-2 py-0.5 rounded-full"
                             [class.bg-rose-100]="chip.tone === 'critical'"
                             [class.text-rose-800]="chip.tone === 'critical'"
                             [class.bg-amber-100]="chip.tone === 'amber'"

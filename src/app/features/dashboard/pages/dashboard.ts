@@ -210,7 +210,7 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Financial Snapshot</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Financial Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
           </div>
           <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
@@ -246,7 +246,7 @@ interface DashboardFinancialMetric {
       @if (widgetVisible('billing-pipeline')) {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900">Billing Pipeline</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Billing Pipeline</h2>
             <p class="text-xs text-slate-500 mt-0.5">Top 10 projects by contract value — billed vs remaining</p>
           </div>
           <div class="p-4 h-72">
@@ -263,7 +263,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">A/R Tracker</h2>
+              <h2 class="text-sm font-semibold text-slate-900">A/R Tracker</h2>
               <p class="text-xs text-slate-500 mt-0.5">Top projects by open accounts receivable</p>
             </div>
             <a routerLink="/ar" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View A/R</a>
@@ -299,7 +299,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Field Labor Hours</h2>
+              <h2 class="text-sm font-semibold text-slate-900">Field Labor Hours</h2>
               <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
             </div>
             <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
@@ -340,7 +340,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">
+              <h2 class="text-sm font-semibold text-slate-900">
                 Today's Priorities
                 @if (priorities().length) {
                   <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
@@ -372,7 +372,7 @@ interface DashboardFinancialMetric {
                       <app-status-chip [tone]="item.severity === 'error' ? 'red' : 'amber'">
                         {{ item.severity === 'error' ? 'Review Needed' : 'Follow Up' }}
                       </app-status-chip>
-                      <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ sourceLabel(item.source) }}</span>
+                      <span class="text-xs text-slate-500 font-medium">{{ sourceLabel(item.source) }}</span>
                     </div>
                     @if (item.jobNumber) {
                       <p class="text-sm text-slate-600 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
@@ -397,7 +397,7 @@ interface DashboardFinancialMetric {
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="text-base font-bold text-slate-900">Active Projects</h2>
+              <h2 class="text-sm font-semibold text-slate-900">Active Projects</h2>
               <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
             </div>
             <a routerLink="/active-2026-control" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
@@ -468,7 +468,7 @@ interface DashboardFinancialMetric {
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Billing Snapshot</h2>
+            <h2 class="text-sm font-semibold text-slate-900">Billing Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Recent Pay Apps, retainage, and A/R follow-up</p>
           </div>
           <a routerLink="/billing" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Review Billing</a>
