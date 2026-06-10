@@ -42,7 +42,7 @@ import {
     EmptyStateComponent,
   ],
   template: `
-    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4 page-enter">
       <app-page-header
         title="AR"
         subtitle="Open receivables, aging, and collection follow-up"
@@ -87,6 +87,53 @@ import {
         </button>
       </div>
 
+      <div class="flex flex-wrap items-center justify-between gap-4 px-1">
+        <div>
+          <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Total Outstanding</p>
+          <p class="text-3xl font-black text-slate-900">{{ fmt(summary().openAr) }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" (click)="agingFilter.set('current')"
+                  class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+                  [class.bg-emerald-500]="agingFilter() === 'current'"
+                  [class.text-white]="agingFilter() === 'current'"
+                  [class.bg-emerald-100]="agingFilter() !== 'current'"
+                  [class.text-emerald-800]="agingFilter() !== 'current'">
+            Current {{ fmt(summary().current) }}
+          </button>
+          <button type="button" (click)="agingFilter.set('30')"
+                  class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+                  [class.bg-amber-500]="agingFilter() === '30'"
+                  [class.text-white]="agingFilter() === '30'"
+                  [class.bg-amber-100]="agingFilter() !== '30'"
+                  [class.text-amber-800]="agingFilter() !== '30'">
+            30 days {{ fmt(summary().days1To30) }}
+          </button>
+          <button type="button" (click)="agingFilter.set('60')"
+                  class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+                  [class.bg-orange-500]="agingFilter() === '60'"
+                  [class.text-white]="agingFilter() === '60'"
+                  [class.bg-orange-100]="agingFilter() !== '60'"
+                  [class.text-orange-800]="agingFilter() !== '60'">
+            60 days {{ fmt(summary().days31To60) }}
+          </button>
+          <button type="button" (click)="agingFilter.set('90')"
+                  class="px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+                  [class.bg-rose-500]="agingFilter() === '90'"
+                  [class.text-white]="agingFilter() === '90'"
+                  [class.bg-rose-100]="agingFilter() !== '90'"
+                  [class.text-rose-800]="agingFilter() !== '90'">
+            90+ days {{ fmt(summary().days90Plus) }}
+          </button>
+          @if (agingFilter()) {
+            <button type="button" (click)="agingFilter.set(null)"
+                    class="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 transition-colors hover:bg-slate-200">
+              Clear filter
+            </button>
+          }
+        </div>
+      </div>
+
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         @for (bucket of agingBuckets(); track bucket.label) {
           <div class="rounded-lg border p-4" [ngClass]="bucket.boxClass">
@@ -117,7 +164,14 @@ import {
 
       <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
         @for (row of filteredRows(); track row.projectId) {
-          <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
+          <div class="px-5 py-4 hover:bg-white transition-colors border-l-2"
+               [class.!border-l-4]="row.days90Plus > 0 || row.days61To90 > 0 || row.days1To30 > 0"
+               [class.border-l-emerald-400]="rowAgingCategory(row) === 'current'"
+               [class.border-l-amber-400]="rowAgingCategory(row) === '30'"
+               [class.border-l-rose-500]="rowAgingCategory(row) === '60plus'"
+               [class.ring-2]="agingFilter() && rowMatchesAgingFilter(row)"
+               [class.ring-indigo-200]="agingFilter() && rowMatchesAgingFilter(row)"
+               [class.opacity-40]="agingFilter() && !rowMatchesAgingFilter(row)">
             <div class="flex flex-wrap items-start gap-4">
               @if (rowLink(row); as link) {
                 <a [routerLink]="link" [queryParams]="{ section: 'financials', view: 'ar' }"
@@ -194,6 +248,7 @@ export class ArPage implements OnInit {
   projectSearch = signal('');
   hubMessage = signal<string | null>(null);
   syncing = signal(false);
+  agingFilter = signal<'current' | '30' | '60' | '90' | null>(null);
 
   ctx = computed(() => this.arCompute.buildContext());
   summary = computed(() => this.arCompute.portfolioSummary(this.ctx()));
@@ -260,6 +315,22 @@ export class ArPage implements OnInit {
     void this.data.waitForProjectsLoaded()
       .then(() => this.arSvc.syncFromPayApps())
       .then(() => this.arSvc.refreshArAutomation());
+  }
+
+  rowAgingCategory(row: ArJobRow): 'current' | '30' | '60plus' {
+    if (row.days90Plus > 0 || row.days61To90 > 0) return '60plus';
+    if (row.days1To30 > 0 || row.days31To60 > 0) return '30';
+    return 'current';
+  }
+
+  rowMatchesAgingFilter(row: ArJobRow): boolean {
+    const f = this.agingFilter();
+    if (!f) return true;
+    if (f === 'current') return row.current > 0 && row.days1To30 === 0 && row.days31To60 === 0 && row.days61To90 === 0 && row.days90Plus === 0;
+    if (f === '30') return row.days1To30 > 0 || row.days31To60 > 0;
+    if (f === '60') return row.days61To90 > 0;
+    if (f === '90') return row.days90Plus > 0;
+    return true;
   }
 
   fmt(n: number): string {

@@ -148,7 +148,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   template: `
 
-    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
+    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4 page-enter">
 
       <app-page-header
 
@@ -255,7 +255,14 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
             <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
                    placeholder="Search projects…"
-                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
+                   class="w-full pl-10 pr-8 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
+
+            @if (searchQuery()) {
+              <button type="button" (click)="onSearch('')"
+                      class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                <mat-icon class="!text-[16px]">close</mat-icon>
+              </button>
+            }
 
           </div>
 
@@ -345,7 +352,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
-                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                <tr class="sticky top-0 z-10 bg-white text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
                   <th class="px-4 py-2">Job #</th>
                   <th class="px-4 py-2">Project</th>
                   <th class="px-4 py-2">Customer</th>
@@ -359,7 +366,14 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of visibleListRows(); track row.project.id) {
-                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
+                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer"
+                      [class.opacity-70]="row.quietRow"
+                      [class.border-l-4]="row.health !== 'Neutral'"
+                      [class.border-l-2]="row.health === 'Neutral'"
+                      [class.border-l-emerald-400]="row.health === 'Green'"
+                      [class.border-l-amber-400]="row.health === 'Yellow'"
+                      [class.border-l-rose-500]="row.health === 'Red'"
+                      [class.border-l-slate-200]="row.health === 'Neutral'"
                       (click)="navigateToProject(row, $event)">
                     <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
                     <td class="px-4 py-2">
@@ -384,7 +398,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
                       <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
                     </td>
                     <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2 text-right">
+                      <span class="text-xs font-numeric text-slate-700 block">{{ fmt(row.financial.billedToDate) }}</span>
+                      <div class="mt-1 h-[4px] rounded-full bg-slate-100 overflow-hidden w-20 ml-auto">
+                        <div class="h-full rounded-full bg-emerald-400 transition-all"
+                             [style.width.%]="billedPct(row)"></div>
+                      </div>
+                    </td>
                     <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
                     <td class="px-4 py-2">
                       <a [routerLink]="row.nextActionRoute"
@@ -404,8 +424,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             @for (row of visibleListRows(); track row.project.id) {
 
               <div class="group px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
-
                    [class.opacity-70]="row.quietRow"
+                   [class.border-l-4]="row.health !== 'Neutral'"
+                   [class.border-l-2]="row.health === 'Neutral'"
+                   [class.border-l-emerald-400]="row.health === 'Green'"
+                   [class.border-l-amber-400]="row.health === 'Yellow'"
+                   [class.border-l-rose-500]="row.health === 'Red'"
+                   [class.border-l-slate-200]="row.health === 'Neutral'"
                    (click)="navigateToProject(row, $event)">
 
                 <div class="flex flex-wrap items-center gap-3 min-w-0 flex-1">
@@ -452,6 +477,11 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                       </span>
 
+                    </div>
+
+                    <div class="mt-2 h-[4px] rounded-full bg-slate-100 overflow-hidden max-w-[200px]">
+                      <div class="h-full rounded-full bg-emerald-400 transition-all"
+                           [style.width.%]="billedPct(row)"></div>
                     </div>
 
                     @if (row.warnings.length) {
@@ -541,10 +571,25 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         } @else {
 
-          <div class="p-5">
-
-            <app-empty-state icon="folder_off" title="No projects found" message="Try adjusting your search or filters." />
-
+          <div class="p-8 text-center">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 mb-4">
+              <mat-icon class="!text-[28px] text-slate-400">folder_off</mat-icon>
+            </div>
+            <h3 class="text-sm font-bold text-slate-700 mb-1">No projects match your filters</h3>
+            <p class="text-xs text-slate-500 mb-4">
+              @if (searchQuery()) {
+                No results for <span class="font-semibold">"{{ searchQuery() }}"</span>.
+                <button type="button" (click)="onSearch('')" class="text-indigo-600 underline ml-1">Clear search</button>
+              } @else {
+                Try adjusting your view or advanced filters.
+              }
+            </p>
+            @if (advancedFilterCount()) {
+              <button type="button" (click)="clearAdvancedFilters()"
+                      class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 underline">
+                Clear {{ advancedFilterCount() }} advanced filter(s)
+              </button>
+            }
           </div>
 
         }
@@ -1337,6 +1382,12 @@ export class Projects implements OnInit {
 
     return this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
 
+  }
+
+  billedPct(row: ProjectListRow): number {
+    const contract = row.financial.currentContractAmount;
+    if (!contract || contract <= 0) return 0;
+    return Math.min(100, Math.round((row.financial.billedToDate / contract) * 100));
   }
 
   warningRoute(row: ProjectListRow, chip: ProjectListWarning): string[] {

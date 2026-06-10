@@ -46,8 +46,10 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
                      [class.bg-slate-700]="isActive(item)"
                      [class.text-white]="isActive(item)"
                      [class.font-semibold]="isActive(item)"
+                     [class.border-l-indigo-400]="isActive(item)"
                      [class.text-slate-400]="!isActive(item)"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-colors text-sm min-w-0">
+                     [class.border-l-transparent]="!isActive(item)"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-all duration-150 text-sm min-w-0 border-l-2">
                     <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ item.icon }}</mat-icon>
                     <span class="truncate flex-1">{{ item.label }}</span>
                     @if (item.badge; as badge) {
@@ -70,8 +72,10 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
            [class.bg-slate-700]="isActive(settingsNav)"
            [class.text-white]="isActive(settingsNav)"
            [class.font-semibold]="isActive(settingsNav)"
+           [class.border-l-indigo-400]="isActive(settingsNav)"
            [class.text-slate-400]="!isActive(settingsNav)"
-           class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-colors text-sm">
+           [class.border-l-transparent]="!isActive(settingsNav)"
+           class="flex items-center gap-2.5 px-3 py-2 rounded-md hover:text-white hover:bg-slate-800 transition-all duration-150 text-sm border-l-2">
           <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ settingsNav.icon }}</mat-icon>
           <span class="truncate flex-1">{{ settingsNav.label }}</span>
         </a>

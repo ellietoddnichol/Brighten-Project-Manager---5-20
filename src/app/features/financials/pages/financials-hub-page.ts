@@ -193,24 +193,65 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-        <app-stat-card label="Projected Margin" [value]="marginLabel()" [subtext]="'20% target'" icon="trending_up"
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center gap-2 mb-1">
+            <mat-icon class="!text-[18px] text-slate-400">trending_up</mat-icon>
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Projected Margin</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900">{{ marginLabel() }}</p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="w-2 h-2 rounded-full shrink-0"
+                  [class.bg-emerald-500]="metrics().forecastMargin >= 20"
+                  [class.bg-rose-500]="metrics().forecastMargin < 20"></span>
+            <span class="text-xs font-semibold"
+                  [class.text-emerald-700]="metrics().forecastMargin >= 20"
+                  [class.text-rose-700]="metrics().forecastMargin < 20">
+              {{ metrics().forecastMargin >= 20 ? 'Above 20% target' : 'Below 20% target' }}
+            </span>
+          </div>
+        </div>
 
-                       [trend]="metrics().forecastMargin < 20 ? 'Below target' : undefined" [trendPositive]="metrics().forecastMargin >= 20" />
-
-        <button type="button" (click)="setSegment('ar')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-
-          <app-stat-card label="Open AR" [value]="fmt(metrics().arBalance)" icon="receipt_long"
-
-                         [trend]="metrics().arOver30 > 0 ? 'Past due aging' : undefined" [trendPositive]="false" />
-
+        <button type="button" (click)="setSegment('ar')" class="text-left rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          <div class="flex items-center gap-2 mb-1">
+            <mat-icon class="!text-[18px] text-slate-400">receipt_long</mat-icon>
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Open AR</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900">{{ fmt(metrics().arBalance) }}</p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="w-2 h-2 rounded-full shrink-0"
+                  [class.bg-amber-500]="metrics().arOver30 > 0"
+                  [class.bg-emerald-500]="metrics().arOver30 === 0"></span>
+            <span class="text-xs font-semibold"
+                  [class.text-amber-700]="metrics().arOver30 > 0"
+                  [class.text-emerald-700]="metrics().arOver30 === 0">
+              {{ metrics().arOver30 > 0 ? fmt(metrics().arOver30) + ' past due' : 'No past due' }}
+            </span>
+          </div>
         </button>
 
-        <button type="button" (click)="setSegment('billing')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-
-          <app-stat-card label="Left to Bill" [value]="fmt(metrics().leftToBill)" icon="pending_actions" />
-
+        <button type="button" (click)="setSegment('billing')" class="text-left rounded-xl border border-slate-200 bg-white p-4 shadow-sm hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-300">
+          <div class="flex items-center gap-2 mb-1">
+            <mat-icon class="!text-[18px] text-slate-400">pending_actions</mat-icon>
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Left to Bill</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900">{{ fmt(metrics().leftToBill) }}</p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="w-2 h-2 rounded-full bg-indigo-400 shrink-0"></span>
+            <span class="text-xs font-semibold text-indigo-700">{{ metrics().payAppsDueCount }} pay app(s) pending</span>
+          </div>
         </button>
 
+        <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div class="flex items-center gap-2 mb-1">
+            <mat-icon class="!text-[18px] text-slate-400">construction</mat-icon>
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Active WIP</span>
+          </div>
+          <p class="text-2xl font-black text-slate-900">{{ fmt(metrics().activeWipContractAmount) }}</p>
+          <div class="flex items-center gap-1.5 mt-1">
+            <span class="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+            <span class="text-xs font-semibold text-slate-600">{{ jobsUnderMargin() }} job(s) under 20% margin</span>
+          </div>
+        </div>
 
       </div>
 
@@ -344,7 +385,11 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
               @for (row of filteredWipRows(); track row.record.projectId) {
 
-                <div class="px-5 py-4 hover:bg-slate-50">
+                <div class="px-5 py-4 hover:bg-slate-50 border-l-2"
+                     [class.!border-l-4]="row.record.forecastMargin < 20"
+                     [class.border-l-emerald-400]="row.record.forecastMargin >= 20"
+                     [class.border-l-amber-400]="row.record.forecastMargin >= 10 && row.record.forecastMargin < 20"
+                     [class.border-l-rose-500]="row.record.forecastMargin < 10">
 
                   <div class="flex flex-wrap items-start gap-4">
 
@@ -440,7 +485,11 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
               @for (row of arJobRows(); track row.projectId) {
 
-                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
+                <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 border-l-2"
+                     [class.border-l-emerald-400]="(row.days1To30 + row.days31To60 + row.days61To90 + row.days90Plus) === 0"
+                     [class.!border-l-4]="(row.days1To30 + row.days31To60 + row.days61To90 + row.days90Plus) > 0"
+                     [class.border-l-amber-400]="row.days1To30 > 0 && row.days61To90 === 0 && row.days90Plus === 0"
+                     [class.border-l-rose-500]="row.days61To90 > 0 || row.days90Plus > 0">
 
                   <a [routerLink]="['/projects', row.projectId]" class="min-w-0 flex-1">
 
