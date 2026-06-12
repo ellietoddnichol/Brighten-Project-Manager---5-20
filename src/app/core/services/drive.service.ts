@@ -238,57 +238,26 @@ export class DriveService {
     return response.json();
   }
 
-<<<<<<< HEAD
   /** Register a push notification channel for a Drive file (spreadsheet/folder). */
-=======
-  // ---------------------------------------------------------------------------
-  // Push notification (webhook) methods
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Register a push notification channel on a single Drive file or folder.
-   * Use for watching a specific file (e.g. the QB export spreadsheet).
-   *
-   * Drive will POST to webhookUrl whenever the file's content or metadata changes.
-   * The channel expires after `expirationMs` (max ~7 days from now).
-   * You MUST renew before expiration or notifications stop.
-   */
->>>>>>> origin/claude/bold-hawking-ZZo7f
   async watchFile(
     fileId: string,
     channelId: string,
     webhookUrl: string,
-<<<<<<< HEAD
     token: string,
     expirationMs = 6 * 24 * 60 * 60 * 1000,
     allowRetry = true,
   ): Promise<{ resourceId: string; expiration: string }> {
     const expiration = Date.now() + expirationMs;
-=======
-    channelToken: string,
-    expirationMs?: number,
-    allowRetry = true,
-  ): Promise<DriveWatchChannel> {
-    const expiration = expirationMs ?? Date.now() + 6 * 24 * 60 * 60 * 1000; // 6 days
->>>>>>> origin/claude/bold-hawking-ZZo7f
     const body = {
       id: channelId,
       type: 'web_hook',
       address: webhookUrl,
-<<<<<<< HEAD
       token,
-=======
-      token: channelToken,
->>>>>>> origin/claude/bold-hawking-ZZo7f
       expiration: String(expiration),
     };
 
     const response = await this.authorizedFetch(
-<<<<<<< HEAD
       `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/watch?supportsAllDrives=true`,
-=======
-      `https://www.googleapis.com/drive/v3/files/${fileId}/watch?supportsAllDrives=true`,
->>>>>>> origin/claude/bold-hawking-ZZo7f
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -302,7 +271,6 @@ export class DriveService {
       throw new Error(`Drive watch error: ${detail}`);
     }
 
-<<<<<<< HEAD
     const data = await response.json() as { resourceId?: string; expiration?: string };
     return {
       resourceId: data.resourceId ?? '',
@@ -311,127 +279,6 @@ export class DriveService {
   }
 
   async stopWatch(channelId: string, resourceId: string, allowRetry = true): Promise<void> {
-=======
-    return response.json() as Promise<DriveWatchChannel>;
-  }
-
-  /**
-   * Get the current page token for tracking Drive changes.
-   * Required before calling watchChanges() — store this token and update it
-   * after each listChanges() call.
-   */
-  async getChangesStartToken(allowRetry = true): Promise<string> {
-    const response = await this.authorizedFetch(
-      'https://www.googleapis.com/drive/v3/changes/startPageToken?supportsAllDrives=true',
-      { method: 'GET' },
-      allowRetry,
-    );
-    if (!response.ok) {
-      const detail = await readDriveApiError(response);
-      throw new Error(`Drive changes token error: ${detail}`);
-    }
-    const data = await response.json() as { startPageToken: string };
-    return data.startPageToken;
-  }
-
-  /**
-   * Register a push notification channel on Drive changes feed.
-   * Notifies when ANY file the user can access changes — filter by folderId client-side.
-   *
-   * Use this for watching project folders (children of a folder).
-   * pageToken comes from getChangesStartToken() or the previous listChanges() response.
-   */
-  async watchChanges(
-    pageToken: string,
-    channelId: string,
-    webhookUrl: string,
-    channelToken: string,
-    expirationMs?: number,
-    allowRetry = true,
-  ): Promise<DriveWatchChannel> {
-    const expiration = expirationMs ?? Date.now() + 6 * 24 * 60 * 60 * 1000;
-    const body = {
-      id: channelId,
-      type: 'web_hook',
-      address: webhookUrl,
-      token: channelToken,
-      expiration: String(expiration),
-    };
-
-    const params = new URLSearchParams({
-      pageToken,
-      supportsAllDrives: 'true',
-      includeItemsFromAllDrives: 'true',
-    });
-
-    const response = await this.authorizedFetch(
-      `https://www.googleapis.com/drive/v3/changes/watch?${params}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      },
-      allowRetry,
-    );
-
-    if (!response.ok) {
-      const detail = await readDriveApiError(response);
-      throw new Error(`Drive changes watch error: ${detail}`);
-    }
-
-    return response.json() as Promise<DriveWatchChannel>;
-  }
-
-  /**
-   * Fetch the list of changes since the given pageToken.
-   * Call this after receiving a Drive push notification to find out what changed.
-   * Returns the changes and a new pageToken to use for the next call.
-   */
-  async listChanges(
-    pageToken: string,
-    allowRetry = true,
-  ): Promise<{ changes: DriveChange[]; newPageToken: string }> {
-    const params = new URLSearchParams({
-      pageToken,
-      supportsAllDrives: 'true',
-      includeItemsFromAllDrives: 'true',
-      fields: 'nextPageToken,newStartPageToken,changes(type,changeType,removed,fileId,file(id,name,mimeType,parents,webViewLink,modifiedTime,trashed))',
-      pageSize: '100',
-    });
-
-    const response = await this.authorizedFetch(
-      `https://www.googleapis.com/drive/v3/changes?${params}`,
-      { method: 'GET' },
-      allowRetry,
-    );
-
-    if (!response.ok) {
-      const detail = await readDriveApiError(response);
-      throw new Error(`Drive listChanges error: ${detail}`);
-    }
-
-    const data = await response.json() as {
-      nextPageToken?: string;
-      newStartPageToken?: string;
-      changes: DriveChange[];
-    };
-
-    return {
-      changes: data.changes ?? [],
-      newPageToken: data.nextPageToken ?? data.newStartPageToken ?? pageToken,
-    };
-  }
-
-  /**
-   * Stop a push notification channel before it expires.
-   * Call when a project is closed or a folder is unlinked.
-   */
-  async stopChannel(
-    channelId: string,
-    resourceId: string,
-    allowRetry = true,
-  ): Promise<void> {
->>>>>>> origin/claude/bold-hawking-ZZo7f
     const response = await this.authorizedFetch(
       'https://www.googleapis.com/drive/v3/channels/stop',
       {
@@ -441,47 +288,9 @@ export class DriveService {
       },
       allowRetry,
     );
-<<<<<<< HEAD
     if (!response.ok && response.status !== 404) {
       const detail = await readDriveApiError(response);
       throw new Error(`Drive stop watch error: ${detail}`);
     }
   }
-=======
-
-    // 204 = success, 404 = channel already expired — both are fine
-    if (!response.ok && response.status !== 404) {
-      const detail = await readDriveApiError(response);
-      throw new Error(`Drive stopChannel error: ${detail}`);
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Drive push notification types
-// ---------------------------------------------------------------------------
-
-export interface DriveWatchChannel {
-  kind: string;          // 'api#channel'
-  id: string;            // channelId you provided
-  resourceId: string;    // stable opaque ID of the watched resource
-  resourceUri: string;   // canonical URI of the resource
-  expiration: string;    // epoch milliseconds as a string
-}
-
-export interface DriveChange {
-  type: 'file' | 'drive';
-  changeType: string;
-  removed: boolean;
-  fileId?: string;
-  file?: {
-    id: string;
-    name: string;
-    mimeType: string;
-    parents?: string[];
-    webViewLink?: string;
-    modifiedTime?: string;
-    trashed?: boolean;
-  };
->>>>>>> origin/claude/bold-hawking-ZZo7f
 }
