@@ -19,45 +19,44 @@ import {
 } from '@features/labor/utils/foreman-bonus-report';
 import { summarizeForemanBonusRecords } from '@features/labor/utils/foreman-bonus.compute';
 import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-module-banner';
+import { PageHeaderComponent } from '@app/components/ui/page-header';
+import { StatCardComponent } from '@app/components/ui/stat-card';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
   selector: 'app-foreman-bonuses-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, HiddenModuleBannerComponent],
+  imports: [CommonModule, FormsModule, RouterLink, HiddenModuleBannerComponent, PageHeaderComponent, StatCardComponent, StatusChipComponent],
   template: `
     <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-hidden-module-banner moduleId="foreman-bonuses" />
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-bold">Foreman Bonuses</h1>
-          <p class="text-sm text-slate-500">Labor savings bonus with work progress and billing release caps</p>
-        </div>
-        <div class="flex flex-wrap items-end gap-2">
-          <div>
-            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Export Format</label>
-            <select [(ngModel)]="exportFormat" class="px-3 py-2 border rounded-lg text-sm min-w-[280px]">
-              @for (option of exportOptions; track option.id) {
-                <option [value]="option.id">{{ option.label }}</option>
-              }
-            </select>
-          </div>
+
+      <app-page-header
+        title="Foreman Bonuses"
+        subtitle="Labor savings bonus with work progress and billing release caps">
+        <div class="flex items-center gap-2">
+          <select [(ngModel)]="exportFormat" class="px-3 py-2 border border-slate-200 rounded-lg text-sm min-w-[240px] bg-white">
+            @for (option of exportOptions; track option.id) {
+              <option [value]="option.id">{{ option.label }}</option>
+            }
+          </select>
           <button type="button" (click)="exportReport()"
-                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
+                  class="px-4 py-2 rounded-lg text-sm font-semibold border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors">
             Export
           </button>
           <button type="button" (click)="approveSelected()" [disabled]="!selectedIds().size"
-                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50">
-            Approve payment batch
+                  class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-40">
+            Approve batch
           </button>
         </div>
-      </div>
+      </app-page-header>
 
       <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         @for (card of summaryCards(); track card.label) {
-          <div class="bg-white p-4 rounded-xl border shadow-sm">
-            <p class="text-[10px] font-bold uppercase text-slate-500 mb-1">{{ card.label }}</p>
-            <p class="text-lg font-bold" [class.text-rose-700]="card.alert">{{ card.value }}</p>
-          </div>
+          <app-stat-card
+            [label]="card.label"
+            [value]="card.value"
+            [subtext]="card.alert ? 'Needs attention' : undefined" />
         }
       </div>
 
@@ -144,13 +143,11 @@ import { HiddenModuleBannerComponent } from '@app/components/layout/hidden-modul
                   <td class="px-4 py-3 text-right font-numeric font-bold">{{ row.payThisTerm | currency }}</td>
                   <td class="px-4 py-3 text-right font-numeric">{{ row.remainingPotential | currency }}</td>
                   <td class="px-4 py-3">
-                    <span class="text-[10px] font-bold uppercase px-2 py-1 rounded-full"
-                          [class.bg-amber-100]="row.status === 'NeedsReview' || row.status === 'MissingData'"
-                          [class.text-amber-800]="row.status === 'NeedsReview' || row.status === 'MissingData'"
-                          [class.bg-emerald-100]="row.status === 'Calculated' || row.status === 'Approved'"
-                          [class.text-emerald-800]="row.status === 'Calculated' || row.status === 'Approved'">
-                      {{ row.status }}
-                    </span>
+                    <app-status-chip
+                      [tone]="row.status === 'NeedsReview' || row.status === 'MissingData' ? 'amber'
+                            : row.status === 'Paid' || row.status === 'Closed' ? 'slate'
+                            : 'green'"
+                      [label]="row.status" />
                   </td>
                   <td class="px-4 py-3 text-xs text-slate-500 max-w-[200px]">{{ row.notes || '—' }}</td>
                 </tr>
