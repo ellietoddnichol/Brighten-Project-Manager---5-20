@@ -83,4 +83,6 @@ See `docs/project-setup-audit.md` and `docs/data-storage-map.md` for data archit
 
 ## Deployment
 
-Firebase + Docker/nginx. Review `docs/deploy-readiness-checklist.md` before deploy. DB credentials belong on the API service (Cloud Run env / Secret Manager), not in the Angular build.
+Cloud Run (`projectmanager06`) via `cloudbuild.yaml` — one container serves Angular + API. Review `docs/deploy-readiness-checklist.md` before deploy.
+
+**Cloud SQL in production:** set `DB_NAME`, `DB_USER`, and `DB_PASSWORD` on the Cloud Run service (Secret Manager). Full checklist: [docs/sql-api-integration.md § Production — Cloud Run](docs/sql-api-integration.md#production--cloud-run). DB credentials never go in the Angular build.

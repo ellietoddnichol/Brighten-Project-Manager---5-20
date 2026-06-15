@@ -257,6 +257,8 @@ firebase deploy --only firestore:rules
 ## Manual setup required after deploy
 - Add production domain to Firebase Auth authorized domains.
 - Deploy Firestore rules.
+- **Cloud SQL on Cloud Run:** one-time Secret Manager setup (`brighten-pm-db-password`), then `cloudbuild.yaml` applies `DB_*` and `CORS_ORIGIN` on deploy — see [sql-api-integration.md § Production — Cloud Run](sql-api-integration.md#production--cloud-run).
+- Verify `https://<service>/api/health` and `/api/projects` after deploy.
 - Connect Master Time Sheet + QuickBooks workbook (optional but recommended).
 - Link Drive folders for active jobs.
 - Enter/confirm contract + budget on any job flagged "Missing contract / Confirm budget" on Home.

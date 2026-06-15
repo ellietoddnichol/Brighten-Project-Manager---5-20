@@ -126,6 +126,63 @@ Verify: Network tab shows `GET http://localhost:8080/api/projects` with 200 and 
 
 ---
 
+## Production — Cloud Run
+
+The Dockerfile bundles Angular static files and the Node API in one container. `cloudbuild.yaml` deploys to **`projectmanager06`** and attaches Cloud SQL instance **`project-manager-498120:us-central1:databaseprojectmgmt63`** via `DB_SOCKET_PATH`.
+
+### 1. One-time Secret Manager setup
+
+Create the DB password secret (run once; never commit the password):
+
+```powershell
+gcloud secrets create brighten-pm-db-password --replication-policy=automatic --project=project-manager-498120
+# Paste password at prompt (do not echo in chat):
+gcloud secrets versions add brighten-pm-db-password --data-file=- --project=project-manager-498120
+```
+
+Grant the **Cloud Build** and **Cloud Run** service accounts **Secret Manager Secret Accessor** on `brighten-pm-db-password`.
+
+`cloudbuild.yaml` deploys with `--set-secrets=DB_PASSWORD=brighten-pm-db-password:latest` (override `_DB_PASSWORD_SECRET` in the trigger if you use a different secret id).
+
+### 2. Cloud Run environment (applied on each deploy)
+
+`cloudbuild.yaml` sets these on every deploy to **projectmanager06**:
+
+| Variable | Source | Notes |
+|----------|--------|--------|
+| `DB_SOCKET_PATH` | `cloudbuild.yaml` | `/cloudsql/project-manager-498120:us-central1:databaseprojectmgmt63` |
+| `DB_NAME` | substitution `_DB_NAME` | `brighten_pm` |
+| `DB_USER` | substitution `_DB_USER` | e.g. `databaseprojectmgmt6` |
+| `DB_PASSWORD` | Secret Manager | `_DB_PASSWORD_SECRET` → `brighten-pm-db-password` |
+| `APP_STATIC_DIR` | `cloudbuild.yaml` | `/app/public` |
+| `CORS_ORIGIN` | substitution `_CORS_ORIGIN` | Your live `https://….run.app` URL |
+| `API_PORT` | Dockerfile | `8080` |
+
+Override `_CORS_ORIGIN` (and `_DB_USER` if needed) in the Cloud Build trigger substitutions to match your service URL.
+
+**IAM:** the Cloud Run service account needs **Cloud SQL Client** on the instance.
+
+### 3. Firebase Auth (same deploy URL)
+
+Firebase Console → Authentication → Settings → **Authorized domains** → add your `….run.app` host so Google sign-in works on production.
+
+### 4. Verify after deploy
+
+```powershell
+Invoke-RestMethod https://<your-service-url>/api/health
+Invoke-RestMethod https://<your-service-url>/api/projects
+```
+
+Open `https://<your-service-url>/projects` — list should load from SQL (no amber “Firestore fallback” banner). `api.config.ts` uses `window.location.origin` in production so `/api/...` hits the same Cloud Run host.
+
+### 5. Known production gaps (acceptable for hybrid deploy)
+
+- **API has no Firebase token check yet** — `/api/*` is public if the URL is known. Add auth middleware before treating SQL as fully private.
+- **Most screens still use Firestore** — only projects list/detail shell, PATCH, financial summary, budget, and pay apps are SQL-backed today.
+- **Region:** Cloud Run is `europe-west1`, Cloud SQL is `us-central1` — works; align regions later if latency matters.
+
+---
+
 ## Commit gate
 
 Commit **only after** live tests succeed:
