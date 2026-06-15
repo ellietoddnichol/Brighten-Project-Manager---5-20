@@ -18,6 +18,7 @@ serviceAccountKey.json
 
 # Compiled output
 /dist
+/api/dist
 /tmp
 /out-tsc
 /bazel-out
