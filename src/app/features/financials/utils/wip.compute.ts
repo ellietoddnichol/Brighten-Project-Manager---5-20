@@ -259,6 +259,7 @@ export function buildWipWarningChips(
     push('Missing AR Aging Summary', 'amber');
   }
   if (projectNeedsManualEfc(ctx.project, financial)) push('Manual EFC needed', 'amber');
+  if (reviewFlags.includes('Projected margin under 20%')) push('Margin under 20%', 'amber');
   if (reviewFlags.includes('Source review needed')) push('Source review needed', 'amber');
   if (reviewFlags.includes('Overbilled vs earned') || reviewFlags.includes('Underbilled vs earned')) {
     push('Review over/under billing', 'amber');
