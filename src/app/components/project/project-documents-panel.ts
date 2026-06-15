@@ -15,6 +15,7 @@ import { fileCountForView } from '@features/documents/pages/documents-tab';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { StatusChipComponent } from '../ui/status-chip';
 import { firstValueFrom } from 'rxjs';
+import { ProjectWorkflowSaveService } from '@features/projects/services/project-workflow-save.service';
 
 type FileSortMode = 'modified' | 'name';
 
@@ -111,6 +112,12 @@ type FileSortMode = 'modified' | 'name';
             Uploading…
           </p>
         }
+        @if (uploadError()) {
+          <p class="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{{ uploadError() }}</p>
+        }
+        @if (uploadNotice()) {
+          <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{{ uploadNotice() }}</p>
+        }
 
         <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
           @for (file of sortedFiles(); track file.id) {
@@ -155,12 +162,15 @@ export class ProjectDocumentsPanelComponent {
   private requirements = inject(ProjectRequirementsService);
   private lifecycle = inject(ProjectLifecycleService);
   private projectFiles = inject(ProjectFilesRepository);
+  private workflowSave = inject(ProjectWorkflowSaveService);
 
   moreOpen = signal(false);
   showArchived = signal(false);
   searchQuery = signal('');
   sortMode = signal<FileSortMode>('modified');
   uploading = signal(false);
+  uploadError = signal<string | null>(null);
+  uploadNotice = signal<string | null>(null);
 
   private allFiles = toSignal(this.data.getProjectFiles(), { initialValue: [] });
   private allReqs = toSignal(this.data.getRequiredDocuments(), { initialValue: [] });
@@ -246,15 +256,38 @@ export class ProjectDocumentsPanelComponent {
     }
   }
 
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file || !this.project.driveFolderId) return;
+
     this.uploading.set(true);
-    window.setTimeout(() => {
+    this.uploadError.set(null);
+    this.uploadNotice.set(null);
+
+    try {
+      const result = await this.workflowSave.saveProjectWorkflowFile({
+        projectId: this.project.id,
+        workflowType: 'closeout',
+        folderKey: 'CORRESPONDENCE',
+        fallbackFolderKeys: ['BILLING', 'SUBS', 'RFIS'],
+        fileName: file.name,
+        content: file,
+        mimeType: file.type || 'application/octet-stream',
+        documentType: this.activeView === 'all' ? 'General' : (FILE_VIEW_LABELS[this.activeView] ?? 'General'),
+        requestAuthIfNeeded: true,
+      });
+      if (result.warning) {
+        this.uploadNotice.set(result.warning);
+      } else {
+        this.uploadNotice.set(`Uploaded ${result.fileName} to ${result.savedToLabel}`);
+      }
+    } catch (err) {
+      this.uploadError.set(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
       this.uploading.set(false);
       input.value = '';
-    }, 1200);
+    }
   }
 
   async archiveFile(file: ProjectFile): Promise<void> {

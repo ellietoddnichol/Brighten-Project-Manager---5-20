@@ -154,7 +154,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
       <section class="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
           <div class="px-4 py-3 border-b border-blue-100 bg-blue-50 flex justify-between items-center">
           <h3 class="text-sm font-bold text-blue-900">COs Included in Draft Pay Apps</h3>
-          <span class="text-xs font-bold text-blue-700">{{ includedInDraftCos().length }}</span>
+          <span class="text-xs font-bold text-indigo-700">{{ includedInDraftCos().length }}</span>
         </div>
         @if (includedInDraftCos().length) {
           <ul class="divide-y divide-slate-100">
@@ -162,7 +162,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
               <li class="px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>{{ coNumber(co) }} — {{ co.title }}</span>
                 <span class="font-mono">{{ coApprovedAmount(co) | currency }}</span>
-                <span class="text-xs text-blue-700 font-semibold">IncludedInDraftPayApp</span>
+                <span class="text-xs text-indigo-700 font-semibold">IncludedInDraftPayApp</span>
                 @if (!readOnly && draftPayApp(); as draft) {
                   <button type="button" (click)="removeCoFromDraft(co, draft)" class="text-xs font-bold text-rose-700 hover:underline">Remove</button>
                 }

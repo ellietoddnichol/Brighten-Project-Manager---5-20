@@ -26,7 +26,8 @@ import { CompactStatStripComponent } from '../ui/compact-stat-strip';
 import { SegmentedControlComponent, SegmentOption } from '../ui/segmented-control';
 import { DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent } from '../ui/detail-drawer';
 import { EmptyStateComponent } from '../ui/empty-state';
-import { StatusChipComponent, StatusTone } from '../ui/status-chip';
+import { StatusChipComponent } from '../ui/status-chip';
+import { payAppChipTone } from '@shared/utils/status-chip-tone';
 import {
   BillingSegment,
   BudgetSegment,
@@ -63,7 +64,8 @@ interface PayAppSummaryCard {
     BudgetTabComponent, PosTabComponent, BillingTabComponent, WipTabComponent, ArTabComponent,
     ProjectForemanBonusTabComponent,
     StatCardComponent, CompactStatStripComponent, SegmentedControlComponent,
-    DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent, EmptyStateComponent, StatusChipComponent,
+    DetailDrawerComponent, DrawerSectionComponent, DrawerFieldComponent, EmptyStateComponent,
+    StatusChipComponent,
   ],
   template: `
     <div class="space-y-4">
@@ -315,7 +317,7 @@ interface PayAppSummaryCard {
                       <td class="px-3 py-2 align-top">
                         <div class="flex flex-wrap gap-1">
                           @for (chip of payAppStatusChips(payApp); track chip.label) {
-                            <app-status-chip [tone]="chipTone(chip.tone)" [label]="chip.label" />
+                            <app-status-chip [tone]="payAppChipTone(chip.tone)" [label]="chip.label" />
                           }
                         </div>
                       </td>
@@ -325,7 +327,9 @@ interface PayAppSummaryCard {
                       <td class="px-3 py-2.5 align-top text-right text-xs font-mono text-slate-700">{{ moneyNullable(payApp.balanceToFinish) }}</td>
                       <td class="px-3 py-2 align-top text-right font-semibold text-slate-700">{{ payApp.sovLineCount }}</td>
                       <td class="px-3 py-2 align-top">
-                        <app-status-chip [tone]="recordNeedsReview(payApp) ? 'amber' : 'slate'" [label]="reviewIndicatorLabel(payApp)" />
+                        <app-status-chip
+                          [tone]="recordNeedsReview(payApp) ? 'amber' : 'green'"
+                          [label]="reviewIndicatorLabel(payApp)" />
                       </td>
                       <td class="px-3 py-2 align-top text-right">
                         <button type="button" (click)="selectSqlPayApp(payApp)"
@@ -339,7 +343,7 @@ interface PayAppSummaryCard {
                             <summary class="cursor-pointer text-[11px] font-bold uppercase tracking-wide text-slate-500 group-open:text-amber-700">
                               Import / Review Notes
                             </summary>
-                            <p class="mt-1 max-w-5xl text-xs leading-relaxed text-slate-700">{{ payApp.notes }}</p>
+                            <p class="mt-1 max-w-3xl text-xs leading-relaxed text-slate-700">{{ payApp.notes }}</p>
                           </details>
                         </td>
                       </tr>
@@ -370,7 +374,7 @@ interface PayAppSummaryCard {
                   <div class="flex flex-wrap items-center gap-2">
                     <h3 class="text-base font-bold text-slate-900">{{ detail.payAppNumber || 'Pending pay app number' }}</h3>
                     @for (chip of payAppStatusChips(detail); track chip.label) {
-                      <app-status-chip [tone]="chipTone(chip.tone)" [label]="chip.label" />
+                      <app-status-chip [tone]="payAppChipTone(chip.tone)" [label]="chip.label" />
                     }
                   </div>
                   <p class="text-xs text-slate-500">{{ periodLabel(detail) }}</p>
@@ -397,7 +401,7 @@ interface PayAppSummaryCard {
                   <summary class="cursor-pointer text-[10px] font-bold uppercase tracking-widest text-amber-700">
                     Import / Review Notes
                   </summary>
-                  <p class="mt-1 max-w-5xl text-sm leading-relaxed text-amber-950">{{ detail.notes }}</p>
+                  <p class="mt-1 max-w-3xl text-sm leading-relaxed text-amber-950">{{ detail.notes }}</p>
                 </details>
               }
 
@@ -812,18 +816,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
     return chips;
   }
 
-  chipTone(tone: PayAppChipTone): StatusTone {
-    switch (tone) {
-      case 'amber':
-        return 'amber';
-      case 'emerald':
-        return 'green';
-      case 'indigo':
-        return 'violet';
-      default:
-        return 'slate';
-    }
-  }
+  payAppChipTone = payAppChipTone;
 
   reviewIndicatorLabel(payApp: ProjectSqlPayApp): string {
     return this.recordNeedsReview(payApp) ? 'Review' : 'OK';

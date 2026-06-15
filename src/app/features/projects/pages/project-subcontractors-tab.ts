@@ -15,11 +15,12 @@ import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { ProjectSubcontractorService } from '@features/subcontractors/services/project-subcontractor.service';
 import { SubcontractorInvoiceService } from '@features/subcontractors/services/subcontractor-invoice.service';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
   selector: 'app-project-subcontractors-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, StatusChipComponent],
   template: `
     <div class="space-y-6">
       <div class="flex flex-wrap gap-2 items-center">
@@ -54,10 +55,10 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                   <td class="px-4 py-3 font-medium">
                     {{ ps.subcontractorName }}
                     @if (ps.importSource === 'QuickBooksSync' || ps.importSource === 'QuickBooksSeed') {
-                      <span class="ml-1 text-[10px] font-bold uppercase text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">QB</span>
+                      <app-status-chip class="ml-1" tone="blue" label="QB" />
                     }
                     @if (ps.importSource === 'DriveDiscovery' || ps.importSource === 'DriveSeed') {
-                      <span class="ml-1 text-[10px] font-bold uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Drive</span>
+                      <app-status-chip class="ml-1" tone="green" label="Drive" />
                     }
                   </td>
                   <td class="px-4 py-3">{{ ps.trade || '—' }}</td>

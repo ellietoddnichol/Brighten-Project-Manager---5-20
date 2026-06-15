@@ -13,6 +13,7 @@ import { ImportDataService } from '@core/services/import-data.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ProjectForemanBonusTabComponent } from './project-foreman-bonus-tab';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 import { ProjectApiService } from '@core/services/api/project-api.service';
 import { ProjectSqlBudgetLine } from '@core/services/api/project-budget-api.mapper';
 import { BudgetSegment } from '@features/projects/utils/project-money.compute';
@@ -23,7 +24,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
 @Component({
   selector: 'app-budget-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent, EmptyStateComponent],
+  imports: [CommonModule, MatIconModule, FormsModule, ProjectForemanBonusTabComponent, EmptyStateComponent, StatusChipComponent],
   template: `
     <div class="space-y-4">
       @if (!simplified) {
@@ -143,7 +144,7 @@ type BudgetInnerTab = 'lines' | 'labor-bonus';
         <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
           <div class="p-3 border-b bg-slate-50 flex flex-wrap items-center justify-between gap-2">
             <h3 class="text-sm font-bold text-slate-900">QuickBooks Detail Costs</h3>
-            <span class="text-[10px] font-bold uppercase text-blue-700 bg-blue-50 px-2 py-1 rounded">QuickBooks Detail</span>
+            <app-status-chip tone="blue" label="QuickBooks Detail" />
           </div>
           <div class="overflow-x-auto max-h-64">
             <table class="w-full text-sm min-w-[900px]">

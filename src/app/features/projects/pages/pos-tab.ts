@@ -31,21 +31,23 @@ type PosSegment = 'pos' | 'subcontractors';
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ProjectSubcontractorsTabComponent],
   template: `
     <div class="space-y-6">
-      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <div class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1">
         <button type="button" (click)="segment.set('pos')"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg"
-                [class.bg-white]="segment() === 'pos'"
-                [class.text-blue-700]="segment() === 'pos'"
-                [class.border]="segment() === 'pos'"
-                [class.border-slate-200]="segment() === 'pos'">
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-colors shrink-0"
+                [class.bg-slate-900]="segment() === 'pos'"
+                [class.text-white]="segment() === 'pos'"
+                [class.text-slate-500]="segment() !== 'pos'"
+                [class.hover:text-slate-900]="segment() !== 'pos'"
+                [class.hover:bg-slate-50]="segment() !== 'pos'">
           Purchase Orders
         </button>
         <button type="button" (click)="segment.set('subcontractors')"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg"
-                [class.bg-white]="segment() === 'subcontractors'"
-                [class.text-blue-700]="segment() === 'subcontractors'"
-                [class.border]="segment() === 'subcontractors'"
-                [class.border-slate-200]="segment() === 'subcontractors'">
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-colors shrink-0"
+                [class.bg-slate-900]="segment() === 'subcontractors'"
+                [class.text-white]="segment() === 'subcontractors'"
+                [class.text-slate-500]="segment() !== 'subcontractors'"
+                [class.hover:text-slate-900]="segment() !== 'subcontractors'"
+                [class.hover:bg-slate-50]="segment() !== 'subcontractors'">
           Subcontractors
         </button>
       </div>
