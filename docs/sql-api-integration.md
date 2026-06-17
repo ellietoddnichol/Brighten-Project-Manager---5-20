@@ -212,6 +212,9 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 | GET | `/api/projects/:id/pay-apps/:payAppId` | `pay_apps` + `sov_lines` (Phase 3B read-only billing detail; `payAppId` is the list-provided UUID) |
 | GET | `/api/action-center` | `v_action_center` |
 | GET | `/api/backend-readiness` | `v_backend_readiness_summary` |
+| GET | `/api/subcontractors` | `subcontractors` |
+| GET | `/api/subcontractors/invoices` | `subcontractor_invoices` |
+| GET | `/api/projects/:id/subcontractors` | `v_project_subcontractors` |
 
 `:id` accepts project UUID or job number (`208`, `J208`).
 
@@ -230,6 +233,17 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 - Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id`
 - Project edit modal — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false. Failed SQL writes show an error and never fall back to Firestore.
 - Financials summary cards (Phase 2B/2C) — `GET /api/projects/:id/financials` when API is enabled; child tabs (Budget/Billing/WIP/AR/PO/import/source) remain on existing Firestore/import paths.
+- Dashboard Daily Action Center — `GET /api/action-center` when API is enabled; falls back to computed Firestore priorities when API is off or empty.
+- Dashboard/backend readiness preload — `GET /api/backend-readiness` (loaded for future settings/sync surfaces; Firestore sync health unchanged).
+- Project Tasks tab + Issues/Tasks tab — `GET /api/projects/:id/tasks` read-only when API is enabled; Firestore remains write path until task write routes exist.
+- Project Documents panel — `GET /api/projects/:id/documents` read-only when API is enabled; upload/archive remain Firestore/Drive.
+- Active 2026 control page (`/active-2026`) — hybrid: `GET /api/projects` + `GET /api/action-center` overlay job shell, AR, billing, and next actions; margin/labor/subs still Firestore-computed.
+- Subcontractors directory + invoices — `GET /api/subcontractors`, `GET /api/subcontractors/invoices` read-only when API enabled; writes remain Firestore.
+- Project Subcontractors tab — `GET /api/projects/:id/subcontractors` read-only when API enabled.
+
+**API auth (production):** `/api/*` (except `/api/health`) requires `Authorization: Bearer <Firebase ID token>`. Angular `ApiClientService` attaches the token from `AuthService.getIdToken()`. Set `API_AUTH_REQUIRED=false` locally in `api/.env.local`.
+
+**Subcontractors backfill:** `node scripts/backfill-subcontractors-sql.mjs <owner-id> --dry-run` after running `db/manual/2026-06-08_subcontractors_schema.sql` and `legacy_align.sql`. Held-out billing jobs: `db/manual/2026-06-08_held_out_billing_jobs_decisions.md`.
 
 **PATCH whitelist (Phase 1A):** `projectName`, `status`, `address`, `city`, `state`, `zip`, `county`, `customer` (exact company match), `superintendent` (exact user match), `originalContractAmount`, `billingStatus`, `startDate`, `targetEndDate`, `prevailingWage`/`certifiedPayrollRequired` (both columns set together), `taxExempt`, `bondRequired`, `driveFolderId`, optional `projectNumber`.
 
@@ -254,7 +268,7 @@ Migration record: `db/manual/2026-06-04_phase_1b_overview_completion.sql` (addit
 
 **Still deferred:** project manager assignment (`project_users`), client/billing contacts (no schema), wage orders, certified payroll workflow, Financials child tab migration, financial writes.
 
-**Not wired yet:** Home, project detail child tab SQL migrations (tasks, documents, workflows, financial detail tabs), other entity write routes, Firebase removal.
+**Not wired yet:** Active 2026 control row compute (still Firestore-derived), project detail workflow tabs beyond tasks/documents, other entity write routes, Firebase removal.
 
 ---
 
@@ -270,7 +284,7 @@ Empty tables are **backend-ready** (RFIs, subs, POs, CPR weeks, etc.) — not br
 
 ## Next steps (one screen at a time)
 
-1. Stabilize `/projects` and project detail shell against live API (this gate).
-2. Project detail tab reads (tasks, documents, financials) — one endpoint at a time.
-3. Home / Active 2026 (`/api/action-center`, `/api/backend-readiness`).
+1. Stabilize `/projects`, project detail shell, dashboard action center, tasks, and documents against live API (this gate).
+2. Active 2026 control rows from SQL dashboard + readiness views.
+3. Project detail workflow tab reads (RFIs, submittals, etc.) — one endpoint at a time.
 4. Write endpoints only after reads are verified in production.

@@ -7,6 +7,8 @@ import { SyncHealthService } from '@core/services/sync-health.service';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 import { ApiClientService } from '@core/services/api/api-client.service';
+import { ActionCenterApiService } from '@core/services/api/action-center-api.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { DataService } from '@core/services/data.service';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import {
@@ -127,6 +129,9 @@ interface DashboardFinancialMetric {
               }
             </h2>
             <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
+            @if (actionCenterApi.actionCenterActiveSource() === 'api') {
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 mt-1">Cloud SQL action center</p>
+            }
           </div>
           <a routerLink="/active-2026-control"
              class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
@@ -397,6 +402,8 @@ export class Dashboard {
   private importReview = inject(ImportReviewService);
   private qbSyncData = inject(QuickBooksSyncDataService);
   private api = inject(ApiClientService);
+  readonly actionCenterApi = inject(ActionCenterApiService);
+  private projectApi = inject(ProjectApiService);
   private currency = inject(CurrencyPipe);
   private data = inject(DataService);
   private laborData = inject(LaborDataService);
@@ -415,7 +422,11 @@ export class Dashboard {
   projectsError = signal<string | null>(null);
   readonly skeletonSlots = [1, 2, 3, 4, 5];
 
-  dashboardError = computed(() => this.projectsError() ?? this.billingError());
+  dashboardError = computed(() =>
+    this.projectsError()
+    ?? this.billingError()
+    ?? this.actionCenterApi.actionCenterError(),
+  );
   dashboardLoading = computed(() => !this.projectsReady() || (this.billingLoading() && !this.billingRecords().length && this.globalNeeds.active2026Rows().length > 0));
 
   activeProjectRows = computed(() =>
@@ -475,6 +486,9 @@ export class Dashboard {
   });
 
   priorities = computed(() => {
+    if (this.actionCenterApi.actionCenterActiveSource() === 'api' && this.actionCenterApi.priorities().length) {
+      return this.actionCenterApi.priorities();
+    }
     const qbRun = this.qbSyncData.lastRun();
     const qbSyncWarning = !!qbRun?.completedAt && ((qbRun.warnings?.length ?? 0) > 0 || qbRun.status === 'Failed');
     return buildHomePriorities({
@@ -585,10 +599,16 @@ export class Dashboard {
 
   constructor() {
     this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
-      next: () => this.projectsReady.set(true),
+      next: () => {
+        this.projectsReady.set(true);
+        void this.actionCenterApi.loadActionCenter();
+        void this.actionCenterApi.loadBackendReadiness();
+        void this.projectApi.loadProjects();
+      },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+        void this.actionCenterApi.loadActionCenter();
       },
     });
 
@@ -715,10 +735,16 @@ export class Dashboard {
     this.billingRecords.set([]);
     this.projectsReady.set(false);
     this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
-      next: () => this.projectsReady.set(true),
+      next: () => {
+        this.projectsReady.set(true);
+        void this.actionCenterApi.loadActionCenter();
+        void this.actionCenterApi.loadBackendReadiness();
+        void this.projectApi.loadProjects();
+      },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+        void this.actionCenterApi.loadActionCenter();
       },
     });
     const rows = this.globalNeeds.active2026Rows();

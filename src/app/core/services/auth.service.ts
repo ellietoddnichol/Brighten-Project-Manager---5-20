@@ -43,9 +43,12 @@ export class AuthService {
     });
   }
 
-  /** Basic Google sign-in — identity only. Drive/Sheets scopes are requested later. */
+  /** Google sign-in — request Drive and Sheets scopes immediately at login to prevent scope errors. */
   private signInProvider(): GoogleAuthProvider {
-    return new GoogleAuthProvider();
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/drive');
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly');
+    return provider;
   }
 
   private googleProvider(forceConsent = false): GoogleAuthProvider {
@@ -173,6 +176,18 @@ export class AuthService {
    */
   async getAccessToken(_forceRefresh = false): Promise<string | null> {
     return this.accessToken() || this.loadPersistedToken();
+  }
+
+  /** Firebase ID token for Cloud SQL API Authorization header. */
+  async getIdToken(forceRefresh = false): Promise<string | null> {
+    const user = this.user();
+    if (!user) return null;
+    try {
+      return await user.getIdToken(forceRefresh);
+    } catch (error) {
+      console.warn('Failed to get Firebase ID token', error);
+      return null;
+    }
   }
 
   private requestGoogleAccessToken(forceConsent: boolean): Promise<string | null> {

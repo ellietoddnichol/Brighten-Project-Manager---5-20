@@ -6,6 +6,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { SubcontractorSeedService } from '@features/subcontractors/services/subcontractor-seed.service';
+import { SubcontractorApiService } from '@core/services/api/subcontractor-api.service';
 import { Subcontractor, SubcontractorStatus, SubcontractorInvoice, VendorClassification } from '@app/models/subcontractor.types';
 import { countActiveProjectsForSub, isCoiExpiringSoon, isDocumentExpired } from '@features/subcontractors/utils/subcontractor-compliance.compute';
 import { isInvoiceOverdue } from '@features/subcontractors/utils/subcontractor-invoice.compute';
@@ -64,6 +65,16 @@ type SubFilter =
           </button>
         }
       </app-page-header>
+
+      @if (sqlDirectoryReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          Directory and invoices loaded from Cloud SQL (read-only). Edits still use Firestore.
+        </div>
+      } @else if (subApi.directoryError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load subcontractors from API — showing Firestore data. {{ subApi.directoryError() }}
+        </div>
+      }
 
       @if (pageView() === 'directory') {
       <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
@@ -319,16 +330,30 @@ export class SubcontractorsPage implements OnInit {
   private subSvc = inject(SubcontractorService);
   private subSeed = inject(SubcontractorSeedService);
   private route = inject(ActivatedRoute);
+  readonly subApi = inject(SubcontractorApiService);
 
   sourceDataAvailable = computed(() => this.subSeed.sourceDataAvailable());
   importing = signal(false);
 
-  subCount = computed(() => (this.subs() ?? []).length);
+  subCount = computed(() => this.subs().length);
 
-  private subs = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
+  private firestoreSubs = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
+  subs = computed(() =>
+    this.subApi.isEnabled() && this.subApi.directoryActiveSource() === 'api' && this.subApi.subcontractors().length
+      ? this.subApi.subcontractors()
+      : (this.firestoreSubs() ?? []),
+  );
+  sqlDirectoryReadOnly = computed(() =>
+    this.subApi.isEnabled() && this.subApi.directoryActiveSource() === 'api',
+  );
   private projectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] });
   private tasks = toSignal(this.data.getProjectTasks(), { initialValue: [] });
-  private invoices = toSignal(this.data.getSubcontractorInvoices(), { initialValue: [] as SubcontractorInvoice[] });
+  private firestoreInvoices = toSignal(this.data.getSubcontractorInvoices(), { initialValue: [] as SubcontractorInvoice[] });
+  invoices = computed(() =>
+    this.subApi.isEnabled() && this.subApi.invoicesActiveSource() === 'api' && this.subApi.invoices().length
+      ? this.subApi.invoices()
+      : (this.firestoreInvoices() ?? []),
+  );
 
   pageView = signal<PageView>('directory');
   activeFilter = signal<SubFilter>('all');
@@ -473,6 +498,8 @@ export class SubcontractorsPage implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.subApi.loadSubcontractors();
+    void this.subApi.loadInvoices();
     this.route.queryParams.subscribe(params => {
       if (params['view'] === 'invoices') {
         this.pageView.set('invoices');

@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject, signal } from '@angular/core';
+import { Component, Input, computed, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -15,6 +15,7 @@ import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { ProjectSubcontractorService } from '@features/subcontractors/services/project-subcontractor.service';
 import { SubcontractorInvoiceService } from '@features/subcontractors/services/subcontractor-invoice.service';
+import { SubcontractorApiService } from '@core/services/api/subcontractor-api.service';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
@@ -23,6 +24,15 @@ import { StatusChipComponent } from '@app/components/ui/status-chip';
   imports: [CommonModule, FormsModule, StatusChipComponent],
   template: `
     <div class="space-y-6">
+      @if (sqlReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          Project subcontractors loaded from Cloud SQL (read-only). Assignments and edits still use Firestore.
+        </div>
+      } @else if (subApi.projectSubsError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load project subcontractors from API — showing Firestore data. {{ subApi.projectSubsError() }}
+        </div>
+      }
       <div class="flex flex-wrap gap-2 items-center">
         <button type="button" (click)="openAssign()" class="ml-auto bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
           Add Subcontractor
@@ -284,13 +294,14 @@ import { StatusChipComponent } from '@app/components/ui/status-chip';
     </div>
   `,
 })
-export class ProjectSubcontractorsTabComponent {
+export class ProjectSubcontractorsTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
 
   private data = inject(DataService);
   private subSvc = inject(SubcontractorService);
   private psSvc = inject(ProjectSubcontractorService);
   private invSvc = inject(SubcontractorInvoiceService);
+  readonly subApi = inject(SubcontractorApiService);
 
   private allProjectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] as ProjectSubcontractor[] });
   private masterList = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
@@ -321,7 +332,34 @@ export class ProjectSubcontractorsTabComponent {
     'WorkComplete', 'FinalWaiverNeeded', 'Closed', 'HoldIssue',
   ];
 
-  projectSubs = computed(() => this.allProjectSubs().filter(ps => ps.projectId === this.project.id));
+  projectSubs = computed(() => {
+    if (this.sqlReadOnly()) {
+      return this.subApi.projectSubcontractors().filter(ps => ps.projectId === this.project.id);
+    }
+    return this.allProjectSubs().filter(ps => ps.projectId === this.project.id);
+  });
+
+  sqlReadOnly = computed(() =>
+    this.subApi.isEnabled()
+    && this.subApi.projectSubsActiveSource() === 'api'
+    && this.matchesLoadedProject(this.subApi.projectSubsProjectId()),
+  );
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project) {
+      void this.subApi.loadProjectSubcontractors(this.projectKey());
+    }
+  }
+
+  private projectKey(): string {
+    return this.project.projectNumber || this.project.id;
+  }
+
+  private matchesLoadedProject(loadedKey: string | null): boolean {
+    if (!loadedKey) return false;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    return keys.some(key => key === loadedKey || key?.replace(/^J/i, '') === loadedKey.replace(/^J/i, ''));
+  }
   masterSubs = computed(() => this.masterList());
   poOptions = computed(() => this.psSvc.poOptions(this.project.id));
   budgetLineOptions = computed(() => this.psSvc.budgetLineOptions(this.project.id));

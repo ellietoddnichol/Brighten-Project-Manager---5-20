@@ -5,10 +5,12 @@ import path from 'node:path';
 import { healthRouter } from './routes/health.routes.js';
 import { projectsRouter } from './routes/projects.routes.js';
 import { actionCenterRouter } from './routes/action-center.routes.js';
+import { subcontractorsRouter } from './routes/subcontractors.routes.js';
 import { webhooksRouter } from './routes/webhooks.routes.js';
 import { webhookEventsRouter } from './routes/webhook-events.routes.js';
 import { ensureWebhookEventsTable } from './utils/webhookEvents.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requireFirebaseAuth } from './middleware/firebaseAuth.js';
 
 const app = express();
 const port = Number(process.env.API_PORT ?? 8080);
@@ -25,8 +27,10 @@ app.use('/webhooks', webhooksRouter);
 app.use(express.json());
 
 app.use('/api', healthRouter);
+app.use('/api', requireFirebaseAuth);
 app.use('/api', projectsRouter);
 app.use('/api', actionCenterRouter);
+app.use('/api', subcontractorsRouter);
 app.use('/api', webhookEventsRouter);
 
 if (staticDir) {
