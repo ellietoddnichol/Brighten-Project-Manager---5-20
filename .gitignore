@@ -59,3 +59,8 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Local tooling and API build artifacts
+/tools/
+/api/dist/
+/scratch/

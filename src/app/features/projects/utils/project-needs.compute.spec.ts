@@ -35,14 +35,14 @@ function baseInput(overrides: Partial<ProjectNeedsInput> = {}): ProjectNeedsInpu
     hasInspectionRecords: false,
     isCloseoutOrClosed: false,
     showAllTools: false,
-    projectProfile: 'SmallInstall',
+    projectProfile: 'SmallJob',
     ...overrides,
   };
 }
 
 describe('project-needs.compute', () => {
   it('hides RFIs and CPR for small install by default', () => {
-    const modules = computeProjectEnabledModules(baseInput({ projectProfile: 'SmallInstall' }));
+    const modules = computeProjectEnabledModules(baseInput({ projectProfile: 'SmallJob' }));
     expect(modules.workMore).not.toContain('rfis');
     expect(modules.workMore).not.toContain('certified-payroll');
     expect(modules.moneyPrimary).not.toContain('pos');
@@ -73,7 +73,7 @@ describe('project-needs.compute', () => {
   });
 
   it('shows daily logs when required by profile', () => {
-    const modules = computeProjectEnabledModules(baseInput({ projectProfile: 'TMWorkOrder', requiresDailyLogs: true }));
+    const modules = computeProjectEnabledModules(baseInput({ projectProfile: 'TM', requiresDailyLogs: true }));
     expect(modules.workMore).toContain('daily-logs');
     const withLogs = computeProjectEnabledModules(baseInput({ hasDailyLogs: true }));
     expect(withLogs.workMore).toContain('daily-logs');

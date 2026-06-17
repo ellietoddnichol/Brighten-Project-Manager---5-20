@@ -27,7 +27,7 @@ import { ChangeOrderDocumentService } from '@features/projects/services/change-o
         <div class="flex flex-wrap items-center gap-2">
           @if (canGenerate()) {
             <button type="button" (click)="generateDocument()" [disabled]="uploading()"
-                    class="text-xs font-semibold text-blue-700 hover:text-blue-900 disabled:opacity-50">
+                    class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors disabled:opacity-50">
               Generate Document
             </button>
           }

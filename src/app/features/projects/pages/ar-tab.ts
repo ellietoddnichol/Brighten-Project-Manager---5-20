@@ -96,7 +96,7 @@ import {
                                 class="text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors">Mark Paid</button>
                         <button type="button" (click)="markDisputed(r)" class="text-xs text-rose-700 font-bold">Dispute</button>
                       }
-                      <button type="button" (click)="selectRecord(r)" class="text-xs text-blue-700 font-bold">Note</button>
+                      <button type="button" (click)="selectRecord(r)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors">Note</button>
                     </div>
                   </td>
                 </tr>

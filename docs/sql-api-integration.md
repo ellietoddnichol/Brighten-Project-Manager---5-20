@@ -126,6 +126,63 @@ Verify: Network tab shows `GET http://localhost:8080/api/projects` with 200 and 
 
 ---
 
+## Production — Cloud Run
+
+The Dockerfile bundles Angular static files and the Node API in one container. `cloudbuild.yaml` deploys to **`projectmanager06`** and attaches Cloud SQL instance **`project-manager-498120:us-central1:databaseprojectmgmt63`** via `DB_SOCKET_PATH`.
+
+### 1. One-time Secret Manager setup
+
+Create the DB password secret (run once; never commit the password):
+
+```powershell
+gcloud secrets create brighten-pm-db-password --replication-policy=automatic --project=project-manager-498120
+# Paste password at prompt (do not echo in chat):
+gcloud secrets versions add brighten-pm-db-password --data-file=- --project=project-manager-498120
+```
+
+Grant the **Cloud Build** and **Cloud Run** service accounts **Secret Manager Secret Accessor** on `brighten-pm-db-password`.
+
+`cloudbuild.yaml` deploys with `--set-secrets=DB_PASSWORD=brighten-pm-db-password:latest` (override `_DB_PASSWORD_SECRET` in the trigger if you use a different secret id).
+
+### 2. Cloud Run environment (applied on each deploy)
+
+`cloudbuild.yaml` sets these on every deploy to **projectmanager06**:
+
+| Variable | Source | Notes |
+|----------|--------|--------|
+| `DB_SOCKET_PATH` | `cloudbuild.yaml` | `/cloudsql/project-manager-498120:us-central1:databaseprojectmgmt63` |
+| `DB_NAME` | substitution `_DB_NAME` | `brighten_pm` |
+| `DB_USER` | substitution `_DB_USER` | e.g. `databaseprojectmgmt6` |
+| `DB_PASSWORD` | Secret Manager | `_DB_PASSWORD_SECRET` → `brighten-pm-db-password` |
+| `APP_STATIC_DIR` | `cloudbuild.yaml` | `/app/public` |
+| `CORS_ORIGIN` | substitution `_CORS_ORIGIN` | Your live `https://….run.app` URL |
+| `API_PORT` | Dockerfile | `8080` |
+
+Override `_CORS_ORIGIN` (and `_DB_USER` if needed) in the Cloud Build trigger substitutions to match your service URL.
+
+**IAM:** the Cloud Run service account needs **Cloud SQL Client** on the instance.
+
+### 3. Firebase Auth (same deploy URL)
+
+Firebase Console → Authentication → Settings → **Authorized domains** → add your `….run.app` host so Google sign-in works on production.
+
+### 4. Verify after deploy
+
+```powershell
+Invoke-RestMethod https://<your-service-url>/api/health
+Invoke-RestMethod https://<your-service-url>/api/projects
+```
+
+Open `https://<your-service-url>/projects` — list should load from SQL (no amber “Firestore fallback” banner). `api.config.ts` uses `window.location.origin` in production so `/api/...` hits the same Cloud Run host.
+
+### 5. Known production gaps (acceptable for hybrid deploy)
+
+- **API has no Firebase token check yet** — `/api/*` is public if the URL is known. Add auth middleware before treating SQL as fully private.
+- **Most screens still use Firestore** — only projects list/detail shell, PATCH, financial summary, budget, and pay apps are SQL-backed today.
+- **Region:** Cloud Run is `europe-west1`, Cloud SQL is `us-central1` — works; align regions later if latency matters.
+
+---
+
 ## Commit gate
 
 Commit **only after** live tests succeed:
@@ -155,6 +212,9 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 | GET | `/api/projects/:id/pay-apps/:payAppId` | `pay_apps` + `sov_lines` (Phase 3B read-only billing detail; `payAppId` is the list-provided UUID) |
 | GET | `/api/action-center` | `v_action_center` |
 | GET | `/api/backend-readiness` | `v_backend_readiness_summary` |
+| GET | `/api/subcontractors` | `subcontractors` |
+| GET | `/api/subcontractors/invoices` | `subcontractor_invoices` |
+| GET | `/api/projects/:id/subcontractors` | `v_project_subcontractors` |
 
 `:id` accepts project UUID or job number (`208`, `J208`).
 
@@ -173,6 +233,17 @@ Do **not** commit if `/api/health` or `/api/projects` were not verified against 
 - Project detail shell/header (`/projects/:id`) — `GET /api/projects/:id`
 - Project edit modal — `PATCH /api/projects/:id` when `brighten.useApiBackend` is true; legacy Firestore save when false. Failed SQL writes show an error and never fall back to Firestore.
 - Financials summary cards (Phase 2B/2C) — `GET /api/projects/:id/financials` when API is enabled; child tabs (Budget/Billing/WIP/AR/PO/import/source) remain on existing Firestore/import paths.
+- Dashboard Daily Action Center — `GET /api/action-center` when API is enabled; falls back to computed Firestore priorities when API is off or empty.
+- Dashboard/backend readiness preload — `GET /api/backend-readiness` (loaded for future settings/sync surfaces; Firestore sync health unchanged).
+- Project Tasks tab + Issues/Tasks tab — `GET /api/projects/:id/tasks` read-only when API is enabled; Firestore remains write path until task write routes exist.
+- Project Documents panel — `GET /api/projects/:id/documents` read-only when API is enabled; upload/archive remain Firestore/Drive.
+- Active 2026 control page (`/active-2026`) — hybrid: `GET /api/projects` + `GET /api/action-center` overlay job shell, AR, billing, and next actions; margin/labor/subs still Firestore-computed.
+- Subcontractors directory + invoices — `GET /api/subcontractors`, `GET /api/subcontractors/invoices` read-only when API enabled; writes remain Firestore.
+- Project Subcontractors tab — `GET /api/projects/:id/subcontractors` read-only when API enabled.
+
+**API auth (production):** `/api/*` (except `/api/health`) requires `Authorization: Bearer <Firebase ID token>`. Angular `ApiClientService` attaches the token from `AuthService.getIdToken()`. Set `API_AUTH_REQUIRED=false` locally in `api/.env.local`.
+
+**Subcontractors backfill:** `node scripts/backfill-subcontractors-sql.mjs <owner-id> --dry-run` after running `db/manual/2026-06-08_subcontractors_schema.sql` and `legacy_align.sql`. Held-out billing jobs: `db/manual/2026-06-08_held_out_billing_jobs_decisions.md`.
 
 **PATCH whitelist (Phase 1A):** `projectName`, `status`, `address`, `city`, `state`, `zip`, `county`, `customer` (exact company match), `superintendent` (exact user match), `originalContractAmount`, `billingStatus`, `startDate`, `targetEndDate`, `prevailingWage`/`certifiedPayrollRequired` (both columns set together), `taxExempt`, `bondRequired`, `driveFolderId`, optional `projectNumber`.
 
@@ -197,7 +268,7 @@ Migration record: `db/manual/2026-06-04_phase_1b_overview_completion.sql` (addit
 
 **Still deferred:** project manager assignment (`project_users`), client/billing contacts (no schema), wage orders, certified payroll workflow, Financials child tab migration, financial writes.
 
-**Not wired yet:** Home, project detail child tab SQL migrations (tasks, documents, workflows, financial detail tabs), other entity write routes, Firebase removal.
+**Not wired yet:** Active 2026 control row compute (still Firestore-derived), project detail workflow tabs beyond tasks/documents, other entity write routes, Firebase removal.
 
 ---
 
@@ -213,7 +284,7 @@ Empty tables are **backend-ready** (RFIs, subs, POs, CPR weeks, etc.) — not br
 
 ## Next steps (one screen at a time)
 
-1. Stabilize `/projects` and project detail shell against live API (this gate).
-2. Project detail tab reads (tasks, documents, financials) — one endpoint at a time.
-3. Home / Active 2026 (`/api/action-center`, `/api/backend-readiness`).
+1. Stabilize `/projects`, project detail shell, dashboard action center, tasks, and documents against live API (this gate).
+2. Active 2026 control rows from SQL dashboard + readiness views.
+3. Project detail workflow tab reads (RFIs, submittals, etc.) — one endpoint at a time.
 4. Write endpoints only after reads are verified in production.

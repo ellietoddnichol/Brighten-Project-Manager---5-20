@@ -4,9 +4,13 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { GlobalNeedsService } from '@core/services/global-needs.service';
 import { SyncHealthService } from '@core/services/sync-health.service';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { ApiClientService } from '@core/services/api/api-client.service';
+import { ActionCenterApiService } from '@core/services/api/action-center-api.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { DataService } from '@core/services/data.service';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import {
@@ -14,7 +18,7 @@ import {
   currentLaborMonthKey,
 } from '@features/labor/utils/labor-hours-summary.compute';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { first } from 'rxjs';
+import { take } from 'rxjs';
 import { ProjectPayAppsApiResponse } from '@core/services/api/project-api.types';
 import { mapPayAppsResponse, ProjectSqlPayApp } from '@core/services/api/project-pay-app-api.mapper';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
@@ -23,7 +27,6 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ChartCardComponent } from '@app/components/ui/chart-card';
 import { DonutChartComponent, DonutSlice } from '@app/components/charts/donut-chart';
-import { StackedBarChartComponent, StackedBarSeries } from '@app/components/charts/stacked-bar-chart';
 import {
   buildHomePriorities,
   homeSourceHealthFragment,
@@ -31,32 +34,6 @@ import {
   isHomeSourceHealthRow,
 } from '@shared/utils/home-hub.compute';
 import { Active2026ControlRow } from '@app/models/active-2026-control.types';
-
-const STORAGE_KEY = 'brighten-dashboard-v1';
-
-export type WidgetId =
-  | 'portfolio-health'
-  | 'billing-pipeline'
-  | 'ar-tracker'
-  | 'labor-month'
-  | 'priorities'
-  | 'project-table';
-
-interface WidgetConfig {
-  id: WidgetId;
-  label: string;
-  description: string;
-  defaultVisible: boolean;
-}
-
-const WIDGET_CONFIGS: WidgetConfig[] = [
-  { id: 'portfolio-health', label: 'Portfolio Health', description: 'Donut charts for project health and billing split', defaultVisible: true },
-  { id: 'billing-pipeline', label: 'Billing Pipeline', description: 'Top 10 projects by contract value as stacked bar chart', defaultVisible: true },
-  { id: 'ar-tracker', label: 'A/R Tracker', description: 'Top projects with open accounts receivable', defaultVisible: true },
-  { id: 'labor-month', label: 'Labor Hours This Month', description: 'Field labor hours table for current month', defaultVisible: true },
-  { id: 'priorities', label: "Today's Priorities", description: 'Urgent action items and follow-up list', defaultVisible: true },
-  { id: 'project-table', label: 'Active Projects Table', description: 'All active projects with billing and status', defaultVisible: true },
-];
 
 interface DashboardBillingRecord extends ProjectSqlPayApp {
   projectName: string;
@@ -90,24 +67,14 @@ interface DashboardFinancialMetric {
     EmptyStateComponent,
     ChartCardComponent,
     DonutChartComponent,
-    StackedBarChartComponent,
   ],
   providers: [CurrencyPipe],
   template: `
-    <div class="p-4 lg:p-6 max-w-[1440px] mx-auto space-y-4">
-
-      <!-- Header -->
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
       <app-page-header
         title="Dashboard"
         subtitle="Active jobs, billing follow-up, and review items for the office"
         [hasActions]="true">
-        <button type="button" (click)="customizing.set(!customizing())"
-                [class]="customizing()
-                  ? 'bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-indigo-800 transition-colors flex items-center gap-2'
-                  : 'bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2'">
-          <mat-icon class="!text-[18px]">tune</mat-icon>
-          Customize
-        </button>
         <a routerLink="/projects"
            class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors flex items-center gap-2">
           <mat-icon class="!text-[18px]">folder</mat-icon>
@@ -120,58 +87,6 @@ interface DashboardFinancialMetric {
         </a>
       </app-page-header>
 
-      <!-- Customize panel -->
-      @if (customizing()) {
-        <div class="bg-white rounded-xl border border-indigo-100 shadow-sm p-5">
-          <div class="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <h2 class="text-sm font-bold text-slate-900">Customizing dashboard</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Toggle widgets on or off — preferences are saved automatically.</p>
-            </div>
-            <button type="button" (click)="customizing.set(false)"
-                    class="text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors flex items-center gap-1">
-              <mat-icon class="!text-[16px]">close</mat-icon>
-              Done
-            </button>
-          </div>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            @for (widget of widgetConfigs; track widget.id) {
-              <label class="flex items-start gap-3 p-3 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
-                <input type="checkbox"
-                       [checked]="widgetVisible(widget.id)"
-                       (change)="toggleWidget(widget.id, $any($event.target).checked)"
-                       class="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                <div>
-                  <div class="text-sm font-semibold text-slate-900">{{ widget.label }}</div>
-                  <div class="text-xs text-slate-500 mt-0.5">{{ widget.description }}</div>
-                </div>
-              </label>
-            }
-          </div>
-        </div>
-      }
-
-      <!-- Source warnings bar -->
-      @if (sourceWarnings().length) {
-        <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <h2 class="text-sm font-bold text-amber-800">Missing Pay App Backup</h2>
-            <a routerLink="/settings" fragment="import-review" class="text-xs font-bold text-amber-900 underline">Admin / Setup</a>
-          </div>
-          <div class="flex flex-wrap gap-2">
-            @for (row of sourceWarnings(); track row.id) {
-              <a [routerLink]="homeSourceHealthRoute(row.id)"
-                 [fragment]="homeSourceHealthFragment(row.id)"
-                 class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
-                <mat-icon class="!text-[16px] text-amber-600">warning</mat-icon>
-                {{ backupReviewLabel(row.label) }}
-              </a>
-            }
-          </div>
-        </section>
-      }
-
-      <!-- Error banner -->
       @if (dashboardError()) {
         <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
           <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
@@ -192,9 +107,8 @@ interface DashboardFinancialMetric {
         </div>
       } @else {
 
-      <!-- Top 4 stat cards (always visible) -->
       <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        @for (metric of topMetrics().slice(0, 4); track metric.label) {
+        @for (metric of topMetrics(); track metric.label) {
           <a [routerLink]="metric.route"
              class="block rounded-xl hover:ring-2 hover:ring-indigo-200 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300">
             <app-stat-card
@@ -206,275 +120,75 @@ interface DashboardFinancialMetric {
         }
       </section>
 
-      <!-- Financial snapshot row (always visible) -->
+      <div class="grid xl:grid-cols-[minmax(0,1.1fr)_minmax(420px,0.9fr)] gap-6">
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Financial Snapshot</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
+            <h2 class="text-lg font-bold text-slate-900">
+              Daily Action Center
+              @if (priorities().length) {
+                <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
+              }
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
+            @if (actionCenterApi.actionCenterActiveSource() === 'api') {
+              <p class="text-[10px] font-semibold uppercase tracking-wide text-indigo-600 mt-1">Cloud SQL action center</p>
+            }
           </div>
-          <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
+          <a routerLink="/active-2026-control"
+             class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
+            View all follow-up
+          </a>
         </div>
-        <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y divide-slate-100">
-          @for (item of financialSnapshot(); track item.label) {
-            <div class="p-4 min-w-0">
-              <div class="text-xs text-slate-500 font-medium">{{ item.label }}</div>
-              <div class="text-lg font-bold text-slate-950 mt-1 truncate">{{ item.value }}</div>
-              <div class="text-xs text-slate-500 mt-1 truncate">{{ item.subtext }}</div>
-            </div>
-          }
-        </div>
+        @if (priorities().length) {
+          <div class="divide-y divide-slate-100">
+            @for (item of priorities(); track item.id) {
+              <a [routerLink]="item.route"
+                 [queryParams]="item.queryParams"
+                 [fragment]="item.fragment"
+                 class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    @if (item.jobNumber) {
+                      <span class="text-xs font-mono font-bold text-slate-900">{{ item.jobNumber }}</span>
+                      @if (item.projectName) {
+                        <span class="text-xs text-slate-500 truncate max-w-[240px]">{{ item.projectName }}</span>
+                      }
+                    } @else {
+                      <span class="text-sm font-semibold text-slate-900">{{ priorityIssueLabel(item.issue) }}</span>
+                    }
+                    <app-status-chip [tone]="item.severity === 'error' ? 'red' : 'amber'">
+                      {{ item.severity === 'error' ? 'Review Needed' : 'Follow Up' }}
+                    </app-status-chip>
+                    <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ sourceLabel(item.source) }}</span>
+                  </div>
+                  @if (item.jobNumber) {
+                    <p class="text-sm text-slate-600 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
+                  }
+                </div>
+                <span class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
+                  {{ priorityActionLabel(item.nextActionLabel) }}
+                </span>
+              </a>
+            }
+          </div>
+        } @else {
+          <div class="p-5">
+            <app-empty-state title="No urgent priorities" message="You're caught up for now." />
+          </div>
+        }
       </section>
 
-      <!-- Widget: portfolio-health -->
-      @if (widgetVisible('portfolio-health')) {
-        <section class="grid md:grid-cols-2 gap-4">
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <app-chart-card title="Project Health" subtitle="Count of active jobs by health status">
-              <app-donut-chart [slices]="healthDonut()" />
-            </app-chart-card>
-          </div>
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <app-chart-card title="Portfolio Billing Mix" subtitle="Billed vs balance vs open A/R">
-              <app-donut-chart [slices]="portfolioDonut()" />
-            </app-chart-card>
-          </div>
-        </section>
-      }
-
-      <!-- Widget: billing-pipeline -->
-      @if (widgetVisible('billing-pipeline')) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-100">
-            <h2 class="text-base font-bold text-slate-900">Billing Pipeline</h2>
-            <p class="text-xs text-slate-500 mt-0.5">Top 10 projects by contract value — billed vs remaining</p>
-          </div>
-          <div class="p-4 h-72">
-            <app-stacked-bar-chart
-              [labels]="billingPipelineLabels()"
-              [data]="billingPipelineData()"
-              [series]="billingPipelineSeries" />
-          </div>
-        </section>
-      }
-
-      <!-- Widget: ar-tracker -->
-      @if (widgetVisible('ar-tracker')) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">A/R Tracker</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Top projects by open accounts receivable</p>
-            </div>
-            <a routerLink="/ar" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View A/R</a>
-          </div>
-          @if (topArRows().length) {
-            <div class="px-5 py-3 space-y-3">
-              @for (row of topArRows(); track row.projectId) {
-                <div class="pt-3 first:pt-0">
-                  <div class="flex items-center justify-between gap-3 mb-1">
-                    <div class="flex items-center gap-2 min-w-0">
-                      <span class="font-mono text-xs font-bold text-slate-900 shrink-0">{{ row.jobNumber }}</span>
-                      <span class="text-xs text-slate-600 truncate">{{ row.projectName }}</span>
-                    </div>
-                    <span class="text-xs font-semibold text-amber-700 shrink-0">{{ fmt(row.arBalance) }}</span>
-                  </div>
-                  <div class="w-full bg-slate-100 rounded-full h-1.5">
-                    <div class="bg-amber-500 h-1.5 rounded-full transition-all"
-                         [style.width.%]="arPercent(row)"></div>
-                  </div>
-                </div>
-              }
-            </div>
-          } @else {
-            <div class="p-5">
-              <app-empty-state title="No open A/R" message="All accounts receivable are cleared." />
-            </div>
-          }
-        </section>
-      }
-
-      <!-- Widget: labor-month -->
-      @if (widgetVisible('labor-month')) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">Field Labor Hours</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
-            </div>
-            <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
-          </div>
-          @if (laborHoursRows().length) {
-            <div class="overflow-x-auto">
-              <table class="min-w-full divide-y divide-slate-100 text-sm">
-                <thead class="bg-slate-50 text-left">
-                  <tr>
-                    <th class="px-4 py-3 text-xs text-slate-500 font-medium">Job</th>
-                    <th class="px-4 py-3 text-xs text-slate-500 font-medium">Project</th>
-                    <th class="px-4 py-3 text-right text-xs text-slate-500 font-medium">Hours</th>
-                    <th class="px-4 py-3 text-right text-xs text-slate-500 font-medium">Crew</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  @for (row of laborHoursRows(); track row.projectNumber) {
-                    <tr class="hover:bg-slate-50 transition-colors">
-                      <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
-                      <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
-                      <td class="px-4 py-2.5 text-right font-mono text-xs font-semibold">{{ fmtHours(row.totalHours) }}</td>
-                      <td class="px-4 py-2.5 text-right text-xs text-slate-600">{{ row.employeeCount }}</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else {
-            <div class="p-5">
-              <app-empty-state title="No timekeeper hours this month" message="Approved hours from the Master Time Data Sheet will appear here." />
-            </div>
-          }
-        </section>
-      }
-
-      <!-- Widget: priorities -->
-      @if (widgetVisible('priorities')) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">
-                Today's Priorities
-                @if (priorities().length) {
-                  <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full ml-2">{{ priorities().length }}</span>
-                }
-              </h2>
-              <p class="text-xs text-slate-500 mt-0.5">Waiting on A/R, billing review, setup, and missing backup</p>
-            </div>
-            <a routerLink="/active-2026-control" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
-              View all follow-up
-            </a>
-          </div>
-          @if (priorities().length) {
-            <div class="divide-y divide-slate-100">
-              @for (item of priorities(); track item.id) {
-                <a [routerLink]="item.route"
-                   [queryParams]="item.queryParams"
-                   [fragment]="item.fragment"
-                   class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
-                  <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                      @if (item.jobNumber) {
-                        <span class="text-xs font-mono font-bold text-slate-900">{{ item.jobNumber }}</span>
-                        @if (item.projectName) {
-                          <span class="text-xs text-slate-500 truncate max-w-[240px]">{{ item.projectName }}</span>
-                        }
-                      } @else {
-                        <span class="text-sm font-semibold text-slate-900">{{ priorityIssueLabel(item.issue) }}</span>
-                      }
-                      <app-status-chip [tone]="item.severity === 'error' ? 'red' : 'amber'">
-                        {{ item.severity === 'error' ? 'Review Needed' : 'Follow Up' }}
-                      </app-status-chip>
-                      <span class="text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ sourceLabel(item.source) }}</span>
-                    </div>
-                    @if (item.jobNumber) {
-                      <p class="text-sm text-slate-600 mt-0.5">{{ priorityIssueLabel(item.issue) }}</p>
-                    }
-                  </div>
-                  <span class="shrink-0 text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
-                    {{ priorityActionLabel(item.nextActionLabel) }}
-                  </span>
-                </a>
-              }
-            </div>
-          } @else {
-            <div class="p-5">
-              <app-empty-state title="No urgent priorities" message="You're caught up for now." />
-            </div>
-          }
-        </section>
-      }
-
-      <!-- Widget: project-table -->
-      @if (widgetVisible('project-table')) {
-        <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 class="text-base font-bold text-slate-900">Active Projects</h2>
-              <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
-            </div>
-            <a routerLink="/active-2026-control" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
-              View all active jobs
-            </a>
-          </div>
-          @if (activeProjectRows().length) {
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm min-w-[1120px]">
-                <thead>
-                  <tr class="text-xs text-slate-500 font-medium border-b border-slate-100">
-                    <th class="px-4 py-3">Job #</th>
-                    <th class="px-4 py-3">Project</th>
-                    <th class="px-4 py-3">Customer</th>
-                    <th class="px-4 py-3">Status</th>
-                    <th class="px-4 py-3">Billing Status</th>
-                    <th class="px-4 py-3 text-right">Contract</th>
-                    <th class="px-4 py-3 text-right">Billed</th>
-                    <th class="px-4 py-3 text-right">Balance</th>
-                    <th class="px-4 py-3">Foreman / PM</th>
-                    <th class="px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100">
-                  @for (row of activeProjectRows(); track row.projectId) {
-                    <tr class="hover:bg-slate-50 transition-colors">
-                      <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
-                      <td class="px-4 py-2.5">
-                        <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
-                          {{ row.projectName }}
-                        </a>
-                      </td>
-                      <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.customer || 'Not available' }}</td>
-                      <td class="px-4 py-2.5">
-                        <app-status-chip [tone]="healthTone(row.healthStatus)">{{ row.status || row.healthStatus }}</app-status-chip>
-                      </td>
-                      <td class="px-4 py-2.5">
-                        <app-status-chip [tone]="billingStatusTone(row.billingStatus)">{{ row.billingStatus || 'Pending' }}</app-status-chip>
-                      </td>
-                      <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.contract2026) }}</td>
-                      <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.billedToDate) }}</td>
-                      <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
-                      <td class="px-4 py-2.5">
-                        <div class="text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</div>
-                      </td>
-                      <td class="px-4 py-2.5">
-                        <a [routerLink]="row.nextAction.route"
-                           [queryParams]="row.nextAction.queryParams"
-                           [fragment]="row.nextAction.fragment"
-                           class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
-                          {{ priorityActionLabel(row.nextAction.label) }}
-                        </a>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          } @else {
-            <div class="p-5">
-              <app-empty-state icon="work_off" title="No active projects" message="All projects are closed or archived." />
-            </div>
-          }
-        </section>
-      }
-
-      <!-- Billing snapshot (always visible) -->
       <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="text-base font-bold text-slate-900">Billing Snapshot</h2>
+            <h2 class="text-lg font-bold text-slate-900">Billing Snapshot</h2>
             <p class="text-xs text-slate-500 mt-0.5">Recent Pay Apps, retainage, and A/R follow-up</p>
           </div>
           <a routerLink="/billing" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Review Billing</a>
         </div>
         @if (billingLoading()) {
-          <div class="px-5 py-10 text-center text-slate-400 text-sm">Loading billing records...</div>
+          <div class="px-5 py-10 text-center text-slate-400 text-sm">Loading billing records…</div>
         } @else if (billingError()) {
           <div class="px-5 py-8 text-center text-slate-500 text-sm">
             Billing snapshot is not available right now.
@@ -508,8 +222,142 @@ interface DashboardFinancialMetric {
           </div>
         }
       </section>
+      </div>
 
-      <!-- Quick actions -->
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Active Projects</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Contracts, billing, and next actions across active jobs</p>
+          </div>
+          <a routerLink="/active-2026-control"
+             class="text-xs font-bold text-indigo-700 hover:text-indigo-800">
+            View all active jobs
+          </a>
+        </div>
+        @if (activeProjectRows().length) {
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm min-w-[1120px]">
+              <thead>
+                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
+                  <th class="px-4 py-3">Job #</th>
+                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3">Customer</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Billing Status</th>
+                  <th class="px-4 py-3 text-right">Contract</th>
+                  <th class="px-4 py-3 text-right">Billed</th>
+                  <th class="px-4 py-3 text-right">Balance</th>
+                  <th class="px-4 py-3">Foreman / PM</th>
+                  <th class="px-4 py-3">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (row of activeProjectRows(); track row.projectId) {
+                  <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.jobNumber }}</td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="['/projects', row.projectId]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
+                        {{ row.projectName }}
+                      </a>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600 truncate max-w-[180px]">{{ row.customer || 'Not available' }}</td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip [tone]="healthTone(row.healthStatus)">{{ row.status || row.healthStatus }}</app-status-chip>
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <app-status-chip [tone]="billingStatusTone(row.billingStatus)">{{ row.billingStatus || 'Pending' }}</app-status-chip>
+                    </td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.contract2026) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs">{{ fmt(row.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right font-mono text-xs" [class.text-amber-700]="row.leftToBill > 0">{{ fmt(row.leftToBill) }}</td>
+                    <td class="px-4 py-2.5">
+                      <div class="text-xs font-semibold text-slate-700 truncate max-w-[160px]">{{ foremanPmLabel(row) }}</div>
+                    </td>
+                    <td class="px-4 py-2.5">
+                      <a [routerLink]="row.nextAction.route"
+                         [queryParams]="row.nextAction.queryParams"
+                         [fragment]="row.nextAction.fragment"
+                         class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
+                        {{ priorityActionLabel(row.nextAction.label) }}
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-5">
+            <app-empty-state icon="work_off" title="No active projects" message="All projects are closed or archived." />
+          </div>
+        }
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Financial Snapshot</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Contract value, billings, retainage, and open A/R</p>
+          </div>
+          <a routerLink="/financials" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">View Financials</a>
+        </div>
+        <div class="grid lg:grid-cols-[minmax(0,1fr)_280px] gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+          <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 divide-x divide-y divide-slate-100">
+            @for (item of financialSnapshot(); track item.label) {
+              <div class="p-4 min-w-0">
+                <div class="text-[10px] font-bold uppercase tracking-wide text-slate-500">{{ item.label }}</div>
+                <div class="text-lg font-bold text-slate-950 mt-1 truncate">{{ item.value }}</div>
+                <div class="text-xs text-slate-500 mt-1 truncate">{{ item.subtext }}</div>
+              </div>
+            }
+          </div>
+          <div class="p-4">
+            <app-chart-card title="Portfolio Mix" subtitle="Billed vs balance across active jobs">
+              <app-donut-chart [slices]="portfolioDonut()" />
+            </app-chart-card>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Field Labor Hours</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Approved timekeeper hours · {{ laborMonthLabel() }}</p>
+          </div>
+          <a routerLink="/labor" class="text-xs font-bold text-indigo-700 hover:text-indigo-800">Open Labor</a>
+        </div>
+        @if (laborHoursRows().length) {
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100 text-sm">
+              <thead class="bg-slate-50 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">Job</th>
+                  <th class="px-4 py-3">Project</th>
+                  <th class="px-4 py-3 text-right">Hours</th>
+                  <th class="px-4 py-3 text-right">Crew</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (row of laborHoursRows(); track row.projectNumber) {
+                  <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.projectNumber }}</td>
+                    <td class="px-4 py-3 text-slate-600 truncate max-w-[280px]">{{ row.projectName }}</td>
+                    <td class="px-4 py-3 text-right font-mono font-semibold">{{ fmtHours(row.totalHours) }}</td>
+                    <td class="px-4 py-3 text-right text-slate-600">{{ row.employeeCount }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="p-5">
+            <app-empty-state title="No timekeeper hours this month" message="Approved hours from the Master Time Data Sheet will appear here." />
+          </div>
+        }
+      </section>
+
       <section class="grid md:grid-cols-2 xl:grid-cols-4 gap-3">
         @for (action of quickActions(); track action.label) {
           <a [routerLink]="action.route"
@@ -527,6 +375,24 @@ interface DashboardFinancialMetric {
         }
       </section>
 
+      @if (sourceWarnings().length) {
+        <section class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+            <h2 class="text-lg font-bold text-amber-800">Missing Pay App Backup</h2>
+            <a routerLink="/settings" fragment="import-review" class="text-xs font-bold text-amber-900 underline">Admin / Setup</a>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            @for (row of sourceWarnings(); track row.id) {
+              <a [routerLink]="homeSourceHealthRoute(row.id)"
+                 [fragment]="homeSourceHealthFragment(row.id)"
+                 class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold text-amber-800 hover:border-amber-300 hover:bg-amber-50/50 transition-colors">
+                <mat-icon class="!text-[16px] text-amber-600">warning</mat-icon>
+                {{ backupReviewLabel(row.label) }}
+              </a>
+            }
+          </div>
+        </section>
+      }
       }
     </div>
   `,
@@ -538,6 +404,8 @@ export class Dashboard {
   private importReview = inject(ImportReviewService);
   private qbSyncData = inject(QuickBooksSyncDataService);
   private api = inject(ApiClientService);
+  readonly actionCenterApi = inject(ActionCenterApiService);
+  private projectApi = inject(ProjectApiService);
   private currency = inject(CurrencyPipe);
   private data = inject(DataService);
   private laborData = inject(LaborDataService);
@@ -546,7 +414,6 @@ export class Dashboard {
 
   readonly homeSourceHealthRoute = homeSourceHealthRoute;
   readonly homeSourceHealthFragment = homeSourceHealthFragment;
-  readonly widgetConfigs = WIDGET_CONFIGS;
 
   billingLoading = signal(false);
   billingError = signal<string | null>(null);
@@ -557,14 +424,11 @@ export class Dashboard {
   projectsError = signal<string | null>(null);
   readonly skeletonSlots = [1, 2, 3, 4, 5];
 
-  customizing = signal(false);
-
-  readonly billingPipelineSeries: StackedBarSeries[] = [
-    { key: 'billed', label: 'Billed', color: '#059669' },
-    { key: 'balance', label: 'Balance to Bill', color: '#2563eb' },
-  ];
-
-  dashboardError = computed(() => this.projectsError() ?? this.billingError());
+  dashboardError = computed(() =>
+    this.projectsError()
+    ?? this.billingError()
+    ?? this.actionCenterApi.actionCenterError(),
+  );
   dashboardLoading = computed(() => !this.projectsReady() || (this.billingLoading() && !this.billingRecords().length && this.globalNeeds.active2026Rows().length > 0));
 
   activeProjectRows = computed(() =>
@@ -624,12 +488,21 @@ export class Dashboard {
   });
 
   priorities = computed(() => {
+    if (this.actionCenterApi.actionCenterActiveSource() === 'api' && this.actionCenterApi.priorities().length) {
+      return this.actionCenterApi.priorities();
+    }
     const qbRun = this.qbSyncData.lastRun();
-    const qbSyncWarning = !!qbRun?.completedAt && ((qbRun.warnings?.length ?? 0) > 0 || qbRun.status === 'Failed');
+    const qbSyncWarning = !manualFirstConfig.hideMainWorkflowWarnings
+      && qbSyncConfig.useWorkbookSync
+      && !!qbRun?.completedAt
+      && ((qbRun.warnings?.length ?? 0) > 0 || qbRun.status === 'Failed');
+    if (manualFirstConfig.hideMainWorkflowWarnings) {
+      return [];
+    }
     return buildHomePriorities({
       rows: this.globalNeeds.active2026Rows(),
       qbSyncWarning,
-      unmatchedSourceCount: this.importReview.unresolvedCount(),
+      unmatchedSourceCount: 0,
     });
   });
 
@@ -650,41 +523,6 @@ export class Dashboard {
       { label: 'Open A/R', value: ar, color: '#d97706' },
     ].filter(slice => slice.value > 0);
   });
-
-  healthDonut = computed<DonutSlice[]>(() => {
-    const rows = this.globalNeeds.active2026Rows();
-    const green = rows.filter(r => r.healthStatus === 'Green').length;
-    const yellow = rows.filter(r => r.healthStatus === 'Yellow').length;
-    const red = rows.filter(r => r.healthStatus === 'Red').length;
-    return [
-      { label: 'Green', value: green, color: '#059669' },
-      { label: 'Yellow', value: yellow, color: '#d97706' },
-      { label: 'Red', value: red, color: '#e11d48' },
-    ].filter(s => s.value > 0);
-  });
-
-  billingPipelineLabels = computed(() =>
-    [...this.globalNeeds.active2026Rows()]
-      .filter(r => r.currentContract > 0)
-      .sort((a, b) => b.currentContract - a.currentContract)
-      .slice(0, 10)
-      .map(r => r.jobNumber),
-  );
-
-  billingPipelineData = computed(() =>
-    [...this.globalNeeds.active2026Rows()]
-      .filter(r => r.currentContract > 0)
-      .sort((a, b) => b.currentContract - a.currentContract)
-      .slice(0, 10)
-      .map(r => ({ billed: r.billedToDate, balance: r.leftToBill })),
-  );
-
-  topArRows = computed(() =>
-    [...this.globalNeeds.active2026Rows()]
-      .filter(r => r.arBalance > 0)
-      .sort((a, b) => b.arBalance - a.arBalance)
-      .slice(0, 6),
-  );
 
   laborMonthLabel = computed(() => {
     const key = currentLaborMonthKey();
@@ -764,27 +602,25 @@ export class Dashboard {
   );
 
   sourceWarnings = computed(() =>
-    this.syncHealth.blockingWarnings().filter(row => isHomeSourceHealthRow(row.id)),
+    manualFirstConfig.hideMainWorkflowWarnings
+      ? []
+      : this.syncHealth.blockingWarnings().filter(row => isHomeSourceHealthRow(row.id)),
   );
 
   constructor() {
-    this.data.getProjects().pipe(
-      first(projects => projects.length > 0),
-      takeUntilDestroyed(),
-    ).subscribe({
-      next: () => this.projectsReady.set(true),
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => {
+        this.projectsReady.set(true);
+        void this.actionCenterApi.loadActionCenter();
+        void this.actionCenterApi.loadBackendReadiness();
+        void this.projectApi.loadProjects();
+      },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+        void this.actionCenterApi.loadActionCenter();
       },
     });
-
-    // 8-second timeout fallback
-    setTimeout(() => {
-      if (!this.projectsReady()) {
-        this.projectsReady.set(true);
-      }
-    }, 8000);
 
     effect(() => {
       const rows = this.globalNeeds.active2026Rows();
@@ -793,28 +629,6 @@ export class Dashboard {
         void this.loadBillingSnapshot(rows);
       }
     });
-  }
-
-  widgetVisible(id: WidgetId): boolean {
-    const prefs = this.loadPrefs();
-    const config = WIDGET_CONFIGS.find(w => w.id === id);
-    if (!config) return false;
-    return id in prefs ? prefs[id] : config.defaultVisible;
-  }
-
-  toggleWidget(id: WidgetId, visible: boolean): void {
-    const prefs = this.loadPrefs();
-    prefs[id] = visible;
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
-    } catch {
-      // localStorage unavailable
-    }
-  }
-
-  arPercent(row: Active2026ControlRow): number {
-    if (!row.currentContract || row.currentContract <= 0) return 0;
-    return Math.min(100, (row.arBalance / row.currentContract) * 100);
   }
 
   fmt(value: number): string {
@@ -930,14 +744,17 @@ export class Dashboard {
     this.billingLoadStarted = false;
     this.billingRecords.set([]);
     this.projectsReady.set(false);
-    this.data.getProjects().pipe(
-      first(projects => projects.length > 0),
-      takeUntilDestroyed(),
-    ).subscribe({
-      next: () => this.projectsReady.set(true),
+    this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
+      next: () => {
+        this.projectsReady.set(true);
+        void this.actionCenterApi.loadActionCenter();
+        void this.actionCenterApi.loadBackendReadiness();
+        void this.projectApi.loadProjects();
+      },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
+        void this.actionCenterApi.loadActionCenter();
       },
     });
     const rows = this.globalNeeds.active2026Rows();
@@ -946,15 +763,6 @@ export class Dashboard {
       void this.loadBillingSnapshot(rows);
     } else {
       this.projectsReady.set(true);
-    }
-  }
-
-  private loadPrefs(): Record<string, boolean> {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-    } catch {
-      return {};
     }
   }
 
@@ -1012,3 +820,4 @@ export class Dashboard {
     return present.length ? present.reduce((sum, value) => sum + value, 0) : null;
   }
 }
+

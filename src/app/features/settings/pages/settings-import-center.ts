@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
@@ -7,16 +7,18 @@ import { DriveFolderSeedService } from '@features/subcontractors/services/drive-
 import { BillingSovImportService } from '@features/financials/services/billing-sov-import.service';
 import { QbInvoicePacketImportService } from '@features/financials/services/qb-invoice-packet-import.service';
 import { LaborCodeMappingService } from '@features/labor/services/labor-code-mapping.service';
+import { laborCodesDeferred } from '@app/config/labor-codes.config';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import { SettingsLaborCodes } from './settings-labor-codes';
 import { SettingsDriveFolders } from './settings-drive-folders';
+import { qbWorkbookSyncEnabled } from '@app/config/qb-sync.config';
 
 @Component({
   selector: 'app-settings-import-center',
   standalone: true,
   imports: [CommonModule, RouterLink, SettingsLaborCodes, SettingsDriveFolders],
   template: `
-    <section id="import-center" class="space-y-4">
+    <section id="import-center" class="space-y-6">
       <div>
         <h2 class="text-xl font-bold text-slate-900">Import Center</h2>
         <p class="text-sm text-slate-500 mt-1 max-w-3xl">
@@ -26,8 +28,8 @@ import { SettingsDriveFolders } from './settings-drive-folders';
       </div>
 
       <div class="grid gap-4 md:grid-cols-2">
-        @for (action of actions; track action.id) {
-          <article class="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col gap-3">
+        @for (action of actions(); track action.id) {
+          <article class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3">
             <div>
               <h3 class="text-sm font-bold text-slate-900">{{ action.title }}</h3>
               <p class="text-xs text-slate-500 mt-1">{{ action.when }}</p>
@@ -48,14 +50,14 @@ import { SettingsDriveFolders } from './settings-drive-folders';
         <p class="text-sm text-rose-700">{{ error() }}</p>
       }
 
-      <details class="bg-slate-50 rounded-xl border border-slate-200">
+      <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
         <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Drive folder links</summary>
         <div class="px-2 pb-4">
           <app-settings-drive-folders />
         </div>
       </details>
 
-      <details class="bg-slate-50 rounded-xl border border-slate-200">
+      <details class="bg-white rounded-xl border border-slate-200 shadow-sm">
         <summary class="px-5 py-4 cursor-pointer text-sm font-bold text-slate-900">Labor code mapping</summary>
         <div class="px-2 pb-4">
           <app-settings-labor-codes />
@@ -82,50 +84,54 @@ export class SettingsImportCenterComponent {
   message = signal<string | null>(null);
   error = signal<string | null>(null);
 
-  readonly actions = [
-    {
-      id: 'billing',
-      title: 'Import new pay app / SOV',
-      when: 'When a new G702/G703 or billing workbook arrives',
-      description: 'Imports billing summary and SOV lines with review flags. Does not overwrite protected contract fields.',
-      buttonLabel: 'Run billing/SOV import (seed)',
-    },
-    {
-      id: 'invoice',
-      title: 'Upload invoice packet',
-      when: 'QuickBooks invoice PDF batch',
-      description: 'Invoice-only imports for T&M and small jobs.',
-      buttonLabel: 'Import invoice packet',
-    },
-    {
-      id: 'qb',
-      title: 'Refresh QuickBooks data',
-      when: 'QBO workbook updated or AR needs refresh',
-      description: 'Updates invoices, payments, AR, and project cost detail from the sync workbook.',
-      buttonLabel: 'Refresh QBO',
-    },
-    {
-      id: 'labor',
-      title: 'Refresh Timekeeper labor',
-      when: 'Master Time Sheet updated',
-      description: 'Updates labor hours and labor actuals — not part of project setup.',
-      buttonLabel: 'Refresh labor',
-    },
-    {
-      id: 'drive',
-      title: 'Check Drive folder links',
-      when: 'New jobs or folder list update',
-      description: 'Confirms Drive folder IDs on project records. Files stay in Google Drive.',
-      buttonLabel: 'Sync Drive links',
-    },
-    {
-      id: 'labor-codes',
-      title: 'Discover labor codes',
-      when: 'New codes appear on time sheet',
-      description: 'Classify labor codes from the Master Time Sheet.',
-      buttonLabel: 'Discover codes',
-    },
-  ];
+  readonly actions = computed(() => {
+    const all = [
+      {
+        id: 'billing',
+        title: 'Import new pay app / SOV',
+        when: 'When a new G702/G703 or billing workbook arrives',
+        description: 'Imports billing summary and SOV lines with review flags. Does not overwrite protected contract fields.',
+        buttonLabel: 'Run billing/SOV import (seed)',
+      },
+      {
+        id: 'invoice',
+        title: 'Upload invoice packet',
+        when: 'QuickBooks invoice PDF batch',
+        description: 'Invoice-only imports for T&M and small jobs.',
+        buttonLabel: 'Import invoice packet',
+      },
+      {
+        id: 'qb',
+        title: 'Refresh QuickBooks data',
+        when: 'QBO workbook updated or AR needs refresh',
+        description: 'Updates invoices, payments, AR, and project cost detail from the sync workbook.',
+        buttonLabel: 'Refresh QBO',
+      },
+      {
+        id: 'labor',
+        title: 'Refresh Timekeeper labor',
+        when: 'Master Time Sheet updated',
+        description: 'Updates labor hours and labor actuals — not part of project setup.',
+        buttonLabel: 'Refresh labor',
+      },
+      {
+        id: 'drive',
+        title: 'Check Drive folder links',
+        when: 'New jobs or folder list update',
+        description: 'Confirms Drive folder IDs on project records. Files stay in Google Drive.',
+        buttonLabel: 'Sync Drive links',
+      },
+      {
+        id: 'labor-codes',
+        title: 'Discover labor codes',
+        when: 'New codes appear on time sheet',
+        description: 'Classify labor codes from the Master Time Sheet.',
+        buttonLabel: 'Discover codes',
+      },
+    ];
+    const withoutQb = qbWorkbookSyncEnabled() ? all : all.filter(a => a.id !== 'qb');
+    return laborCodesDeferred() ? withoutQb.filter(a => a.id !== 'labor-codes') : withoutQb;
+  });
 
   running(): boolean {
     return this.qbSync.syncing() || this.timeSync.syncing()

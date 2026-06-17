@@ -79,15 +79,12 @@ export class ProjectHeaderComponent {
   newMenuOpen = signal(false);
 
   readonly newItems: NewItemAction[] = [
-    { id: 'change-request', label: 'Change Request', icon: 'sync_alt', section: 'workflows', view: 'changes' },
-    { id: 'rfi', label: 'RFI', icon: 'help_outline', section: 'workflows', view: 'rfis' },
-    { id: 'submittal', label: 'Submittal', icon: 'inventory_2', section: 'workflows', view: 'submittals' },
-    { id: 'daily-log', label: 'Daily Log', icon: 'today', section: 'workflows', view: 'daily-logs' },
-    { id: 'field-issue', label: 'Field Issue', icon: 'report_problem', section: 'workflows', view: 'field-issues' },
-    { id: 'pay-app', label: 'Pay App', icon: 'request_quote', section: 'financials', view: 'billing' },
-    { id: 'po', label: 'PO', icon: 'shopping_cart', section: 'financials', view: 'pos' },
-    { id: 'cpr-week', label: 'Certified Payroll Week', icon: 'gavel', section: 'workflows', view: 'certified-payroll' },
-    { id: 'upload-doc', label: 'Upload Document', icon: 'upload_file', section: 'documents' },
+    { id: 'labor', label: 'Labor Entry', icon: 'schedule', section: 'labor' },
+    { id: 'material', label: 'Material Entry', icon: 'inventory', section: 'materials' },
+    { id: 'change', label: 'Change', icon: 'sync_alt', section: 'changes' },
+    { id: 'todo', label: 'Todo', icon: 'task_alt', section: 'todos' },
+    { id: 'upload-doc', label: 'Document Link', icon: 'upload_file', section: 'documents' },
+    { id: 'activity', label: 'Activity', icon: 'history', section: 'activities' },
   ];
 
   selectNewItem(item: NewItemAction): void {

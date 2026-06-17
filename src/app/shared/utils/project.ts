@@ -1,27 +1,28 @@
 import { Project, ProjectStatus } from '@app/models/types';
+import { StatusTone } from '@app/components/ui/status-chip';
 import {
   extractLeadingJobNumber,
   findProjectMatches,
   pickCanonicalProject,
 } from '@features/projects/utils/project-dedupe';
+import { projectStatusTone } from '@shared/utils/status-chip-tone';
 
+/** @deprecated Use projectStatusTone with app-status-chip instead. */
 export function projectStatusClass(status: ProjectStatus | undefined): string {
-  switch (status) {
-    case 'Lead / Precon':
-    case 'Setup Needed':
-      return 'bg-slate-100 text-slate-700';
-    case 'Active':
-      return 'bg-orange-100 text-orange-800';
-    case 'Awarded':
-      return 'bg-emerald-100 text-emerald-800';
-    case 'Closeout':
-      return 'bg-amber-100 text-amber-800';
-    case 'Closed':
-      return 'bg-slate-200 text-slate-500';
-    default:
-      return 'bg-slate-100 text-slate-700';
-  }
+  const tone = projectStatusTone(status);
+  const map: Record<StatusTone, string> = {
+    slate: 'bg-slate-100 text-slate-600',
+    green: 'bg-emerald-50 text-emerald-700',
+    amber: 'bg-amber-50 text-amber-700',
+    orange: 'bg-orange-50 text-orange-700',
+    red: 'bg-rose-50 text-rose-700',
+    blue: 'bg-blue-50 text-blue-700',
+    violet: 'bg-violet-50 text-violet-700',
+  };
+  return map[tone];
 }
+
+export { projectStatusTone };
 
 export function formatProjectDate(value?: string): string {
   if (!value) return '—';

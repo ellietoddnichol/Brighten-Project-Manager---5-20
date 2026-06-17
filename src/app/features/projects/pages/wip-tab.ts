@@ -48,7 +48,7 @@ import { DataService } from '@core/services/data.service';
                 @for (src of actualCostSources(); track src) {
                   <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
                         [class.bg-blue-50]="src === 'QuickBooks Detail'"
-                        [class.text-blue-700]="src === 'QuickBooks Detail'"
+                        [class.text-indigo-700]="src === 'QuickBooks Detail'"
                         [class.bg-emerald-50]="src === 'Labor Actuals'"
                         [class.text-emerald-700]="src === 'Labor Actuals'"
                         [class.bg-slate-100]="src === 'Manual'"

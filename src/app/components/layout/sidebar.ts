@@ -75,10 +75,6 @@ type NavGroup = GlobalNavGroupConfig & { items: NavRow[] };
           <mat-icon class="!text-[18px] w-[18px] h-[18px] shrink-0">{{ settingsNav.icon }}</mat-icon>
           <span class="truncate flex-1">{{ settingsNav.label }}</span>
         </a>
-        <div class="px-3 py-1.5 flex items-center gap-2 text-[10px] text-slate-500">
-          <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full shrink-0"></span>
-          <span>Cloud sync active</span>
-        </div>
       </div>
     </aside>
   `,

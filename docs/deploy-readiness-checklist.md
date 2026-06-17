@@ -100,9 +100,29 @@ Documented in `.env.example` (committed, no secrets):
 
 ## 4. Sign-in smoke test (verify in deployed env)
 
+**Production URL:** https://projectmanager06-zzehjpfjea-ew.a.run.app
+
+### Firebase Auth — authorized domain (required once)
+
+1. [Firebase Console](https://console.firebase.google.com/) → project `brighten-project-manager`
+2. **Authentication** → **Settings** → **Authorized domains**
+3. Add: `projectmanager06-zzehjpfjea-ew.a.run.app`
+4. Sign in on the production URL with Google
+
+The app surfaces `auth/unauthorized-domain` with the hostname if this step is missing (`auth.service.ts`).
+
+### Automated API smoke (no sign-in required for health)
+
+```powershell
+.\scripts\production-smoke.ps1
+```
+
+### Manual browser smoke
+
 - Local: `npm start` → open app → Sign in with Google.
 - Production: confirm the deploy domain is in Firebase Auth **Authorized domains**, and the OAuth client allows the production origin.
 - Expected: no popup loop, no blank screen, lands on Home with access to Home/Projects/Financials/Documents/Directory/Settings.
+- On `/projects`, Network tab should show `GET /api/projects` → 200 (not amber Firestore fallback).
 
 > Known: the automated browser in earlier sessions hit `auth/popup-blocked`. This is a browser-automation limitation, not an app bug. **Verify manually once in production.**
 
@@ -266,6 +286,8 @@ firebase deploy --only firestore:rules
 ## Manual setup required after deploy
 - Add production domain to Firebase Auth authorized domains.
 - Deploy Firestore rules.
+- **Cloud SQL on Cloud Run:** one-time Secret Manager setup (`brighten-pm-db-password`), then `cloudbuild.yaml` applies `DB_*` and `CORS_ORIGIN` on deploy — see [sql-api-integration.md § Production — Cloud Run](sql-api-integration.md#production--cloud-run).
+- Verify `https://<service>/api/health` and `/api/projects` after deploy.
 - Connect Master Time Sheet + QuickBooks workbook (optional but recommended).
 - Link Drive folders for active jobs.
 - Enter/confirm contract + budget on any job flagged "Missing contract / Confirm budget" on Home.

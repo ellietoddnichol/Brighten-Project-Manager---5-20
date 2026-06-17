@@ -99,12 +99,13 @@ export function deriveProjectStartDate(input: ProjectStartDateInput): string | u
 export function mapSetupProfileLabel(label: string, prevailingWage: boolean): ProjectProfile {
   const normalized = label.toLowerCase();
   if (normalized.includes('prevailing') || normalized.includes('l&w / prevailing')) {
-    return 'PrevailingWage';
+    return 'FullContractGC';
   }
-  if (normalized.includes('t&m')) return 'TMWorkOrder';
-  if (normalized.includes('closeout') || normalized.includes('a/r')) return 'CloseoutAR';
-  if (prevailingWage) return 'PrevailingWage';
-  return 'FullProject';
+  if (normalized.includes('t&m')) return 'TM';
+  if (normalized.includes('closeout') || normalized.includes('a/r')) return 'SmallJob';
+  if (normalized.includes('sub')) return 'FullProjectSubcontractor';
+  if (prevailingWage) return 'FullContractGC';
+  return 'FullContractGC';
 }
 
 export function billingTypeFromProfileLabel(label: string): Project['billingType'] | undefined {

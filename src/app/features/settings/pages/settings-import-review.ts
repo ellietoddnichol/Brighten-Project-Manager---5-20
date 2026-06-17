@@ -9,6 +9,7 @@ import { ImportSeedService } from '@core/services/import-seed.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
+import { qbWorkbookSyncEnabled } from '@app/config/qb-sync.config';
 
 import { QbInvoicePacketImportService } from '@features/financials/services/qb-invoice-packet-import.service';
 import { WipForecastImportService } from '@features/financials/services/wip-forecast-import.service';
@@ -53,6 +54,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 
         <div class="flex flex-wrap gap-2">
 
+          @if (qbWorkbookSyncEnabled()) {
           <button type="button" (click)="runQbSync()" [disabled]="qbSync.syncing()"
 
                   class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-50">
@@ -60,6 +62,7 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
             {{ qbSync.syncing() ? 'Syncing…' : 'Re-sync QuickBooks workbook' }}
 
           </button>
+          }
 
           <button type="button" (click)="runAll()" [disabled]="importSeed.running()"
 
@@ -470,6 +473,8 @@ import { QB_DETAIL_COST_WARNING } from '@app/config/qb-project-mgmt-sync.config'
 })
 
 export class SettingsImportReview {
+
+  readonly qbWorkbookSyncEnabled = qbWorkbookSyncEnabled;
 
   compactMode = input(false);
 

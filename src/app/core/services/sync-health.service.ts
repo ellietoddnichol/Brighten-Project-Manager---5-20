@@ -23,6 +23,7 @@ import { SubcontractorSeedService } from '@features/subcontractors/services/subc
 
 
 import { LaborCodeMappingService } from '@features/labor/services/labor-code-mapping.service';
+import { laborCodesConfig } from '@app/config/labor-codes.config';
 
 
 
@@ -35,6 +36,7 @@ import { TIME_DATA_SHEET } from '@app/config/time-data-sheet.config';
 
 
 import { QB_PROJECT_MGMT_SYNC } from '@app/config/qb-project-mgmt-sync.config';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 
 
 
@@ -326,35 +328,31 @@ export class SyncHealthService {
 
 
 
-        status: qbRun?.status === 'Failed'
-
-
-
+        status: qbSyncConfig.isManualMode()
+          ? 'connected'
+          : (qbRun?.status === 'Failed'
           ? 'error'
+          : (qbRun?.completedAt ? (qbRun.warnings?.length ? 'warning' : 'connected') : 'not_connected')),
 
 
 
-          : (qbRun?.completedAt ? (qbRun.warnings?.length ? 'warning' : 'connected') : 'not_connected'),
+        lastSync: qbSyncConfig.isManualMode() ? undefined : (qbRun?.completedAt ?? undefined),
 
 
 
-        lastSync: qbRun?.completedAt ?? undefined,
+        rowsRead: qbSyncConfig.isManualMode() ? undefined : qbRun?.rowsRead,
 
 
 
-        rowsRead: qbRun?.rowsRead,
+        rowsImported: qbSyncConfig.isManualMode() ? undefined : qbRun?.rowsImported,
 
 
 
-        rowsImported: qbRun?.rowsImported,
+        warnings: qbSyncConfig.isManualMode() ? undefined : (qbRun?.warnings?.length ? qbRun.warnings : undefined),
 
 
 
-        warnings: qbRun?.warnings?.length ? qbRun.warnings : undefined,
-
-
-
-        errors: qbRun?.errors?.length ? qbRun.errors : undefined,
+        errors: qbSyncConfig.isManualMode() ? undefined : (qbRun?.errors?.length ? qbRun.errors : undefined),
 
 
 
@@ -362,19 +360,17 @@ export class SyncHealthService {
 
 
 
-        detail: qbRun
-
-
-
+        detail: qbSyncConfig.isManualMode()
+          ? 'Manual entry mode — workbook auto-sync is off. Edit each project in the app.'
+          : (qbRun
           ? `${qbRun.tabsRead.length} tab(s) · AR + invoices + vendor balances + detail costs`
+          : undefined),
 
 
 
-          : undefined,
-
-
-
-        nextAction: qbRun?.completedAt ? 'Re-sync QuickBooks workbook' : 'Sign in — auto-sync runs on load',
+        nextAction: qbSyncConfig.isManualMode()
+          ? 'Enable workbook sync in Settings → Source Health if needed later'
+          : (qbRun?.completedAt ? 'Re-sync QuickBooks workbook' : 'Sign in — auto-sync runs on load'),
 
 
 
@@ -477,14 +473,20 @@ export class SyncHealthService {
 
 
         warnings: subs === 0 && this.subDiscovery.sourceDataAvailable()
-
           ? ['Source data available — discover on Subcontractors page']
+          : (subs === 0
+            ? (qbSyncConfig.isManualMode()
+              ? ['Add subcontractors manually in Directory']
+              : ['Re-sync QuickBooks workbook first'])
+            : undefined),
 
-          : (subs === 0 ? ['Re-sync QuickBooks workbook first'] : undefined),
 
 
-
-        nextAction: subs === 0 ? 'Discover subcontractors from QuickBooks / Drive' : 'Review vendor candidates',
+        nextAction: subs === 0
+          ? (qbSyncConfig.isManualMode()
+            ? 'Directory → New Subcontractor'
+            : 'Discover subcontractors from QuickBooks / Drive')
+          : 'Review vendor candidates',
 
 
 
@@ -504,7 +506,9 @@ export class SyncHealthService {
 
 
 
-        status: mappings > 0 ? 'connected' : (masterTimeLastSync ? 'warning' : 'not_connected'),
+        status: laborCodesConfig.deferSetup
+          ? 'connected'
+          : (mappings > 0 ? 'connected' : (masterTimeLastSync ? 'warning' : 'not_connected')),
 
 
 
@@ -512,15 +516,21 @@ export class SyncHealthService {
 
 
 
-        detail: `${mappings} mapped labor codes`,
+        detail: laborCodesConfig.deferSetup
+          ? 'Deferred — set up when ready'
+          : `${mappings} mapped labor codes`,
 
 
 
-        warnings: mappings === 0 && masterTimeLastSync ? ['Discover labor codes from Master Time Sheet'] : undefined,
+        warnings: laborCodesConfig.deferSetup
+          ? undefined
+          : (mappings === 0 && masterTimeLastSync ? ['Discover labor codes from Master Time Sheet'] : undefined),
 
 
 
-        nextAction: mappings === 0 ? 'Discover labor codes from Master Time Sheet' : 'Review unmapped codes',
+        nextAction: laborCodesConfig.deferSetup
+          ? undefined
+          : (mappings === 0 ? 'Discover labor codes from Master Time Sheet' : 'Review unmapped codes'),
 
 
 

@@ -11,6 +11,7 @@ import {
   ProjectForemanAssignment,
 } from '@app/models/foreman-bonus.types';
 import { LaborCodeMapping } from '@app/models/labor-code-mapping.types';
+import { Company, ProjectLaborEntry, ProjectMaterial } from '@app/models/job-record.types';
 import { ARRecord, PayAppLine, ProjectFinancial } from '@app/models/financial.types';
 import { findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 import localforage from 'localforage';
@@ -101,6 +102,9 @@ export class DataService {
   private foremanBonusRecordsSubject = new BehaviorSubject<ForemanBonusRecord[]>([]);
   private foremanBonusPaymentsSubject = new BehaviorSubject<ForemanBonusPayment[]>([]);
   private laborCodeMappingsSubject = new BehaviorSubject<LaborCodeMapping[]>([]);
+  private companiesSubject = new BehaviorSubject<Company[]>([]);
+  private projectMaterialsSubject = new BehaviorSubject<ProjectMaterial[]>([]);
+  private projectLaborEntriesSubject = new BehaviorSubject<ProjectLaborEntry[]>([]);
   private projectsSnapshotReady = false;
   private projectsSnapshotWaiters: Array<(projects: Project[]) => void> = [];
 
@@ -313,6 +317,24 @@ export class DataService {
             this.laborCodeMappingsSubject.next(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as LaborCodeMapping)));
           });
         }, error => handleFirestoreError(error, OperationType.LIST, 'labor-code-mappings'));
+
+        onSnapshot(query(collection(db, 'companies'), where('ownerId', '==', user.uid)), snapshot => {
+          this.ngZone.run(() => {
+            this.companiesSubject.next(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Company)));
+          });
+        }, error => handleFirestoreError(error, OperationType.LIST, 'companies'));
+
+        onSnapshot(query(collection(db, 'project-materials'), where('ownerId', '==', user.uid)), snapshot => {
+          this.ngZone.run(() => {
+            this.projectMaterialsSubject.next(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ProjectMaterial)));
+          });
+        }, error => handleFirestoreError(error, OperationType.LIST, 'project-materials'));
+
+        onSnapshot(query(collection(db, 'project-labor-entries'), where('ownerId', '==', user.uid)), snapshot => {
+          this.ngZone.run(() => {
+            this.projectLaborEntriesSubject.next(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as ProjectLaborEntry)));
+          });
+        }, error => handleFirestoreError(error, OperationType.LIST, 'project-labor-entries'));
       } else {
         this.ngZone.run(() => {
           this.projectsSubject.next([]);
@@ -348,6 +370,9 @@ export class DataService {
           this.foremanBonusRecordsSubject.next([]);
           this.foremanBonusPaymentsSubject.next([]);
           this.laborCodeMappingsSubject.next([]);
+          this.companiesSubject.next([]);
+          this.projectMaterialsSubject.next([]);
+          this.projectLaborEntriesSubject.next([]);
           this.projectsSnapshotReady = false;
           this.projectsSnapshotWaiters = [];
         });
@@ -1528,6 +1553,57 @@ export class DataService {
         handleFirestoreError(error, OperationType.UPDATE, `labor-code-mappings/${id}`);
         throw error;
       }
+    })());
+  }
+
+  companiesSnapshot(): Company[] { return this.companiesSubject.value; }
+  getCompanies(): Observable<Company[]> { return this.companiesSubject.asObservable(); }
+  createCompany(c: Partial<Company>): Observable<Company> {
+    return from((async () => {
+      const id = uuidv4();
+      const newDoc = { ...c, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+      await setDoc(doc(db, 'companies', id), forFirestore(newDoc));
+      return newDoc as unknown as Company;
+    })());
+  }
+  updateCompany(id: string, updates: Partial<Company>): Observable<Company> {
+    return from((async () => {
+      await updateDoc(doc(db, 'companies', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+      return { ...this.companiesSubject.value.find(x => x.id === id), ...updates } as Company;
+    })());
+  }
+
+  projectMaterialsSnapshot(): ProjectMaterial[] { return this.projectMaterialsSubject.value; }
+  getProjectMaterials(): Observable<ProjectMaterial[]> { return this.projectMaterialsSubject.asObservable(); }
+  createProjectMaterial(m: Partial<ProjectMaterial>): Observable<ProjectMaterial> {
+    return from((async () => {
+      const id = uuidv4();
+      const newDoc = { ...m, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+      await setDoc(doc(db, 'project-materials', id), forFirestore(newDoc));
+      return newDoc as unknown as ProjectMaterial;
+    })());
+  }
+  updateProjectMaterial(id: string, updates: Partial<ProjectMaterial>): Observable<ProjectMaterial> {
+    return from((async () => {
+      await updateDoc(doc(db, 'project-materials', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+      return { ...this.projectMaterialsSubject.value.find(x => x.id === id), ...updates } as ProjectMaterial;
+    })());
+  }
+
+  projectLaborEntriesSnapshot(): ProjectLaborEntry[] { return this.projectLaborEntriesSubject.value; }
+  getProjectLaborEntries(): Observable<ProjectLaborEntry[]> { return this.projectLaborEntriesSubject.asObservable(); }
+  createProjectLaborEntry(e: Partial<ProjectLaborEntry>): Observable<ProjectLaborEntry> {
+    return from((async () => {
+      const id = uuidv4();
+      const newDoc = { ...e, id, ownerId: auth.currentUser?.uid, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+      await setDoc(doc(db, 'project-labor-entries', id), forFirestore(newDoc));
+      return newDoc as unknown as ProjectLaborEntry;
+    })());
+  }
+  updateProjectLaborEntry(id: string, updates: Partial<ProjectLaborEntry>): Observable<ProjectLaborEntry> {
+    return from((async () => {
+      await updateDoc(doc(db, 'project-labor-entries', id), forFirestore({ ...updates, updatedAt: serverTimestamp() }));
+      return { ...this.projectLaborEntriesSubject.value.find(x => x.id === id), ...updates } as ProjectLaborEntry;
     })());
   }
 }

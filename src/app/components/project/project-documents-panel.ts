@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, Input, Output, EventEmitter, computed, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,6 +15,8 @@ import { fileCountForView } from '@features/documents/pages/documents-tab';
 import { EmptyStateComponent } from '../ui/empty-state';
 import { StatusChipComponent } from '../ui/status-chip';
 import { firstValueFrom } from 'rxjs';
+import { ProjectWorkflowSaveService } from '@features/projects/services/project-workflow-save.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 
 type FileSortMode = 'modified' | 'name';
 
@@ -24,6 +26,16 @@ type FileSortMode = 'modified' | 'name';
   imports: [CommonModule, FormsModule, MatIconModule, EmptyStateComponent, StatusChipComponent],
   template: `
     <div class="space-y-4">
+      @if (sqlDocumentsReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          <mat-icon class="!text-[16px] text-indigo-600">cloud_done</mat-icon>
+          Documents loaded from Cloud SQL (read-only). Upload and archive still use Firestore/Drive.
+        </div>
+      } @else if (projectApi.documentsError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load documents from API — showing Firestore files. {{ projectApi.documentsError() }}
+        </div>
+      }
       <div class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1">
         @for (seg of primarySegments(); track seg.id) {
           <button type="button" (click)="fileViewChange.emit(seg.id)"
@@ -111,6 +123,12 @@ type FileSortMode = 'modified' | 'name';
             Uploading…
           </p>
         }
+        @if (uploadError()) {
+          <p class="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{{ uploadError() }}</p>
+        }
+        @if (uploadNotice()) {
+          <p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">{{ uploadNotice() }}</p>
+        }
 
         <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
           @for (file of sortedFiles(); track file.id) {
@@ -127,7 +145,7 @@ type FileSortMode = 'modified' | 'name';
                 <p class="text-xs text-slate-500">{{ modifiedLabel(file) }}</p>
               </div>
               <app-status-chip tone="slate" [label]="fileTypeLabel(file)" />
-              @if (!file.archived) {
+              @if (!file.archived && !sqlDocumentsReadOnly()) {
                 <button type="button" (click)="archiveFile(file)"
                         class="text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-rose-100 transition-colors">
                   Archive
@@ -144,7 +162,7 @@ type FileSortMode = 'modified' | 'name';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ProjectDocumentsPanelComponent {
+export class ProjectDocumentsPanelComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
   @Input({ required: true }) activeView: FileView = 'all';
   @Input({ required: true }) modules!: ProjectEnabledModules;
@@ -155,22 +173,51 @@ export class ProjectDocumentsPanelComponent {
   private requirements = inject(ProjectRequirementsService);
   private lifecycle = inject(ProjectLifecycleService);
   private projectFiles = inject(ProjectFilesRepository);
+  private workflowSave = inject(ProjectWorkflowSaveService);
+  readonly projectApi = inject(ProjectApiService);
 
   moreOpen = signal(false);
   showArchived = signal(false);
   searchQuery = signal('');
   sortMode = signal<FileSortMode>('modified');
   uploading = signal(false);
+  uploadError = signal<string | null>(null);
+  uploadNotice = signal<string | null>(null);
 
   private allFiles = toSignal(this.data.getProjectFiles(), { initialValue: [] });
   private allReqs = toSignal(this.data.getRequiredDocuments(), { initialValue: [] });
+
+  sqlDocumentsReadOnly = computed(() =>
+    this.projectApi.isEnabled()
+    && this.projectApi.documentsActiveSource() === 'api'
+    && this.matchesLoadedProject(this.projectApi.documentsProjectId()),
+  );
+
+  private projectFilesForView = computed((): ProjectFile[] => {
+    if (this.sqlDocumentsReadOnly()) {
+      return this.projectApi.sqlDocuments();
+    }
+    return (this.allFiles() ?? []).filter(f => f.projectId === this.project.id);
+  });
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project) {
+      void this.projectApi.loadProjectDocuments(this.project.projectNumber || this.project.id);
+    }
+  }
+
+  private matchesLoadedProject(loadedKey: string | null): boolean {
+    if (!loadedKey) return false;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    return keys.some(key => key === loadedKey || key?.replace(/^J/i, '') === loadedKey.replace(/^J/i, ''));
+  }
 
   private reqCtx = computed(() => this.requirements.buildContext(this.project));
   private projectReqs = computed(() => (this.allReqs() ?? []).filter(r => r.projectId === this.project.id));
 
   private countFor = (view: FileView) =>
     fileCountForView(
-      this.allFiles() ?? [],
+      this.projectFilesForView(),
       view,
       this.project,
       this.projectReqs(),
@@ -195,7 +242,7 @@ export class ProjectDocumentsPanelComponent {
 
   moreSegments = computed(() => {
     const ctx = this.reqCtx();
-    const files = (this.allFiles() ?? []).filter(f => f.projectId === this.project.id);
+    const files = this.projectFilesForView();
     return this.modules.filesMore
       .filter(id => id === 'drive-mapping' || fileViewVisibleInNav(id, this.modules, files, ctx, this.projectReqs()))
       .map(id => ({
@@ -210,12 +257,12 @@ export class ProjectDocumentsPanelComponent {
   );
 
   archivedCount = computed(() =>
-    (this.allFiles() ?? []).filter(f => f.projectId === this.project.id && f.archived).length,
+    this.projectFilesForView().filter(f => f.archived).length,
   );
 
   filteredFiles = computed((): ProjectFile[] => {
     const items = filterDocumentList(
-      this.allFiles() ?? [],
+      this.projectFilesForView(),
       this.activeView,
       this.reqCtx(),
       this.projectReqs(),
@@ -246,15 +293,38 @@ export class ProjectDocumentsPanelComponent {
     }
   }
 
-  onFileSelected(event: Event): void {
+  async onFileSelected(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
-    if (!file) return;
+    if (!file || !this.project.driveFolderId) return;
+
     this.uploading.set(true);
-    window.setTimeout(() => {
+    this.uploadError.set(null);
+    this.uploadNotice.set(null);
+
+    try {
+      const result = await this.workflowSave.saveProjectWorkflowFile({
+        projectId: this.project.id,
+        workflowType: 'closeout',
+        folderKey: 'CORRESPONDENCE',
+        fallbackFolderKeys: ['BILLING', 'SUBS', 'RFIS'],
+        fileName: file.name,
+        content: file,
+        mimeType: file.type || 'application/octet-stream',
+        documentType: this.activeView === 'all' ? 'General' : (FILE_VIEW_LABELS[this.activeView] ?? 'General'),
+        requestAuthIfNeeded: true,
+      });
+      if (result.warning) {
+        this.uploadNotice.set(result.warning);
+      } else {
+        this.uploadNotice.set(`Uploaded ${result.fileName} to ${result.savedToLabel}`);
+      }
+    } catch (err) {
+      this.uploadError.set(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
       this.uploading.set(false);
       input.value = '';
-    }, 1200);
+    }
   }
 
   async archiveFile(file: ProjectFile): Promise<void> {

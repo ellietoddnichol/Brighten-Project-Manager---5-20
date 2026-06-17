@@ -1,4 +1,5 @@
 import { Project } from '@app/models/types';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 
 /** Fields owned by the read-only Master Data Sheet sync — not editable in the app. */
 export const MASTER_SHEET_SYNCED_PROJECT_FIELDS: (keyof Project)[] = [
@@ -33,6 +34,7 @@ export function isMasterSheetReadOnlyField(
   field: keyof Project,
   project: Pick<Project, 'masterSheetJobId'>,
 ): boolean {
+  if (qbSyncConfig.isManualMode()) return false;
   if (!isMasterSheetLinkedProject(project)) return false;
   return MASTER_SHEET_SYNCED_PROJECT_FIELDS.includes(field);
 }
@@ -42,7 +44,7 @@ export function stripMasterSheetFieldsFromUserPatch(
   project: Project,
   patch: Partial<Project>,
 ): Partial<Project> {
-  if (!isMasterSheetLinkedProject(project)) return patch;
+  if (qbSyncConfig.isManualMode() || !isMasterSheetLinkedProject(project)) return patch;
   const safe = { ...patch };
   for (const field of MASTER_SHEET_SYNCED_PROJECT_FIELDS) {
     delete (safe as Record<string, unknown>)[field];

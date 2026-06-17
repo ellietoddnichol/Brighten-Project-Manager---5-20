@@ -1,0 +1,21 @@
+---
+description: Brighten PM UI design system — colors, spacing, components
+globs: src/app/**/*.ts
+alwaysApply: false
+---
+
+# UI Design System
+
+Read `docs/ui-design-system.md` before building or editing any page, panel, or component template.
+
+## Non-negotiables
+
+- Page shell: `p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6`
+- Use `<app-page-header>`, `<app-status-chip>`, `<app-empty-state>`, `<app-stat-card>` — do not reinvent
+- Primary buttons: `bg-slate-900` only (not blue/emerald)
+- Cards: `rounded-xl border border-slate-200 shadow-sm`
+- List row hover: `hover:bg-slate-50 transition-colors` (not `/80`)
+- Body text: `text-sm` (not `text-base`)
+- Job numbers in tables: `font-mono font-bold text-xs`
+
+If a pattern is missing, extend `docs/ui-design-system.md` first — do not invent inline variants.

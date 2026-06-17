@@ -35,6 +35,9 @@ import { ProjectsListView, ProjectLifecycleSnapshot } from '@app/models/project-
 import { matchesProjectsListView } from '@features/projects/utils/project-lifecycle.compute';
 
 import { PROJECT_PROFILE_OPTIONS, PROJECT_PROFILE_LABELS } from '@app/models/project-requirements.types';
+import { JobRecordService } from '@features/projects/services/job-record.service';
+import { manualFirstConfig } from '@app/config/manual-first.config';
+import { projectProfileLabel } from '@features/projects/utils/project-profile.compat';
 
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 
@@ -148,35 +151,29 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
   template: `
 
-    <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
+    <div class="p-6 lg:p-8 w-full max-w-[1440px] mx-auto space-y-6">
 
       <app-page-header
 
         title="Projects"
 
-        subtitle="Active jobs, upcoming work, closeout, and archive"
+        subtitle="Job list — open any record to edit and save in Firestore"
 
         primaryActionLabel="New Project"
 
         (primaryAction)="openNewProject()">
 
+        @if (!manualFirst.hideMainWorkflowWarnings) {
         <a routerLink="/settings" fragment="import-review"
-
            class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
-
           Import / source review
-
         </a>
-
         <button type="button" (click)="syncProjects()" [disabled]="syncing()"
-
                 class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-
           <mat-icon class="!text-[18px]">{{ syncing() ? 'hourglass_empty' : 'sync' }}</mat-icon>
-
           {{ syncing() ? 'Syncing…' : 'Sync projects' }}
-
         </button>
+        }
 
         <button type="button" (click)="exportCsv()"
 
@@ -245,7 +242,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <div class="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-3">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
 
         <div class="flex flex-col lg:flex-row lg:items-center gap-4">
 
@@ -327,7 +324,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
 
 
-      <section class="bg-white rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
 
         @if (listLoading()) {
           <div class="p-4 space-y-3">
@@ -346,51 +343,41 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
             <table class="w-full text-left text-sm min-w-[1120px]">
               <thead>
                 <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                  <th class="px-4 py-2">Job #</th>
-                  <th class="px-4 py-2">Project</th>
-                  <th class="px-4 py-2">Customer</th>
-                  <th class="px-4 py-2">Status</th>
-                  <th class="px-4 py-2">Billing</th>
-                  <th class="px-4 py-2 text-right">Contract</th>
-                  <th class="px-4 py-2 text-right">Billed</th>
-                  <th class="px-4 py-2 text-right">Balance</th>
-                  <th class="px-4 py-2">Action</th>
+                  <th class="px-4 py-3">Job #</th>
+                  <th class="px-4 py-3">Job name</th>
+                  <th class="px-4 py-3">Customer</th>
+                  <th class="px-4 py-3">Profile</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3 text-right">Contract</th>
+                  <th class="px-4 py-3 text-right">Billed</th>
+                  <th class="px-4 py-3 text-right">Cost</th>
+                  <th class="px-4 py-3 text-right">Hours</th>
+                  <th class="px-4 py-3 text-right">Profit</th>
+                  <th class="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of visibleListRows(); track row.project.id) {
                   <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
                       (click)="navigateToProject(row, $event)">
-                    <td class="px-4 py-2 font-numeric text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
-                    <td class="px-4 py-2">
+                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
+                    <td class="px-4 py-2.5">
                       <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
                         {{ row.project.projectName }}
                       </a>
-                      @if (row.warnings.length) {
-                        <div class="flex flex-wrap gap-1 mt-1">
-                          @for (chip of row.warnings; track chip.id) {
-                            <a [routerLink]="warningRoute(row, chip)" class="hover:underline">
-                              <app-status-chip [tone]="chip.kind === 'critical' ? 'red' : 'amber'">{{ chip.label }}</app-status-chip>
-                            </a>
-                          }
-                        </div>
-                      }
                     </td>
-                    <td class="px-4 py-2 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
-                    <td class="px-4 py-2">
+                    <td class="px-4 py-2.5 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
+                    <td class="px-4 py-2.5 text-xs text-slate-600">{{ profileLabel(row.project.projectProfile) }}</td>
+                    <td class="px-4 py-2.5">
                       <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
                     </td>
-                    <td class="px-4 py-2">
-                      <app-status-chip tone="slate">{{ row.project.billingStatus || 'Pending' }}</app-status-chip>
-                    </td>
-                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
-                    <td class="px-4 py-2 text-right text-xs font-numeric text-slate-700">{{ fmt(row.moneySecondaryValue) }}</td>
-                    <td class="px-4 py-2">
-                      <a [routerLink]="row.nextActionRoute"
-                         class="text-xs font-semibold text-indigo-700 hover:underline truncate block max-w-[180px]">
-                        {{ row.nextActionLabel }}
-                      </a>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.costToDate) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ hoursLabel(row.project) }}</td>
+                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(profitToDate(row)) }}</td>
+                    <td class="px-4 py-2.5 text-right">
+                      <a [routerLink]="['/projects', row.project.id]" class="text-xs font-semibold text-indigo-700 hover:underline">Open</a>
                     </td>
                   </tr>
                 }
@@ -414,7 +401,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                     <div class="flex flex-wrap items-center gap-2 mb-1">
 
-                      <span class="text-xs font-numeric font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
+                      <span class="text-xs font-mono font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
 
                       <span class="text-sm font-semibold text-slate-900 min-w-0 truncate flex-1 group-hover:text-indigo-700">
 
@@ -440,15 +427,15 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
                     <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
 
-                      <span><span class="text-slate-400">Contract</span> <span class="font-numeric font-semibold">{{ fmt(row.financial.currentContractAmount) }}</span></span>
+                      <span><span class="text-slate-400">Contract</span> <span class="font-mono font-semibold">{{ fmt(row.financial.currentContractAmount) }}</span></span>
 
-                      <span><span class="text-slate-400">Billed</span> <span class="font-numeric font-semibold">{{ fmt(row.financial.billedToDate) }}</span></span>
+                      <span><span class="text-slate-400">Billed</span> <span class="font-mono font-semibold">{{ fmt(row.financial.billedToDate) }}</span></span>
 
                       <span>
 
                         <span class="text-slate-400">{{ row.moneySecondaryLabel }}</span>
 
-                        <span class="font-numeric font-semibold" [class.text-rose-700]="row.moneySecondaryAlert">{{ fmt(row.moneySecondaryValue) }}</span>
+                        <span class="font-mono font-semibold" [class.text-rose-700]="row.moneySecondaryAlert">{{ fmt(row.moneySecondaryValue) }}</span>
 
                       </span>
 
@@ -819,6 +806,38 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
               </div>
 
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Job Profile</label>
+                  <select [(ngModel)]="newProject.projectProfile" name="profile" required class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
+                    @for (opt of profileOptions; track opt) {
+                      <option [value]="opt">{{ profileLabels[opt] }}</option>
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Contract ($)</label>
+                  <input type="number" [(ngModel)]="newProject.originalContractAmount" name="contract" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 uppercase tracking-widest mb-1">Start Date</label>
+                  <input type="date" [(ngModel)]="newProject.startDate" name="start" class="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm">
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.prevailingWage" name="npw"> Prevailing Wage / CPR</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.retainageRequired" name="nret"> Retainage Required</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.progressBilling" name="nprog"> Progress Billing</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.taxExempt" name="ntax"> Tax Exempt</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.bondRequired" name="nbond"> Bond Required</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.hasSubcontractors" name="nsubs"> Has Subcontractors</label>
+                <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="newProject.tmBilling" name="ntm"> T&M Billing</label>
+              </div>
+
               <div class="flex justify-end pt-2 shrink-0">
 
                 <button type="submit" [disabled]="loading()"
@@ -853,6 +872,8 @@ export class Projects implements OnInit {
   readonly projectApi = inject(ProjectApiService);
 
   private controls = inject(ProjectControlsService);
+  private jobRecord = inject(JobRecordService);
+  readonly manualFirst = manualFirstConfig;
 
   private lifecycleSvc = inject(ProjectLifecycleService);
 
@@ -1339,6 +1360,20 @@ export class Projects implements OnInit {
 
   }
 
+  profileLabel(profile: string | undefined): string {
+    return projectProfileLabel(profile);
+  }
+
+  hoursLabel(project: Project): string {
+    const h = project.totalLaborHours;
+    if (h == null || !Number.isFinite(h)) return '—';
+    return h.toFixed(1);
+  }
+
+  profitToDate(row: ProjectListRow): number {
+    return (row.financial.billedToDate ?? 0) - (row.financial.costToDate ?? 0);
+  }
+
   warningRoute(row: ProjectListRow, chip: ProjectListWarning): string[] {
     const pid = row.project.id;
     if (chip.id === 'source-review') return ['/settings'];
@@ -1567,13 +1602,25 @@ export class Projects implements OnInit {
 
       customer: '',
 
-      status: 'Lead / Precon',
+      status: 'Active',
+
+      projectProfile: 'FullContractGC',
 
       billingType: 'Lump Sum',
 
       taxExempt: false,
 
       prevailingWage: false,
+
+      retainageRequired: false,
+
+      progressBilling: false,
+
+      bondRequired: false,
+
+      hasSubcontractors: false,
+
+      tmBilling: false,
 
       kansasRemodelTax: false,
 
@@ -1617,7 +1664,9 @@ export class Projects implements OnInit {
 
     this.dataService.createProject(payload).subscribe({
 
-      next: (project) => {
+      next: async (project) => {
+
+        await this.jobRecord.upsertCompany(project.customer, 'Customer');
 
         void this.controls.onProjectCreated(project);
 
@@ -1626,6 +1675,8 @@ export class Projects implements OnInit {
         this.newProject = this.emptyProject();
 
         this.loading.set(false);
+
+        void this.router.navigate(['/projects', project.id]);
 
       },
 

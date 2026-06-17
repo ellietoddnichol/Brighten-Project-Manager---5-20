@@ -30,22 +30,24 @@ type PosSegment = 'pos' | 'subcontractors';
   standalone: true,
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ProjectSubcontractorsTabComponent],
   template: `
-    <div class="space-y-4">
-      <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+    <div class="space-y-6">
+      <div class="flex gap-1 overflow-x-auto whitespace-nowrap border-b border-slate-200 pb-1">
         <button type="button" (click)="segment.set('pos')"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg"
-                [class.bg-white]="segment() === 'pos'"
-                [class.text-blue-700]="segment() === 'pos'"
-                [class.border]="segment() === 'pos'"
-                [class.border-slate-200]="segment() === 'pos'">
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-colors shrink-0"
+                [class.bg-slate-900]="segment() === 'pos'"
+                [class.text-white]="segment() === 'pos'"
+                [class.text-slate-500]="segment() !== 'pos'"
+                [class.hover:text-slate-900]="segment() !== 'pos'"
+                [class.hover:bg-slate-50]="segment() !== 'pos'">
           Purchase Orders
         </button>
         <button type="button" (click)="segment.set('subcontractors')"
-                class="px-4 py-2 text-sm font-semibold rounded-t-lg"
-                [class.bg-white]="segment() === 'subcontractors'"
-                [class.text-blue-700]="segment() === 'subcontractors'"
-                [class.border]="segment() === 'subcontractors'"
-                [class.border-slate-200]="segment() === 'subcontractors'">
+                class="px-3 py-1.5 rounded-t-lg text-xs font-semibold transition-colors shrink-0"
+                [class.bg-slate-900]="segment() === 'subcontractors'"
+                [class.text-white]="segment() === 'subcontractors'"
+                [class.text-slate-500]="segment() !== 'subcontractors'"
+                [class.hover:text-slate-900]="segment() !== 'subcontractors'"
+                [class.hover:bg-slate-50]="segment() !== 'subcontractors'">
           Subcontractors
         </button>
       </div>
@@ -120,12 +122,12 @@ type PosSegment = 'pos' | 'subcontractors';
             <tbody class="divide-y divide-slate-100">
               @for (row of filteredPos(); track row.po.id) {
                 <tr class="hover:bg-slate-50 transition-colors text-xs text-slate-700 cursor-pointer" (click)="selectPo(row.po)">
-                  <td class="px-3 py-2.5 font-numeric font-bold">{{ row.po.poNumber }}</td>
+                  <td class="px-3 py-2.5 font-mono font-bold">{{ row.po.poNumber }}</td>
                   <td class="px-3 py-2.5">{{ row.po.vendor }}</td>
                   <td class="px-3 py-2.5">{{ row.po.category || '—' }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.committed | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.invoiced | currency }}</td>
-                  <td class="px-3 py-2.5 text-right text-xs font-numeric text-slate-700">{{ row.remaining | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.committed | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.invoiced | currency }}</td>
+                  <td class="px-3 py-2.5 text-right text-xs font-mono text-slate-700">{{ row.remaining | currency }}</td>
                   <td class="px-3 py-2.5">
                     <span class="text-xs font-bold px-2 py-0.5 rounded-full"
                           [class.bg-slate-100]="row.status === 'Draft'"
@@ -164,7 +166,7 @@ type PosSegment = 'pos' | 'subcontractors';
         <div class="fixed inset-0 z-40 bg-black/30" (click)="closeDrawer()"></div>
         <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
           <div class="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
-            <h3 class="text-sm font-semibold text-slate-900">{{ editingId() ? 'Edit PO' : 'New PO' }}</h3>
+            <h3 class="text-lg font-bold text-slate-900">{{ editingId() ? 'Edit PO' : 'New PO' }}</h3>
             <button type="button" (click)="closeDrawer()" class="text-slate-500 hover:text-slate-800">
               <mat-icon>close</mat-icon>
             </button>

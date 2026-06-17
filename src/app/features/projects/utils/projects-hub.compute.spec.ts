@@ -59,7 +59,7 @@ describe('projects-hub.compute', () => {
     expect(projectDisplayStatus(baseLifecycle({ projectLifecycleGroup: 'Archive' }))).toBe('Archived');
   });
 
-  it('separates critical and setup warnings', () => {
+  it('suppresses project warnings in manual-first mode', () => {
     const project = baseProject({ driveFolderId: undefined, projectManager: undefined });
     const lifecycle = baseLifecycle();
     const financial = buildProjectFinancial(project, [], [], []);
@@ -68,8 +68,7 @@ describe('projects-hub.compute', () => {
       lifecycle,
       financial: { ...financial, currentContractAmount: 0, budgetBasis: 'MissingContract' },
     });
-    expect(warnings.some(w => w.id === 'missing-contract' && w.kind === 'critical')).toBe(true);
-    expect(warnings.some(w => w.id === 'missing-drive' && w.kind === 'setup')).toBe(true);
+    expect(warnings).toHaveLength(0);
   });
 
   it('suppresses setup warnings on archived rows', () => {

@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject, signal } from '@angular/core';
+import { Component, Input, computed, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -15,13 +15,24 @@ import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { ProjectSubcontractorService } from '@features/subcontractors/services/project-subcontractor.service';
 import { SubcontractorInvoiceService } from '@features/subcontractors/services/subcontractor-invoice.service';
+import { SubcontractorApiService } from '@core/services/api/subcontractor-api.service';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
   selector: 'app-project-subcontractors-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, StatusChipComponent],
   template: `
-    <div class="space-y-4">
+    <div class="space-y-6">
+      @if (sqlReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          Project subcontractors loaded from Cloud SQL (read-only). Assignments and edits still use Firestore.
+        </div>
+      } @else if (subApi.projectSubsError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load project subcontractors from API — showing Firestore data. {{ subApi.projectSubsError() }}
+        </div>
+      }
       <div class="flex flex-wrap gap-2 items-center">
         <button type="button" (click)="openAssign()" class="ml-auto bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">
           Add Subcontractor
@@ -54,10 +65,10 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                   <td class="px-4 py-3 font-medium">
                     {{ ps.subcontractorName }}
                     @if (ps.importSource === 'QuickBooksSync' || ps.importSource === 'QuickBooksSeed') {
-                      <span class="ml-1 text-[10px] font-bold uppercase text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">QB</span>
+                      <app-status-chip class="ml-1" tone="blue" label="QB" />
                     }
                     @if (ps.importSource === 'DriveDiscovery' || ps.importSource === 'DriveSeed') {
-                      <span class="ml-1 text-[10px] font-bold uppercase text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Drive</span>
+                      <app-status-chip class="ml-1" tone="green" label="Drive" />
                     }
                   </td>
                   <td class="px-4 py-3">{{ ps.trade || '—' }}</td>
@@ -66,14 +77,14 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                   <td class="px-4 py-3">
                     <span [class.text-rose-700]="ps.complianceStatus !== 'Complete'">{{ ps.complianceStatus }}</span>
                   </td>
-                  <td class="px-4 py-3 text-right font-numeric">{{ ps.currentCommitmentAmount | currency }}</td>
-                  <td class="px-4 py-3 text-right font-numeric text-blue-800">
+                  <td class="px-4 py-3 text-right font-mono">{{ ps.currentCommitmentAmount | currency }}</td>
+                  <td class="px-4 py-3 text-right font-mono text-blue-800">
                     {{ (ps.importedCostToDate ?? 0) > 0 ? (ps.importedCostToDate | currency) : '—' }}
                   </td>
-                  <td class="px-4 py-3 text-right font-numeric">{{ ps.invoicedToDate | currency }}</td>
-                  <td class="px-4 py-3 text-right font-numeric">{{ ps.paidToDate | currency }}</td>
-                  <td class="px-4 py-3 text-right font-numeric text-orange-700">{{ ps.openBalance | currency }}</td>
-                  <td class="px-4 py-3 text-right font-numeric">{{ ps.retainageHeld | currency }}</td>
+                  <td class="px-4 py-3 text-right font-mono">{{ ps.invoicedToDate | currency }}</td>
+                  <td class="px-4 py-3 text-right font-mono">{{ ps.paidToDate | currency }}</td>
+                  <td class="px-4 py-3 text-right font-mono text-orange-700">{{ ps.openBalance | currency }}</td>
+                  <td class="px-4 py-3 text-right font-mono">{{ ps.retainageHeld | currency }}</td>
                   <td class="px-4 py-3">{{ waiverLabel(ps) }}</td>
                   <td class="px-4 py-3">{{ poLabel(ps.linkedPurchaseOrderId) }}</td>
                 </tr>
@@ -94,7 +105,7 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
           </div>
 
           @if (selected(); as ps) {
-            <div class="p-5 space-y-4">
+            <div class="p-5 space-y-6">
               <section>
                 <h4 class="text-xs font-bold uppercase text-slate-500 mb-2">Scope</h4>
                 <textarea [(ngModel)]="draft.scopeOfWork" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
@@ -218,9 +229,9 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
                       @for (inv of invoicesForSelected(); track inv.id) {
                         <tr class="border-b">
                           <td class="px-2 py-2">{{ inv.invoiceNumber }}</td>
-                          <td class="px-2 py-2 text-right font-numeric">{{ inv.approvedAmount | currency }}</td>
-                          <td class="px-2 py-2 text-right font-numeric">{{ inv.paidAmount | currency }}</td>
-                          <td class="px-2 py-2 text-right font-numeric">{{ inv.openBalance | currency }}</td>
+                          <td class="px-2 py-2 text-right font-mono">{{ inv.approvedAmount | currency }}</td>
+                          <td class="px-2 py-2 text-right font-mono">{{ inv.paidAmount | currency }}</td>
+                          <td class="px-2 py-2 text-right font-mono">{{ inv.openBalance | currency }}</td>
                           <td class="px-2 py-2">{{ inv.status }}</td>
                           <td class="px-2 py-2">{{ inv.lienWaiverStatus }}</td>
                           <td class="px-2 py-2">
@@ -283,13 +294,14 @@ import { SubcontractorInvoiceService } from '@features/subcontractors/services/s
     </div>
   `,
 })
-export class ProjectSubcontractorsTabComponent {
+export class ProjectSubcontractorsTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
 
   private data = inject(DataService);
   private subSvc = inject(SubcontractorService);
   private psSvc = inject(ProjectSubcontractorService);
   private invSvc = inject(SubcontractorInvoiceService);
+  readonly subApi = inject(SubcontractorApiService);
 
   private allProjectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] as ProjectSubcontractor[] });
   private masterList = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
@@ -320,7 +332,34 @@ export class ProjectSubcontractorsTabComponent {
     'WorkComplete', 'FinalWaiverNeeded', 'Closed', 'HoldIssue',
   ];
 
-  projectSubs = computed(() => this.allProjectSubs().filter(ps => ps.projectId === this.project.id));
+  projectSubs = computed(() => {
+    if (this.sqlReadOnly()) {
+      return this.subApi.projectSubcontractors().filter(ps => ps.projectId === this.project.id);
+    }
+    return this.allProjectSubs().filter(ps => ps.projectId === this.project.id);
+  });
+
+  sqlReadOnly = computed(() =>
+    this.subApi.isEnabled()
+    && this.subApi.projectSubsActiveSource() === 'api'
+    && this.matchesLoadedProject(this.subApi.projectSubsProjectId()),
+  );
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project) {
+      void this.subApi.loadProjectSubcontractors(this.projectKey());
+    }
+  }
+
+  private projectKey(): string {
+    return this.project.projectNumber || this.project.id;
+  }
+
+  private matchesLoadedProject(loadedKey: string | null): boolean {
+    if (!loadedKey) return false;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    return keys.some(key => key === loadedKey || key?.replace(/^J/i, '') === loadedKey.replace(/^J/i, ''));
+  }
   masterSubs = computed(() => this.masterList());
   poOptions = computed(() => this.psSvc.poOptions(this.project.id));
   budgetLineOptions = computed(() => this.psSvc.budgetLineOptions(this.project.id));

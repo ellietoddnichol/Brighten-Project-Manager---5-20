@@ -16,14 +16,18 @@ import {
   ApiListResponse,
   ProjectApiUpdateBody,
   ProjectDashboardApiRow,
+  ProjectDocumentApiRow,
   ProjectFinancialSummaryApiResponse,
   ProjectBudgetApiResponse,
   ProjectPayAppDetailApiResponse,
   ProjectPayAppsApiResponse,
+  ProjectTaskApiRow,
 } from './project-api.types';
 import type { ProjectApiUpdatePayload } from './project-api-update';
-import { Project } from '@app/models/types';
+import { Project, ProjectFile, ProjectTask } from '@app/models/types';
 import { apiConfig, ApiDataSource } from '@app/config/api.config';
+import { mapDocumentApiRowsToProjectFiles } from './project-document-api.mapper';
+import { mapTaskApiRowsToProjectTasks } from './project-task-api.mapper';
 
 @Injectable({ providedIn: 'root' })
 export class ProjectApiService {
@@ -34,6 +38,7 @@ export class ProjectApiService {
   lastLoadedAt = signal<string | null>(null);
   activeSource = signal<ApiDataSource>('firestore');
   projects = signal<Project[]>([]);
+  dashboardRows = signal<ProjectDashboardApiRow[]>([]);
 
   detailLoading = signal(false);
   detailError = signal<string | null>(null);
@@ -68,6 +73,18 @@ export class ProjectApiService {
   labor = signal<ProjectSqlLabor | null>(null);
   laborProjectId = signal<string | null>(null);
 
+  tasksLoading = signal(false);
+  tasksError = signal<string | null>(null);
+  tasksActiveSource = signal<ApiDataSource>('firestore');
+  tasks = signal<ProjectTask[]>([]);
+  tasksProjectId = signal<string | null>(null);
+
+  documentsLoading = signal(false);
+  documentsError = signal<string | null>(null);
+  documentsActiveSource = signal<ApiDataSource>('firestore');
+  sqlDocuments = signal<ProjectFile[]>([]);
+  documentsProjectId = signal<string | null>(null);
+
   isEnabled(): boolean {
     return apiConfig.useApiBackend;
   }
@@ -88,7 +105,9 @@ export class ProjectApiService {
 
     try {
       const resp = await this.api.get<ApiListResponse<ProjectDashboardApiRow>>('/api/projects');
-      const mapped = mapDashboardRowsToProjects(resp.items ?? []);
+      const items = resp.items ?? [];
+      const mapped = mapDashboardRowsToProjects(items);
+      this.dashboardRows.set(items);
       this.projects.set(mapped);
       this.activeSource.set('api');
       this.lastLoadedAt.set(new Date().toISOString());
@@ -419,6 +438,76 @@ export class ProjectApiService {
   async deleteLaborEntry(idOrJob: string, entryId: string): Promise<void> {
     await this.api.delete(`/api/projects/${encodeURIComponent(idOrJob)}/labor/${encodeURIComponent(entryId)}`);
     await this.loadProjectLabor(idOrJob);
+  }
+
+  /** Load SQL-backed project tasks. Read-only; Firestore remains write path until task write routes exist. */
+  async loadProjectTasks(idOrJob: string): Promise<ProjectTask[]> {
+    this.tasksProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.tasksActiveSource.set('firestore');
+      this.tasksError.set(null);
+      this.tasks.set([]);
+      return [];
+    }
+
+    this.tasksLoading.set(true);
+    this.tasksError.set(null);
+    this.tasksActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ApiListResponse<ProjectTaskApiRow>>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/tasks`,
+      );
+      const mapped = mapTaskApiRowsToProjectTasks(resp.items ?? []);
+      this.tasks.set(mapped);
+      this.tasksActiveSource.set('api');
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project tasks from API';
+      this.tasksError.set(message);
+      this.tasks.set([]);
+      this.tasksActiveSource.set('firestore');
+      console.warn('[ProjectApiService] tasks', message);
+      return [];
+    } finally {
+      this.tasksLoading.set(false);
+    }
+  }
+
+  /** Load SQL-backed project documents. Read-only display; uploads remain on Firestore/Drive. */
+  async loadProjectDocuments(idOrJob: string): Promise<ProjectFile[]> {
+    this.documentsProjectId.set(idOrJob);
+
+    if (!this.isEnabled()) {
+      this.documentsActiveSource.set('firestore');
+      this.documentsError.set(null);
+      this.sqlDocuments.set([]);
+      return [];
+    }
+
+    this.documentsLoading.set(true);
+    this.documentsError.set(null);
+    this.documentsActiveSource.set('firestore');
+
+    try {
+      const resp = await this.api.get<ApiListResponse<ProjectDocumentApiRow>>(
+        `/api/projects/${encodeURIComponent(idOrJob)}/documents`,
+      );
+      const mapped = mapDocumentApiRowsToProjectFiles(resp.items ?? []);
+      this.sqlDocuments.set(mapped);
+      this.documentsActiveSource.set('api');
+      return mapped;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load project documents from API';
+      this.documentsError.set(message);
+      this.sqlDocuments.set([]);
+      this.documentsActiveSource.set('firestore');
+      console.warn('[ProjectApiService] documents', message);
+      return [];
+    } finally {
+      this.documentsLoading.set(false);
+    }
   }
 }
 

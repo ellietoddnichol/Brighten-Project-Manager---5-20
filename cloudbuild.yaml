@@ -37,7 +37,9 @@ steps:
       - >-
         --add-cloudsql-instances=$_CLOUD_SQL_INSTANCE
       - >-
-        --update-env-vars=DB_SOCKET_PATH=/cloudsql/$_CLOUD_SQL_INSTANCE
+        --update-env-vars=DB_SOCKET_PATH=/cloudsql/$_CLOUD_SQL_INSTANCE,DB_NAME=$_DB_NAME,DB_USER=$_DB_USER,CORS_ORIGIN=$_CORS_ORIGIN,APP_STATIC_DIR=/app/public,FIREBASE_PROJECT_ID=brighten-project-manager,API_AUTH_REQUIRED=true
+      - >-
+        --set-secrets=DB_PASSWORD=$_DB_PASSWORD_SECRET:latest
       - '--quiet'
     id: Deploy
 
@@ -56,4 +58,10 @@ substitutions:
   _PLATFORM: managed
   _SERVICE_NAME: projectmanager06
   _CLOUD_SQL_INSTANCE: project-manager-498120:us-central1:databaseprojectmgmt63
+  _DB_NAME: brighten_pm
+  _DB_USER: databaseprojectmgmt6
+  # Secret Manager secret id (not the password). Create once — see docs/sql-api-integration.md
+  _DB_PASSWORD_SECRET: brighten-pm-db-password
+  # Set to your live Cloud Run URL (override in the Cloud Build trigger if needed)
+  _CORS_ORIGIN: https://projectmanager06-zzehjpfjea-ew.a.run.app
   _TRIGGER_ID: 09726dad-508a-4cc1-806f-4998a223f618

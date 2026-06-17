@@ -22,7 +22,7 @@ describe('action-item-navigation', () => {
       title: 'Missing Budget',
       type: 'Budget',
     }));
-    expect(hint.nav.section).toBe('financials');
+    expect(hint.nav.section).toBe('overview');
     expect(hint.nav.financialView).toBe('budget');
   });
 
@@ -41,7 +41,7 @@ describe('action-item-navigation', () => {
       title: 'Missing Wage Order',
       type: 'Certified Payroll',
     }));
-    expect(hint.nav.section).toBe('workflows');
+    expect(hint.nav.section).toBe('todos');
     expect(hint.nav.workflowView).toBe('certified-payroll');
   });
 

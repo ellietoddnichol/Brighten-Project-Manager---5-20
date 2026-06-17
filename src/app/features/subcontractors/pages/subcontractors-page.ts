@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, inject, signal, OnInit, viewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -6,9 +6,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { SubcontractorSeedService } from '@features/subcontractors/services/subcontractor-seed.service';
+import { SubcontractorImportService, SubcontractorImportResult } from '@features/subcontractors/services/subcontractor-import.service';
+import { SubcontractorApiService } from '@core/services/api/subcontractor-api.service';
 import { Subcontractor, SubcontractorStatus, SubcontractorInvoice, VendorClassification } from '@app/models/subcontractor.types';
 import { countActiveProjectsForSub, isCoiExpiringSoon, isDocumentExpired } from '@features/subcontractors/utils/subcontractor-compliance.compute';
 import { isInvoiceOverdue } from '@features/subcontractors/utils/subcontractor-invoice.compute';
+import { SUBCONTRACTOR_CSV_HEADERS } from '@features/subcontractors/utils/subcontractor-csv-import';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
@@ -51,19 +55,57 @@ type SubFilter =
                   [class.text-slate-600]="pageView() !== 'invoices'">Invoices</button>
         </div>
         @if (pageView() === 'directory') {
+          <button type="button" (click)="downloadImportTemplate()"
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
+            CSV template
+          </button>
+          <button type="button" (click)="triggerCsvImport()" [disabled]="importing()"
+                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
+            {{ importing() ? 'Importing…' : 'Import CSV' }}
+          </button>
+          <input #csvFileInput type="file" accept=".csv,text/csv" class="hidden" (change)="onCsvSelected($event)">
           <button type="button" (click)="exportDirectoryCsv()"
                   class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors">
             Export CSV
           </button>
-          <button type="button" (click)="discoverSubs()" [disabled]="importing()"
-                  class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
-            {{ importing() ? 'Discovering…' : 'Discover subcontractors' }}
-          </button>
+          @if (!qbManualMode()) {
+            <button type="button" (click)="discoverSubs()" [disabled]="importing()"
+                    class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors disabled:opacity-50">
+              {{ importing() ? 'Discovering…' : 'Discover subcontractors' }}
+            </button>
+          }
           <button type="button" (click)="openNew()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-colors">
             New Subcontractor
           </button>
         }
       </app-page-header>
+
+      @if (sqlDirectoryReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          Directory and invoices loaded from Cloud SQL (read-only). Edits still use Firestore.
+        </div>
+      } @else if (subApi.directoryError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load subcontractors from API — showing Firestore data. {{ subApi.directoryError() }}
+        </div>
+      }
+
+      @if (importResult()) {
+        <div class="px-4 py-3 rounded-lg border text-sm"
+             [class.bg-emerald-50]="importResult()!.errors.length === 0"
+             [class.border-emerald-200]="importResult()!.errors.length === 0"
+             [class.text-emerald-900]="importResult()!.errors.length === 0"
+             [class.bg-amber-50]="importResult()!.errors.length > 0"
+             [class.border-amber-200]="importResult()!.errors.length > 0"
+             [class.text-amber-900]="importResult()!.errors.length > 0">
+          Imported {{ importResult()!.created }} new,
+          updated {{ importResult()!.updated }},
+          skipped {{ importResult()!.skipped }} duplicate{{ importResult()!.skipped === 1 ? '' : 's' }}.
+          @if (importResult()!.errors.length) {
+            <span class="block mt-1 text-xs">{{ importResult()!.errors.length }} row issue{{ importResult()!.errors.length === 1 ? '' : 's' }} — check Company names and try again.</span>
+          }
+        </div>
+      }
 
       @if (pageView() === 'directory') {
       <div class="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
@@ -163,14 +205,21 @@ type SubFilter =
                 </tr>
               } @empty {
                 <tr><td colspan="12">
-                  @if (sourceDataAvailable() && subCount() === 0) {
+                  @if (subCount() === 0 && qbManualMode()) {
                     <app-empty-state icon="group_off" title="No subcontractors found"
-                                     message="Discover subcontractors from QuickBooks / Drive to populate the directory."
+                                     message="Import a CSV list or add subcontractors one at a time."
+                                     actionLabel="Import CSV"
+                                     (actionClick)="triggerCsvImport()" />
+                  } @else if (subCount() === 0 && sourceDataAvailable()) {
+                    <app-empty-state icon="group_off" title="No subcontractors found"
+                                     message="Discover subcontractors from QuickBooks / Drive, or import a CSV list."
                                      actionLabel="Discover subcontractors"
                                      (actionClick)="discoverSubs()" />
                   } @else if (subCount() === 0) {
                     <app-empty-state icon="group_off" title="No subcontractors found"
-                                     message="Re-sync the QuickBooks workbook in Settings, then discover subcontractors here." />
+                                     message="Import a CSV list or enable QuickBooks workbook sync in Settings → Source Health."
+                                     actionLabel="Import CSV"
+                                     (actionClick)="triggerCsvImport()" />
                   } @else {
                     <app-empty-state title="No subcontractors match this filter" message="Try a different filter or search term." />
                   }
@@ -318,17 +367,35 @@ export class SubcontractorsPage implements OnInit {
   private data = inject(DataService);
   private subSvc = inject(SubcontractorService);
   private subSeed = inject(SubcontractorSeedService);
+  private subImport = inject(SubcontractorImportService);
   private route = inject(ActivatedRoute);
+  readonly subApi = inject(SubcontractorApiService);
+  private csvFileInput = viewChild<ElementRef<HTMLInputElement>>('csvFileInput');
 
+  qbManualMode = computed(() => qbSyncConfig.isManualMode());
   sourceDataAvailable = computed(() => this.subSeed.sourceDataAvailable());
   importing = signal(false);
+  importResult = signal<SubcontractorImportResult | null>(null);
 
-  subCount = computed(() => (this.subs() ?? []).length);
+  subCount = computed(() => this.subs().length);
 
-  private subs = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
+  private firestoreSubs = toSignal(this.data.getSubcontractors(), { initialValue: [] as Subcontractor[] });
+  subs = computed(() =>
+    this.subApi.isEnabled() && this.subApi.directoryActiveSource() === 'api' && this.subApi.subcontractors().length
+      ? this.subApi.subcontractors()
+      : (this.firestoreSubs() ?? []),
+  );
+  sqlDirectoryReadOnly = computed(() =>
+    this.subApi.isEnabled() && this.subApi.directoryActiveSource() === 'api',
+  );
   private projectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] });
   private tasks = toSignal(this.data.getProjectTasks(), { initialValue: [] });
-  private invoices = toSignal(this.data.getSubcontractorInvoices(), { initialValue: [] as SubcontractorInvoice[] });
+  private firestoreInvoices = toSignal(this.data.getSubcontractorInvoices(), { initialValue: [] as SubcontractorInvoice[] });
+  invoices = computed(() =>
+    this.subApi.isEnabled() && this.subApi.invoicesActiveSource() === 'api' && this.subApi.invoices().length
+      ? this.subApi.invoices()
+      : (this.firestoreInvoices() ?? []),
+  );
 
   pageView = signal<PageView>('directory');
   activeFilter = signal<SubFilter>('all');
@@ -473,6 +540,8 @@ export class SubcontractorsPage implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.subApi.loadSubcontractors();
+    void this.subApi.loadInvoices();
     this.route.queryParams.subscribe(params => {
       if (params['view'] === 'invoices') {
         this.pageView.set('invoices');
@@ -531,6 +600,58 @@ export class SubcontractorsPage implements OnInit {
     } finally {
       this.importing.set(false);
     }
+  }
+
+  triggerCsvImport(): void {
+    this.importResult.set(null);
+    this.csvFileInput()?.nativeElement.click();
+  }
+
+  async onCsvSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    this.importing.set(true);
+    this.importResult.set(null);
+    try {
+      const text = await file.text();
+      const result = await this.subImport.importFromCsvText(text);
+      this.importResult.set(result);
+    } catch (err) {
+      this.importResult.set({
+        created: 0,
+        updated: 0,
+        skipped: 0,
+        errors: [{ row: 0, message: err instanceof Error ? err.message : 'Could not read CSV file.' }],
+      });
+    } finally {
+      this.importing.set(false);
+    }
+  }
+
+  downloadImportTemplate(): void {
+    downloadCsv(
+      'subcontractors-import-template.csv',
+      [...SUBCONTRACTOR_CSV_HEADERS],
+      [
+        [
+          'Example Electric LLC',
+          'Electrical',
+          'Jane Smith',
+          '555-0100',
+          'billing@example.com',
+          'Missing',
+          'Missing',
+          'PendingSetup',
+          'Subcontractor',
+          '',
+          '123 Main St',
+          'Optional notes',
+        ],
+      ],
+    );
   }
 
   exportDirectoryCsv(): void {

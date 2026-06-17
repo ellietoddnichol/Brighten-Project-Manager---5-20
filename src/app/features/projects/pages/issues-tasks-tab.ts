@@ -1,17 +1,25 @@
-import { Component, Input, computed, inject } from '@angular/core';
+import { Component, Input, computed, inject, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms';
 import { Project, ProjectIssue, ProjectTask } from '@app/models/types';
 import { DataService } from '@core/services/data.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { issueStatusTone, priorityTone, taskStatusTone } from '@shared/utils/status-chip-tone';
 
 @Component({
   selector: 'app-issues-tasks-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, StatusChipComponent],
   template: `
-    <div class="space-y-4">
+    <div class="space-y-6">
+      @if (sqlTasksReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          Tasks loaded from Cloud SQL (read-only). Issue tracking still uses Firestore.
+        </div>
+      }
       
       <!-- Stats -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -42,7 +50,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- Issues List -->
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-sm font-semibold text-slate-900">Project Issues</h3>
+          <h3 class="text-lg font-bold text-slate-900">Project Issues</h3>
           <button (click)="showNewIssue = true" class="bg-white border text-rose-700 border-red-200 px-4 py-2 rounded-md font-bold shadow-sm hover:bg-red-50 transition-all text-sm flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4 text-rose-700">add</mat-icon> Log Issue
           </button>
@@ -125,26 +133,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
                     <span class="text-xs text-slate-500 font-medium">{{ i.category }}</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span class="px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide"
-                      [ngClass]="{
-                        'bg-red-100 text-red-700': i.status === 'Open',
-                        'bg-amber-100 text-amber-700': i.status === 'Waiting',
-                        'bg-emerald-100 text-emerald-700': i.status === 'Resolved',
-                        'bg-slate-100 text-slate-600': i.status === 'Closed'
-                      }">
-                      {{ i.status }}
-                    </span>
+                    <app-status-chip [tone]="issueStatusTone(i.status)" [label]="i.status" />
                   </td>
                   <td class="px-6 py-4">
-                     <span class="px-2.5 py-1 rounded text-[10px] font-bold tracking-wide border border-transparent"
-                      [ngClass]="{
-                        'text-slate-600': i.priority === 'Low',
-                        'text-blue-600': i.priority === 'Medium',
-                        'text-orange-600': i.priority === 'High',
-                        'bg-red-50 text-red-700 border-red-200': i.priority === 'Critical'
-                      }">
-                      {{ i.priority }}
-                    </span>
+                    <app-status-chip [tone]="priorityTone(i.priority)" [label]="i.priority" />
                   </td>
                   <td class="px-6 py-4">
                      <div class="flex flex-col text-xs text-slate-600 gap-1">
@@ -169,7 +161,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
       <!-- Tasks List -->
       <div class="bg-white rounded-md shadow-sm border border-slate-200 overflow-hidden">
         <div class="p-5 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h3 class="text-sm font-semibold text-slate-900">Project Tasks</h3>
+          <h3 class="text-lg font-bold text-slate-900">Project Tasks</h3>
           <button (click)="showNewTask = true" class="bg-slate-900 text-white px-4 py-2 rounded-md font-bold shadow-sm hover:bg-slate-800 transition-all text-sm flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4">add_task</mat-icon> Add Task
           </button>
@@ -236,26 +228,10 @@ import { toSignal } from '@angular/core/rxjs-interop';
                        {{ t.title }}
                     </td>
                     <td class="px-6 py-4">
-                       <span class="px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide"
-                        [ngClass]="{
-                          'bg-slate-100 text-slate-600': t.status === 'Not Started',
-                          'bg-blue-100 text-blue-700': t.status === 'In Progress' || t.status === 'Waiting',
-                          'bg-emerald-100 text-emerald-700': t.status === 'Complete',
-                          'bg-red-100 text-red-700': t.status === 'Canceled'
-                        }">
-                        {{ t.status }}
-                      </span>
+                      <app-status-chip [tone]="taskStatusTone(t.status)" [label]="t.status" />
                     </td>
                     <td class="px-6 py-4">
-                       <span class="px-2.5 py-1 rounded text-[10px] font-bold tracking-wide border border-transparent"
-                        [ngClass]="{
-                          'text-slate-600': t.priority === 'Low',
-                          'text-blue-600': t.priority === 'Medium',
-                          'text-orange-600': t.priority === 'High',
-                          'bg-red-50 text-red-700 border-red-200': t.priority === 'Critical'
-                        }">
-                        {{ t.priority }}
-                      </span>
+                      <app-status-chip [tone]="priorityTone(t.priority)" [label]="t.priority" />
                     </td>
                     <td class="px-6 py-4">
                       <div class="flex flex-col text-xs gap-1" [class.text-slate-600]="t.status !== 'Complete'" [class.text-slate-400]="t.status === 'Complete'">
@@ -279,16 +255,45 @@ import { toSignal } from '@angular/core/rxjs-interop';
     </div>
   `
 })
-export class IssuesTasksTabComponent {
+export class IssuesTasksTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
 
+  issueStatusTone = issueStatusTone;
+  taskStatusTone = taskStatusTone;
+  priorityTone = priorityTone;
+
   private dataService = inject(DataService);
+  readonly projectApi = inject(ProjectApiService);
   
   allIssues = toSignal(this.dataService.getProjectIssues(), { initialValue: [] });
   projectIssues = computed(() => (this.allIssues() || []).filter(i => i.projectId === this.project.id));
   
   allTasks = toSignal(this.dataService.getProjectTasks(), { initialValue: [] });
-  projectTasks = computed(() => (this.allTasks() || []).filter(t => t.projectId === this.project.id));
+
+  sqlTasksReadOnly = computed(() =>
+    this.projectApi.isEnabled()
+    && this.projectApi.tasksActiveSource() === 'api'
+    && this.matchesLoadedProject(this.projectApi.tasksProjectId()),
+  );
+
+  projectTasks = computed(() => {
+    if (this.sqlTasksReadOnly()) {
+      return this.projectApi.tasks().filter(t => t.projectId === this.project.id);
+    }
+    return (this.allTasks() || []).filter(t => t.projectId === this.project.id);
+  });
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project) {
+      void this.projectApi.loadProjectTasks(this.project.projectNumber || this.project.id);
+    }
+  }
+
+  private matchesLoadedProject(loadedKey: string | null): boolean {
+    if (!loadedKey) return false;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    return keys.some(key => key === loadedKey || key?.replace(/^J/i, '') === loadedKey.replace(/^J/i, ''));
+  }
 
   openIssues = computed(() => this.projectIssues().filter(i => i.status === 'Open' || i.status === 'Waiting'));
   resolvedIssues = computed(() => this.projectIssues().filter(i => i.status === 'Resolved' || i.status === 'Closed'));
@@ -328,11 +333,10 @@ export class IssuesTasksTabComponent {
   saveIssue() {
     if (!this.newIssue.title) return;
     this.newIssue.projectId = this.project.id;
-    const onError = () => alert('Failed to save the issue. Please try again.');
     if (this.editingIssueId) {
-      this.dataService.updateProjectIssue(this.editingIssueId, this.newIssue).subscribe({ next: () => this.cancelIssue(), error: onError });
+      this.dataService.updateProjectIssue(this.editingIssueId, this.newIssue).subscribe(() => this.cancelIssue());
     } else {
-      this.dataService.createProjectIssue(this.newIssue).subscribe({ next: () => this.cancelIssue(), error: onError });
+      this.dataService.createProjectIssue(this.newIssue).subscribe(() => this.cancelIssue());
     }
   }
 
@@ -353,13 +357,13 @@ export class IssuesTasksTabComponent {
   }
 
   saveTask() {
+    if (this.sqlTasksReadOnly()) return;
     if (!this.newTask.title) return;
     this.newTask.projectId = this.project.id;
-    const onError = () => alert('Failed to save the task. Please try again.');
     if (this.editingTaskId) {
-      this.dataService.updateProjectTask(this.editingTaskId, this.newTask).subscribe({ next: () => this.cancelTask(), error: onError });
+      this.dataService.updateProjectTask(this.editingTaskId, this.newTask).subscribe(() => this.cancelTask());
     } else {
-      this.dataService.createProjectTask(this.newTask).subscribe({ next: () => this.cancelTask(), error: onError });
+      this.dataService.createProjectTask(this.newTask).subscribe(() => this.cancelTask());
     }
   }
 }

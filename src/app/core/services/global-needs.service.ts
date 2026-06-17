@@ -160,9 +160,9 @@ export class GlobalNeedsService {
       || this.data.posSnapshot().length > 0;
 
     const dailyLogsRequired = activeProjects.some(p =>
-      p.projectProfile === 'TMWorkOrder'
-      || p.projectProfile === 'FullProject'
-      || p.projectProfile === 'Subcontracted',
+      p.projectProfile === 'TM'
+      || p.projectProfile === 'FullContractGC'
+      || p.projectProfile === 'FullProjectSubcontractor',
     );
 
     const seedIssues = controlRows.filter(r => r.seedCompletenessStatus && r.seedCompletenessStatus !== 'Complete').length;

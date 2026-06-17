@@ -423,7 +423,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
                       <button type="button" (click)="editCo(co)" class="text-slate-400 hover:text-slate-800"><mat-icon class="!text-[16px]">edit</mat-icon></button>
                       <button type="button" (click)="toggleCoDocs(co.id)" class="text-xs font-bold text-slate-600 hover:underline">Docs</button>
                       <button type="button" (click)="generateDoc(co)"
-                              class="text-xs font-bold text-blue-700 hover:underline whitespace-nowrap">Generate Doc</button>
+                              class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg hover:bg-indigo-100 transition-colors whitespace-nowrap">Generate Doc</button>
                       <button type="button" (click)="controls.markChangeOrderSent(co)"
                               class="text-xs font-semibold text-orange-700 hover:underline whitespace-nowrap">Mark Sent</button>
                       <button type="button" (click)="controls.markChangeOrderApproved(co)"

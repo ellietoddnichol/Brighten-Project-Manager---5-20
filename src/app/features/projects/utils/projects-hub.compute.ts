@@ -4,6 +4,7 @@ import { ProjectLifecycleSnapshot, ProjectsListView } from '@app/models/project-
 import { PROJECT_PROFILE_LABELS, ProjectProfile } from '@app/models/project-requirements.types';
 import { Project } from '@app/models/types';
 import { matchesProjectsListView } from '@features/projects/utils/project-lifecycle.compute';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 
 export type ProjectWarningKind = 'critical' | 'setup';
 
@@ -115,6 +116,9 @@ export function buildProjectWarnings(input: {
   financial: ProjectFinancial;
   sourceReviewIssue?: boolean;
 }): ProjectListWarning[] {
+  if (manualFirstConfig.hideMainWorkflowWarnings) {
+    return [];
+  }
   if (isQuietRow(input.lifecycle)) {
     return [];
   }

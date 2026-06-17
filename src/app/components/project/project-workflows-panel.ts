@@ -347,9 +347,9 @@ export class ProjectWorkflowsPanelComponent {
   workBuildInput = computed(() => ({
     projectId: this.project.id,
     showAllTools: this.modules.showAllTools,
-    requiresRfis: this.modules.profile === 'FullProject' || this.modules.profile === 'Subcontracted',
-    requiresSubmittals: this.modules.profile === 'FullProject' || this.modules.profile === 'Subcontracted' || this.modules.profile === 'SmallInstall',
-    requiresDailyLogs: this.modules.profile === 'TMWorkOrder' || this.modules.profile === 'FullProject' || this.modules.profile === 'Subcontracted',
+    requiresRfis: this.modules.profile === 'FullContractGC' || this.modules.profile === 'FullProjectSubcontractor',
+    requiresSubmittals: this.modules.profile === 'FullContractGC' || this.modules.profile === 'FullProjectSubcontractor' || this.modules.profile === 'SmallJob',
+    requiresDailyLogs: this.modules.profile === 'TM' || this.modules.profile === 'FullContractGC' || this.modules.profile === 'FullProjectSubcontractor',
     certifiedPayrollRequired: !!this.project.certifiedPayrollRequired,
     prevailingWage: !!this.project.prevailingWage,
     showRfis: this.modules.workMore.includes('rfis') || this.modules.showAllTools,

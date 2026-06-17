@@ -11,6 +11,8 @@ import { ProjectFinancialService } from '@features/projects/services/project-fin
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { ForemanBonusService } from '@features/labor/services/foreman-bonus.service';
 import { ImportDataService } from '@core/services/import-data.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
+import { ActionCenterApiService } from '@core/services/api/action-center-api.service';
 import {
   Active2026ControlRow,
   ControlFilterId,
@@ -26,6 +28,10 @@ import {
   sortControlRows,
   summarizeActive2026Control,
 } from '@features/projects/utils/active-2026-control.compute';
+import {
+  mergeSqlProjectsForControl,
+  overlaySqlOnControlRows,
+} from '@features/projects/utils/active-2026-sql.overlay';
 import { downloadCsv } from '@shared/utils/csv-export';
 import { BRIGHTEN_PROFIT_TARGET } from '@app/config/active-2026-jobs.config';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
@@ -95,6 +101,13 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
           <span>{{ loadError() }}</span>
           <button type="button" (click)="retryLoad()"
                   class="ml-auto text-xs font-semibold underline hover:text-amber-900 transition-colors">Retry</button>
+        </div>
+      }
+
+      @if (sqlHybridActive()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          <mat-icon class="!text-[16px] text-indigo-600">cloud_done</mat-icon>
+          Job shell, AR, billing, and next actions from Cloud SQL. Margin, labor, and subs still computed from Firestore until SQL views are trusted.
         </div>
       }
 
@@ -298,6 +311,8 @@ export class Active2026ControlPage {
   private lifecycleSvc = inject(ProjectLifecycleService);
   private foremanBonus = inject(ForemanBonusService);
   private importData = inject(ImportDataService);
+  private projectApi = inject(ProjectApiService);
+  private actionCenterApi = inject(ActionCenterApiService);
 
   readonly profitTargetPct = BRIGHTEN_PROFIT_TARGET * 100;
   readonly filterOptions = CONTROL_FILTER_OPTIONS;
@@ -317,10 +332,14 @@ export class Active2026ControlPage {
       next: () => {
         this.loading.set(false);
         this.loadError.set(null);
+        void this.projectApi.loadProjects();
+        void this.actionCenterApi.loadActionCenter();
       },
       error: (err) => {
         this.loading.set(false);
         this.loadError.set(err instanceof Error ? err.message : 'Could not load project data. Check your connection.');
+        void this.projectApi.loadProjects();
+        void this.actionCenterApi.loadActionCenter();
       },
     });
 
@@ -345,13 +364,15 @@ export class Active2026ControlPage {
   ];
 
   private allRows = computed(() => {
-    const projects = this.projects() ?? [];
+    const rawProjects = this.projects() ?? [];
+    const dashboardRows = this.projectApi.dashboardRows();
+    const projects = mergeSqlProjectsForControl(rawProjects, dashboardRows);
     const lifecycles = this.lifecycleSvc.snapshotMap();
     const financials = new Map(projects.map(p => [p.id, this.financialSvc.computeForProject(p)]));
     const wipRecords = this.financialSvc.computeWipRecords();
     const wipByProjectId = new Map(wipRecords.map(w => [w.projectId, w]));
 
-    return buildActive2026ControlRows({
+    const firestoreRows = buildActive2026ControlRows({
       projects,
       financialByProjectId: financials,
       lifecycleByProjectId: lifecycles,
@@ -367,7 +388,23 @@ export class Active2026ControlPage {
       foremanRecords: this.foremanBonus.records(),
       laborBudgetImported: job => !!this.importData.flagsForJob(job)?.laborBudgetImported,
     });
+
+    if (!this.projectApi.isEnabled()) return firestoreRows;
+    if (this.projectApi.activeSource() !== 'api' && this.actionCenterApi.actionCenterActiveSource() !== 'api') {
+      return firestoreRows;
+    }
+
+    return overlaySqlOnControlRows(
+      firestoreRows,
+      dashboardRows,
+      this.actionCenterApi.priorities(),
+    );
   });
+
+  sqlHybridActive = computed(() =>
+    this.projectApi.isEnabled()
+    && (this.projectApi.activeSource() === 'api' || this.actionCenterApi.actionCenterActiveSource() === 'api'),
+  );
 
   summary = computed(() => summarizeActive2026Control(this.allRows()));
 
@@ -444,6 +481,8 @@ export class Active2026ControlPage {
       next: () => {
         this.loading.set(false);
         this.loadError.set(null);
+        void this.projectApi.loadProjects();
+        void this.actionCenterApi.loadActionCenter();
       },
       error: (err) => {
         this.loading.set(false);

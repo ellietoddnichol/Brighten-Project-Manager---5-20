@@ -6,11 +6,13 @@ import { Project, ScheduleMilestone } from '@app/models/types';
 import { DataService } from '@core/services/data.service';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@shared/utils/field';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
+import { milestoneStatusTone } from '@shared/utils/status-chip-tone';
 
 @Component({
   selector: 'app-schedule-tab',
   standalone: true,
-  imports: [CommonModule, MatIconModule, FormsModule],
+  imports: [CommonModule, MatIconModule, FormsModule, StatusChipComponent],
   template: `
     <div class="space-y-4">
       <!-- Stats -->
@@ -107,16 +109,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
                       <div class="text-xs text-slate-500">{{ m.responsiblePerson || 'Unassigned' }}</div>
                     </td>
                     <td class="px-6 py-4">
-                       <span class="px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide"
-                        [ngClass]="{
-                          'bg-slate-100 text-slate-700': m.status === 'Upcoming' || m.status === 'Not Started',
-                          'bg-blue-100 text-blue-700': m.status === 'In Progress',
-                          'bg-red-100 text-red-700': m.status === 'Delayed',
-                          'bg-emerald-100 text-emerald-700': m.status === 'Complete',
-                          'bg-slate-50 text-slate-400': m.status === 'Canceled'
-                        }">
-                        {{ m.status }}
-                      </span>
+                      <app-status-chip [tone]="milestoneStatusTone(m.status)" [label]="m.status" />
                     </td>
                     <td class="px-6 py-4 text-slate-600 text-xs gap-1 flex flex-col">
                       @if (m.plannedStartDate) { <span>Start: {{ m.plannedStartDate | date:'shortDate' }}</span> }
@@ -146,6 +139,7 @@ import { getNextMilestone, getOverdueMilestones, getUpcomingMilestones } from '@
 export class ScheduleTabComponent {
   @Input({ required: true }) project!: Project;
 
+  milestoneStatusTone = milestoneStatusTone;
   private dataService = inject(DataService);
   
   allMS = toSignal(this.dataService.getMilestones(), { initialValue: [] });

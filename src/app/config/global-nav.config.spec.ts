@@ -13,7 +13,7 @@ describe('global-nav.config', () => {
       'Financials',
       'Tasks',
       'Documents',
-      'Directory & Compliance',
+      'Directory',
     ]);
   });
 
@@ -32,7 +32,7 @@ describe('global-nav.config', () => {
     expect(money.isActive('/foreman-bonuses')).toBe(false);
   });
 
-  it('highlights Directory & Compliance for directory and subcontractor routes', () => {
+  it('highlights Directory for directory and subcontractor routes', () => {
     const people = GLOBAL_MAIN_NAV.find(n => n.id === 'people')!;
     expect(people.isActive('/directory')).toBe(true);
     expect(people.isActive('/subcontractors')).toBe(true);
@@ -46,8 +46,16 @@ describe('global-nav.config', () => {
     expect(sidebarBadgeForNavItem(field, {})).toBeUndefined();
   });
 
-  it('aggregates urgent badges for field section', () => {
-    const field = GLOBAL_MAIN_NAV.find(n => n.id === 'field')!;
+  it('aggregates urgent badges when badge sources are configured', () => {
+    const field: typeof GLOBAL_MAIN_NAV[number] = {
+      id: 'field',
+      label: 'Tasks',
+      route: '/tasks',
+      icon: 'assignment',
+      group: 'field',
+      badgeSources: ['tasks', 'changes'],
+      isActive: () => false,
+    };
     const badges: Partial<Record<string, GlobalModuleBadge>> = {
       tasks: { count: 2, tone: 'urgent' },
       changes: { count: 3, tone: 'review' },

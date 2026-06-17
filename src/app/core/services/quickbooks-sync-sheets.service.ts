@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { QB_DETAIL_COST_WARNING, QB_PROJECT_MGMT_SYNC } from '@app/config/qb-project-mgmt-sync.config';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { auth } from '@app/firebase';
 import { ARRecord } from '@app/models/financial.types';
 import { DataService } from '@core/services/data.service';
@@ -50,6 +51,7 @@ export class QuickBooksSyncSheetsService {
   private autoSyncStarted = false;
 
   startAutoSync(): void {
+    if (!qbSyncConfig.useWorkbookSync) return;
     if (this.autoSyncStarted) return;
     this.autoSyncStarted = true;
     void this.syncFromWorkbook(false);
@@ -68,6 +70,21 @@ export class QuickBooksSyncSheetsService {
   }
 
   async syncFromWorkbook(manual = true): Promise<QuickBooksSyncResult> {
+    if (!qbSyncConfig.useWorkbookSync) {
+      const message = 'QuickBooks workbook sync is off — update contract, AR, and billing on each project manually.';
+      if (manual) {
+        this.lastMessage.set(message);
+        throw new Error(message);
+      }
+      return {
+        rowsRead: 0,
+        rowsImported: 0,
+        warnings: [],
+        tabsRead: [],
+        tabsMissing: [],
+        syncedAt: new Date().toISOString(),
+      };
+    }
     if (!auth.currentUser) {
       throw new Error('Sign in with Google to sync QuickBooks data.');
     }

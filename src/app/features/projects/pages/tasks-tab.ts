@@ -1,4 +1,4 @@
-import { Component, Input, computed, inject, signal } from '@angular/core';
+import { Component, Input, computed, inject, signal, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
@@ -7,6 +7,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Project, ProjectTask } from '@app/models/types';
 import { PROJECT_TASK_GROUPS } from '@app/models/project-controls.types';
 import { DataService } from '@core/services/data.service';
+import { ProjectApiService } from '@core/services/api/project-api.service';
 import { ListRowComponent } from '@app/components/ui/list-row';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { filterTasksBySegment, TaskFilterSegment } from '@features/projects/utils/project-work.compute';
@@ -18,6 +19,16 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
   imports: [CommonModule, FormsModule, MatIconModule, ListRowComponent, StatusChipComponent],
   template: `
     <div class="space-y-4">
+      @if (sqlReadOnly()) {
+        <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          <mat-icon class="!text-[16px] text-indigo-600">cloud_done</mat-icon>
+          Tasks loaded from Cloud SQL (read-only). Add and edit still use Firestore until task write routes ship.
+        </div>
+      } @else if (projectApi.tasksError()) {
+        <div class="px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          Could not load tasks from API — showing Firestore tasks. {{ projectApi.tasksError() }}
+        </div>
+      }
       @if (!simplified) {
       <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
         <div class="bg-slate-50 p-3 rounded-md border border-slate-200"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Open Tasks</p><p class="text-base font-bold font-numeric text-slate-900">{{ openTasks().length }}</p></div>
@@ -44,7 +55,8 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
                         [class.text-slate-600]="viewMode() !== 'kanban'">Kanban</button>
               </div>
             }
-            <button (click)="openNew()" class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-800 transition-colors">
+            <button (click)="openNew()" [disabled]="sqlReadOnly()"
+                    class="bg-slate-900 text-white px-3 py-1.5 rounded-lg font-semibold text-xs flex items-center gap-1.5 hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
               <mat-icon class="!text-[16px]">add</mat-icon> Add Task
             </button>
           </div>
@@ -132,7 +144,7 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
                 </div>
                 <div class="flex items-center gap-2">
                   <app-status-chip [tone]="taskStatusTone(task)">{{ task.status }}</app-status-chip>
-                  @if (task.status !== 'Complete') {
+                  @if (task.status !== 'Complete' && !sqlReadOnly()) {
                     <button (click)="complete(task)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors">Done</button>
                   }
                 </div>
@@ -147,14 +159,43 @@ import { isManualProjectTask } from '@features/projects/utils/project-task.util'
     </div>
   `,
 })
-export class TasksTabComponent {
+export class TasksTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
   @Input() simplified = false;
   @Input() filterSegment: TaskFilterSegment = 'all';
   private data = inject(DataService);
+  readonly projectApi = inject(ProjectApiService);
 
-  tasks = toSignal(this.data.getProjectTasks(), { initialValue: [] });
-  projectTasks = computed(() => this.tasks().filter(t => t.projectId === this.project.id && isManualProjectTask(t)));
+  private firestoreTasks = toSignal(this.data.getProjectTasks(), { initialValue: [] });
+
+  sqlReadOnly = computed(() =>
+    this.projectApi.isEnabled()
+    && this.projectApi.tasksActiveSource() === 'api'
+    && this.matchesLoadedProject(this.projectApi.tasksProjectId()),
+  );
+
+  projectTasks = computed(() => {
+    if (this.sqlReadOnly()) {
+      return this.projectApi.tasks().filter(t => t.projectId === this.project.id);
+    }
+    return this.firestoreTasks().filter(t => t.projectId === this.project.id && isManualProjectTask(t));
+  });
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['project'] && this.project) {
+      void this.projectApi.loadProjectTasks(this.projectKey());
+    }
+  }
+
+  private projectKey(): string {
+    return this.project.projectNumber || this.project.id;
+  }
+
+  private matchesLoadedProject(loadedKey: string | null): boolean {
+    if (!loadedKey) return false;
+    const keys = [this.project.id, this.project.projectNumber].filter(Boolean);
+    return keys.some(key => key === loadedKey || key?.replace(/^J/i, '') === loadedKey.replace(/^J/i, ''));
+  }
   openTasks = computed(() => this.projectTasks().filter(t => t.status !== 'Complete' && t.status !== 'Canceled'));
   completeTasks = computed(() => this.projectTasks().filter(t => t.status === 'Complete'));
   overdueCount = computed(() => this.openTasks().filter(t => this.isOverdue(t)).length);
@@ -169,7 +210,11 @@ export class TasksTabComponent {
   );
 
   filteredTasks = computed(() =>
-    filterTasksBySegment(this.tasks(), this.project.id, this.filterSegment),
+    filterTasksBySegment(
+      this.sqlReadOnly() ? this.projectApi.tasks() : this.firestoreTasks(),
+      this.project.id,
+      this.filterSegment,
+    ),
   );
 
   taskMetrics(task: ProjectTask) {
@@ -232,6 +277,7 @@ export class TasksTabComponent {
   cancel() { this.showForm.set(false); }
 
   async save() {
+    if (this.sqlReadOnly()) return;
     const payload = { ...this.draft, projectId: this.project.id, source: 'manual' as const };
     if (this.editingId) {
       await firstValueFrom(this.data.updateProjectTask(this.editingId, payload));
@@ -242,6 +288,7 @@ export class TasksTabComponent {
   }
 
   async complete(task: ProjectTask) {
+    if (this.sqlReadOnly()) return;
     await firstValueFrom(this.data.updateProjectTask(task.id, {
       status: 'Complete',
       completedAt: new Date().toISOString(),

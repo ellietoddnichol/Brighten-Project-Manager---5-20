@@ -5,11 +5,12 @@ import { DataService } from '@core/services/data.service';
 import { dedupeProjectsForDisplay } from '@features/projects/utils/project-dedupe';
 import { isOverheadJob } from '@shared/utils/project';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
   selector: 'app-reports',
   standalone: true,
-  imports: [CommonModule, MatIconModule],
+  imports: [CommonModule, MatIconModule, StatusChipComponent],
   template: `
     <div class="p-4 lg:p-6 flex-1 overflow-y-auto w-full max-w-[1440px] mx-auto space-y-4">
       <header class="flex justify-between items-center mb-8">
@@ -81,10 +82,9 @@ import { toSignal } from '@angular/core/rxjs-interop';
                   <td class="px-5 py-4 text-right font-numeric">{{ row.estimatedCost | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-4 text-right font-numeric">{{ row.actualCost | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-4 text-center font-bold">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px]"
-                          [ngClass]="row.pctComplete >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'">
-                      {{ row.pctComplete | number:'1.1-2' }}%
-                    </span>
+                    <app-status-chip
+                      [tone]="row.pctComplete >= 100 ? 'green' : 'slate'"
+                      [label]="pctLabel(row.pctComplete)" />
                   </td>
                   <td class="px-5 py-4 text-right font-numeric">{{ row.contractAmount | currency:'USD':'symbol':'1.0-0' }}</td>
                   <td class="px-5 py-4 text-right font-numeric text-slate-500">{{ row.earnedRev | currency:'USD':'symbol':'1.0-0' }}</td>
@@ -184,4 +184,8 @@ export class Reports {
 
     return { contract, estCost, actCost, billed, earnedRev, overUnder, profit, margin };
   });
+
+  pctLabel(value: number): string {
+    return `${value.toFixed(1)}%`;
+  }
 }

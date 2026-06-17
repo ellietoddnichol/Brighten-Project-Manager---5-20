@@ -106,6 +106,19 @@ export interface Project {
   estOtherCost?: number;
   actualCostToDate?: number;
   billedToDate?: number;
+  /** Revised contract = original + approved changes (manual or computed). */
+  revisedContractAmount?: number;
+  /** Estimated total job cost for profit projection. */
+  estimatedTotalCost?: number;
+  /** Manual billing notes — QuickBooks not required. */
+  billingNotes?: string;
+
+  /** Job attribute toggles (not profiles). */
+  hasSubcontractors?: boolean;
+  retainageRequired?: boolean;
+  progressBilling?: boolean;
+  tmBilling?: boolean;
+  archived?: boolean;
 
   /** WIP spreadsheet snapshot fields */
   selfPerformedAmount?: number;

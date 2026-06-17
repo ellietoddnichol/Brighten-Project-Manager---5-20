@@ -188,3 +188,18 @@ export interface ApiErrorResponse {
   ok: false;
   error: string;
 }
+
+/** Raw row from GET /api/projects/:id/tasks (v_project_tasks). */
+export type ProjectTaskApiRow = Record<string, string | number | null | undefined>;
+
+/** Raw row from GET /api/projects/:id/documents (v_project_documents). */
+export type ProjectDocumentApiRow = Record<string, string | number | null | undefined>;
+
+/** Raw row from GET /api/action-center (v_action_center). */
+export type ActionCenterApiRow = Record<string, string | number | null | undefined>;
+
+/** Raw row from GET /api/backend-readiness (v_backend_readiness_summary). */
+export type BackendReadinessApiRow = Record<string, string | number | null | undefined>;
+
+/** Raw row from subcontractor API routes. */
+export type SubcontractorApiRow = Record<string, string | number | null | undefined>;

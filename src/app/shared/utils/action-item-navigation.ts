@@ -65,7 +65,7 @@ function navLabel(state: ProjectNavState): string {
   if (state.utilityView === 'setup') return 'Open setup';
   if (state.utilityView === 'schedule') return 'Open schedule';
 
-  if (state.section === 'workflows') {
+  if (state.section === 'todos') {
     switch (state.workflowView) {
       case 'certified-payroll': return 'Open certified payroll';
       case 'changes': return 'Open changes';
@@ -73,7 +73,11 @@ function navLabel(state: ProjectNavState): string {
     }
   }
 
-  if (state.section === 'financials') {
+  if (state.section === 'changes') {
+    return 'Open changes';
+  }
+
+  if (state.section === 'overview') {
     switch (state.financialView) {
       case 'budget': return 'Open budget';
       case 'wip': return 'Open WIP';
@@ -82,9 +86,15 @@ function navLabel(state: ProjectNavState): string {
       case 'pos': return 'Open purchase orders';
       case 'labor-bonus': return 'Open foreman bonus';
       case 'import-source': return 'Open sources';
-      default: return 'Open money';
+      default: return 'Open overview';
     }
   }
+
+  if (state.section === 'labor') return 'Open labor';
+  if (state.section === 'materials') return 'Open materials';
+  if (state.section === 'documents') return 'Open documents';
+  if (state.section === 'activities') return 'Open activities';
+  if (state.section === 'subs') return 'Open subs';
 
   return 'Review';
 }

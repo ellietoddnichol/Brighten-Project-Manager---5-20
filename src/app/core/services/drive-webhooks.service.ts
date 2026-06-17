@@ -3,6 +3,7 @@ import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firesto
 import { auth, db } from '@app/firebase';
 import { apiConfig } from '@app/config/api.config';
 import { QB_PROJECT_MGMT_SYNC } from '@app/config/qb-project-mgmt-sync.config';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { ApiClientService } from '@core/services/api/api-client.service';
 import { DriveService } from '@core/services/drive.service';
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
@@ -223,6 +224,7 @@ export class DriveWebhooksService {
   }
 
   private async handleEvent(event: PendingWebhookEvent): Promise<void> {
+    if (!qbSyncConfig.useWorkbookSync) return;
     if (event.source === 'quickbooks' || event.source === 'drive') {
       try {
         await this.qbSync.syncFromWorkbook(false);
