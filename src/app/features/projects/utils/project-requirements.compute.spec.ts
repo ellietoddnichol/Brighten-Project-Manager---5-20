@@ -66,14 +66,14 @@ describe('project-requirements.compute', () => {
     expect(driveFolderTaskDescriptors(c).some(t => t.triggerKey.includes('drive-profile'))).toBe(true);
   });
 
-  it('explicit SmallInstall profile does not require submittals', () => {
-    const c = ctx({ project: baseProject({ projectProfile: 'SmallInstall' }) });
+  it('explicit Small Job profile does not require submittals', () => {
+    const c = ctx({ project: baseProject({ projectProfile: 'SmallJob' }) });
     expect(folderRequirementLevel('SUBMITTALS', c)).toBe('not_needed');
     expect(folderRequirementLevel('CERTIFIED_PAYROLL', c)).toBe('not_needed');
   });
 
   it('prevailing wage project requires certified payroll folder', () => {
-    const c = ctx({ project: baseProject({ prevailingWage: true, projectProfile: 'PrevailingWage' }) });
+    const c = ctx({ project: baseProject({ prevailingWage: true, projectProfile: 'FullContractGC' }) });
     expect(folderRequirementLevel('CERTIFIED_PAYROLL', c)).toBe('required');
   });
 
@@ -110,9 +110,9 @@ describe('project-requirements.compute', () => {
     expect(folderNeedStatus('SUBMITTALS', undefined, c)).toBe('not_needed');
   });
 
-  it('closeout AR profile focuses on billing not daily logs', () => {
+  it('closeout job focuses on billing not daily logs', () => {
     const c = ctx({
-      project: baseProject({ projectProfile: 'CloseoutAR', status: 'Closeout' }),
+      project: baseProject({ projectProfile: 'SmallJob', status: 'Closeout', wipGroupOverride: 'CloseoutAR' }),
       arRecords: [{ id: 'ar1', projectId: 'p1', openBalance: 5000, originalAmount: 5000, agingBucket: '1-30', status: 'Open', source: 'Manual' }],
     });
     expect(folderRequirementLevel('DAILY_LOGS', c)).toBe('not_needed');
@@ -121,7 +121,7 @@ describe('project-requirements.compute', () => {
 
   it('summarize counts missing required separately from optional', () => {
     const c = ctx({
-      project: baseProject({ projectProfile: 'FullProject', prevailingWage: true }),
+      project: baseProject({ projectProfile: 'FullContractGC', prevailingWage: true }),
       folders: [
         folder('CONTRACT'),
         folder('CERTIFIED_PAYROLL', false),
@@ -135,11 +135,11 @@ describe('project-requirements.compute', () => {
 
   it('choosing profile clears needs-profile-only tasks path', () => {
     const c = ctx({
-      project: baseProject({ projectProfile: 'SmallInstall' }),
+      project: baseProject({ projectProfile: 'SmallJob' }),
       folders: [folder('BILLING'), folder('PO_IMAGES')],
     });
     expect(needsProfileDecision(c)).toBe(false);
-    expect(effectiveProfile(c)).toBe('SmallInstall');
+    expect(effectiveProfile(c)).toBe('SmallJob');
     expect(buildFolderRequirementRows(c).filter(r => r.needStatus === 'missing_required').length).toBe(0);
   });
 });

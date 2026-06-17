@@ -23,6 +23,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
 
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
+import { qbWorkbookSyncEnabled } from '@app/config/qb-sync.config';
 
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 
@@ -127,6 +128,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
         (primaryAction)="setSegment('wip')">
 
+        @if (qbWorkbookSyncEnabled()) {
         <button type="button" (click)="resyncQb()" [disabled]="qbSyncing()"
 
                 class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2">
@@ -136,6 +138,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
           {{ qbSyncing() ? 'Syncing…' : 'Re-sync QuickBooks' }}
 
         </button>
+        }
 
         <button type="button" (click)="exportCsv()"
 
@@ -738,6 +741,8 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 })
 
 export class FinancialsHubPage {
+
+  readonly qbWorkbookSyncEnabled = qbWorkbookSyncEnabled;
 
   private data = inject(DataService);
 

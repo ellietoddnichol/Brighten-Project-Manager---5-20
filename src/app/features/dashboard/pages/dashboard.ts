@@ -4,8 +4,10 @@ import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { GlobalNeedsService } from '@core/services/global-needs.service';
 import { SyncHealthService } from '@core/services/sync-health.service';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { ApiClientService } from '@core/services/api/api-client.service';
 import { ActionCenterApiService } from '@core/services/api/action-center-api.service';
 import { ProjectApiService } from '@core/services/api/project-api.service';
@@ -490,11 +492,17 @@ export class Dashboard {
       return this.actionCenterApi.priorities();
     }
     const qbRun = this.qbSyncData.lastRun();
-    const qbSyncWarning = !!qbRun?.completedAt && ((qbRun.warnings?.length ?? 0) > 0 || qbRun.status === 'Failed');
+    const qbSyncWarning = !manualFirstConfig.hideMainWorkflowWarnings
+      && qbSyncConfig.useWorkbookSync
+      && !!qbRun?.completedAt
+      && ((qbRun.warnings?.length ?? 0) > 0 || qbRun.status === 'Failed');
+    if (manualFirstConfig.hideMainWorkflowWarnings) {
+      return [];
+    }
     return buildHomePriorities({
       rows: this.globalNeeds.active2026Rows(),
       qbSyncWarning,
-      unmatchedSourceCount: this.importReview.unresolvedCount(),
+      unmatchedSourceCount: 0,
     });
   });
 
@@ -594,7 +602,9 @@ export class Dashboard {
   );
 
   sourceWarnings = computed(() =>
-    this.syncHealth.blockingWarnings().filter(row => isHomeSourceHealthRow(row.id)),
+    manualFirstConfig.hideMainWorkflowWarnings
+      ? []
+      : this.syncHealth.blockingWarnings().filter(row => isHomeSourceHealthRow(row.id)),
   );
 
   constructor() {

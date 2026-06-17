@@ -136,13 +136,13 @@ export function effectiveProfile(ctx: ProjectRequirementsContext): ProjectProfil
   if (ctx.project.projectProfile) return ctx.project.projectProfile;
   const p = ctx.project;
 
-  if (p.status === 'Lead / Precon' || p.status === 'Setup Needed') return 'BidOnly';
-  if (isNearCloseout(p) && hasOpenAr(ctx)) return 'CloseoutAR';
-  if (isCertifiedPayrollProject(p) || hasApprovedLabor(ctx)) return 'PrevailingWage';
-  if (hasSubcontractors(ctx) && !hasSubmittals(ctx)) return 'Subcontracted';
-  if ((p.originalContractAmount ?? 0) < 25000 && countLinkedFolders(ctx.folders) < 6) return 'SmallInstall';
-  if (p.billingType === 'T&M' || p.contractType?.toLowerCase().includes('time')) return 'TMWorkOrder';
-  return 'FullProject';
+  if (p.status === 'Lead / Precon' || p.status === 'Setup Needed') return 'SmallJob';
+  if (isNearCloseout(p) && hasOpenAr(ctx)) return 'SmallJob';
+  if (isCertifiedPayrollProject(p) || hasApprovedLabor(ctx)) return 'FullContractGC';
+  if (hasSubcontractors(ctx) || p.hasSubcontractors) return 'FullProjectSubcontractor';
+  if ((p.originalContractAmount ?? 0) < 25000 && countLinkedFolders(ctx.folders) < 6) return 'SmallJob';
+  if (p.billingType === 'T&M' || p.tmBilling || p.contractType?.toLowerCase().includes('time')) return 'TM';
+  return 'FullContractGC';
 }
 
 export function folderRequirementLevel(
@@ -160,24 +160,23 @@ export function folderRequirementLevel(
 
   switch (folderKey) {
     case 'CONTRACT':
-      if (profile === 'BidOnly') return 'optional';
-      if (profile === 'SmallInstall' || profile === 'TMWorkOrder') return 'optional';
+      if (profile === 'SmallJob' || profile === 'TM') return 'optional';
       if (isActiveContracted(p) || (p.originalContractAmount ?? 0) > 0) return 'required';
       return 'not_needed';
 
     case 'CHANGE_REQUESTS':
       if (hasChangeRequests(ctx)) return 'required';
-      if (profile === 'FullProject' || profile === 'TMWorkOrder') return 'optional';
+      if (profile === 'FullContractGC' || profile === 'TM') return 'optional';
       return 'not_needed';
 
     case 'CHANGE_ORDERS':
       if (hasChangeOrders(ctx)) return 'required';
-      if (profile === 'FullProject') return 'optional';
+      if (profile === 'FullContractGC') return 'optional';
       return 'not_needed';
 
     case 'BILLING':
       if (hasBillings(ctx) || hasOpenAr(ctx)) return 'required';
-      if (profile === 'FullProject' || profile === 'SmallInstall' || profile === 'TMWorkOrder' || profile === 'CloseoutAR') {
+      if (profile === 'FullContractGC' || profile === 'SmallJob' || profile === 'TM' || profile === 'FullProjectSubcontractor') {
         return isActiveContracted(p) ? 'optional' : 'not_needed';
       }
       return 'not_needed';
@@ -189,45 +188,45 @@ export function folderRequirementLevel(
     case 'SUBMITTALS':
     case 'APPROVED_SUBMITTALS':
       if (hasSubmittals(ctx)) return 'required';
-      if (profile === 'FullProject' && (p.estMaterialCost ?? 0) > 0) return 'optional';
+      if (profile === 'FullContractGC' && (p.estMaterialCost ?? 0) > 0) return 'optional';
       return 'not_needed';
 
     case 'SUBS':
       if (hasSubcontractors(ctx) || hasSubPos(ctx)) return 'required';
-      if (profile === 'Subcontracted') return 'required';
+      if (profile === 'FullProjectSubcontractor') return 'required';
       return 'not_needed';
 
     case 'LIEN_WAIVERS':
       if (hasSubInvoicesOrPayments(ctx)) return 'required';
-      if (profile === 'Subcontracted' && hasSubcontractors(ctx)) return 'optional';
+      if (profile === 'FullProjectSubcontractor' && hasSubcontractors(ctx)) return 'optional';
       return 'not_needed';
 
     case 'CLOSEOUT':
-      if (isNearCloseout(p) && profile !== 'SmallInstall') return 'required';
+      if (isNearCloseout(p) && profile !== 'SmallJob') return 'required';
       if (hasSubInvoicesOrPayments(ctx) && isNearCloseout(p)) return 'required';
       return 'not_needed';
 
     case 'CORRESPONDENCE':
-      if (profile === 'FullProject' && isActiveContracted(p)) return 'optional';
+      if (profile === 'FullContractGC' && isActiveContracted(p)) return 'optional';
       return 'not_needed';
 
     case 'PLANS_SPECS':
-      if (profile === 'FullProject' && isActiveContracted(p)) return 'optional';
+      if (profile === 'FullContractGC' && isActiveContracted(p)) return 'optional';
       return 'not_needed';
 
     case 'DAILY_LOGS':
       if (hasDailyLogs(ctx)) return 'required';
-      if (profile === 'TMWorkOrder' && isActiveContracted(p)) return 'optional';
+      if (profile === 'TM' && isActiveContracted(p)) return 'optional';
       return 'not_needed';
 
     case 'PO_IMAGES':
     case 'PHOTOS':
       if (hasPoPhotos(ctx) || ctx.pos.some(po => po.projectId === projectId(ctx))) return 'optional';
-      if (profile === 'SmallInstall' || profile === 'TMWorkOrder') return 'optional';
+      if (profile === 'SmallJob' || profile === 'TM') return 'optional';
       return 'not_needed';
 
     case 'FIELD_RESOURCES':
-      if (profile === 'FullProject' && isActiveContracted(p)) return 'optional';
+      if (profile === 'FullContractGC' && isActiveContracted(p)) return 'optional';
       return 'not_needed';
 
     case 'TAX_EXEMPTION':

@@ -1,4 +1,5 @@
 import { GlobalModuleBadge, GlobalModuleId } from '@app/models/global-enabled-modules.types';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 
 export type GlobalNavSectionId =
   | 'home'
@@ -54,7 +55,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     route: '/projects',
     icon: 'folder',
     group: 'operations',
-    badgeSources: ['active-2026-control'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['active-2026-control'],
     isActive: path =>
       pathMatches(path, '/projects')
       || pathMatches(path, '/active-2026-control'),
@@ -65,7 +66,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     route: '/financials',
     icon: 'payments',
     group: 'money',
-    badgeSources: ['ar', 'billing', 'wip', 'pos'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['ar', 'billing', 'wip', 'pos'],
     isActive: path =>
       pathMatches(path, '/financials')
       || pathMatches(path, '/wip')
@@ -79,7 +80,7 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     route: '/tasks',
     icon: 'assignment',
     group: 'field',
-    badgeSources: ['tasks', 'changes', 'rfis', 'submittals', 'daily-logs', 'field-issues'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['tasks', 'changes', 'rfis', 'submittals', 'daily-logs', 'field-issues'],
     isActive: path =>
       path === '/tasks'
       || pathMatches(path, '/tasks/board')
@@ -95,16 +96,16 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     route: '/documents',
     icon: 'description',
     group: 'field',
-    badgeSources: ['missing-required-docs'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['missing-required-docs'],
     isActive: path => pathMatches(path, '/documents'),
   },
   {
     id: 'people',
-    label: 'Directory & Compliance',
+    label: 'Directory',
     route: '/directory',
     icon: 'contacts',
     group: 'people',
-    badgeSources: ['subcontractors', 'sub-invoices', 'certified-payroll', 'labor', 'labor-actuals'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['subcontractors', 'sub-invoices', 'certified-payroll', 'labor', 'labor-actuals'],
     isActive: path =>
       pathMatches(path, '/directory')
       || pathMatches(path, '/subcontractors')

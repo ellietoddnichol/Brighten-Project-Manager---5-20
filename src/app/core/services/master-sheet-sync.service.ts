@@ -16,6 +16,32 @@ import { ProjectDedupeService } from '@core/services/project-dedupe.service';
 import { findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 import { mergeImportProjectPatch } from '@shared/utils/lifecycle-import.guard';
 import { ImportReviewService } from '@core/services/import-review.service';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
+import { MASTER_SHEET_SYNCED_PROJECT_FIELDS } from '@shared/utils/master-sheet-fields';
+
+/** On manual project updates, only refresh sheet link + timelog hours — not identity fields edited in the app. */
+function masterSheetPayloadForUpdate(payload: Partial<Project>): Partial<Project> {
+  if (!qbSyncConfig.isManualMode()) return payload;
+  const keep = new Set<keyof Project>([
+    'masterSheetJobId',
+    'masterSheetStatus',
+    'masterSheetSyncedAt',
+    'masterSheetUrl',
+    'regularHours',
+    'overtimeHours',
+    'doubleTimeHours',
+    'totalLaborHours',
+    'lastTimelogDate',
+    'timelogEntryCount',
+  ]);
+  const safe = { ...payload };
+  for (const field of MASTER_SHEET_SYNCED_PROJECT_FIELDS) {
+    if (!keep.has(field)) delete (safe as Record<string, unknown>)[field];
+  }
+  delete safe.status;
+  delete safe.superintendent;
+  return safe;
+}
 
 export interface MasterSheetSyncResult {
   updated: number;
@@ -119,7 +145,8 @@ export class MasterSheetSyncService {
         }
 
         if (match) {
-          const { patch, conflicts } = mergeImportProjectPatch(match, payload);
+          const incoming = masterSheetPayloadForUpdate(payload);
+          const { patch, conflicts } = mergeImportProjectPatch(match, incoming);
           for (const c of conflicts) {
             this.importReview.addException({
               type: 'importFieldConflict',

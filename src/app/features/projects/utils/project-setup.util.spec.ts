@@ -75,8 +75,8 @@ describe('project-setup.util', () => {
   });
 
   it('maps profile labels', () => {
-    expect(mapSetupProfileLabel('L&W / Prevailing Wage', true)).toBe('PrevailingWage');
-    expect(mapSetupProfileLabel('T&M / Other', false)).toBe('TMWorkOrder');
-    expect(mapSetupProfileLabel('Other', false)).toBe('FullProject');
+    expect(mapSetupProfileLabel('L&W / Prevailing Wage', true)).toBe('FullContractGC');
+    expect(mapSetupProfileLabel('T&M / Other', false)).toBe('TM');
+    expect(mapSetupProfileLabel('Other', false)).toBe('FullContractGC');
   });
 });

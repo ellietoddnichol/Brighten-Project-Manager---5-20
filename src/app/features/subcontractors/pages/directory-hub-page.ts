@@ -221,7 +221,7 @@ import {
               </div>
             } @empty {
               <div class="p-5">
-                <app-empty-state title="No vendors in this directory yet" message="Vendor records sync from QuickBooks and imports." />
+                <app-empty-state title="No vendors in this directory yet" message="Import subcontractors from Subcontractors → Import CSV, or add them manually." />
               </div>
             }
           </section>

@@ -15,6 +15,7 @@ import {
   vendorNamesMatch,
 } from '@shared/utils/vendor-normalizers';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { auth } from '@app/firebase';
 import { createLazyJsonLoader } from '@core/utils/mock-data-loader';
 
@@ -122,6 +123,7 @@ export class SubcontractorSeedService {
 
   /** Whether live QuickBooks sync data is available for discovery. */
   sourceDataAvailable(): boolean {
+    if (qbSyncConfig.isManualMode()) return false;
     return !!(this.qbSyncData.vendorBalances().length
       || this.qbSyncData.detailCostTransactions().length
       || this.qbSyncData.lastRun()?.completedAt);
@@ -293,6 +295,10 @@ export class SubcontractorSeedService {
     const vendorBalances = this.qbSyncData.vendorBalances();
     const detailTxns = this.qbSyncData.detailCostTransactions();
     const billPayments = this.qbSyncData.billPayments();
+
+    if (!qbSyncConfig.useWorkbookSync) {
+      throw new Error('QuickBooks workbook sync is off. Add subcontractors manually from Directory → New Subcontractor.');
+    }
 
     if (!vendorBalances.length && !detailTxns.length && !billPayments.length) {
       this.importReview.addException({

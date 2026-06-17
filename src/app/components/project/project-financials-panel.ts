@@ -41,6 +41,7 @@ import {
   moneyMoreVisible,
 } from '@features/projects/utils/project-money.compute';
 import { exportToCsv } from '@shared/utils/export';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 
 type PayAppChipTone = 'slate' | 'amber' | 'emerald' | 'indigo';
 
@@ -255,15 +256,27 @@ interface PayAppSummaryCard {
           [options]="billingSegmentOptions"
           [value]="billingSegment()"
           (select)="billingSegment.set($event)" />
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+        @if (manualFinancials()) {
+          <app-billing-tab [project]="project" [segment]="billingSegment()" [simplified]="true" [readOnly]="false" />
+        }
+        @if (!manualFinancials() || sqlPayApps().length) {
+        <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden" [class.mt-4]="manualFinancials()">
           <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap items-center justify-between gap-2">
             <div>
               <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Pay Apps / Billing</p>
-              <p class="text-sm text-slate-600">Read-only billing records from Cloud SQL · edits handled through import/admin workflow</p>
+              <p class="text-sm text-slate-600">
+                @if (manualFinancials()) {
+                  Imported billing history (read-only) — add and edit pay apps in the section above.
+                } @else {
+                  Read-only billing records from Cloud SQL · edits handled through import/admin workflow
+                }
+              </p>
             </div>
-            <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">
-              Read-only
-            </span>
+            @if (!manualFinancials()) {
+              <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">
+                Read-only
+              </span>
+            }
             @if (projectApi.payAppsLoading()) {
               <span class="text-xs font-semibold text-slate-500">Loading...</span>
             }
@@ -454,7 +467,10 @@ interface PayAppSummaryCard {
             </div>
           }
         </section>
+        }
+        @if (!manualFinancials()) {
         <app-billing-tab [project]="project" [segment]="billingSegment()" [simplified]="true" [readOnly]="true" />
+        }
       }
 
       @if (activeView === 'pos' || activeView === 'sub-invoices') {
@@ -578,6 +594,7 @@ export class ProjectFinancialsPanelComponent implements OnChanges {
   budgetSegment = signal<BudgetSegment>('budget');
   billingSegment = signal<BillingSegment>('summary');
   selectedSqlPayAppId = signal<string | null>(null);
+  manualFinancials = computed(() => qbSyncConfig.isManualMode());
 
   changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] });
   projectSubs = toSignal(this.data.getProjectSubcontractors(), { initialValue: [] });

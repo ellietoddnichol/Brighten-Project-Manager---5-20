@@ -39,12 +39,12 @@ describe('buildProjectApiUpdatePayload', () => {
 
   it('includes Phase 1B Overview completion fields when changed', () => {
     const patch = buildProjectApiUpdatePayload(base, {
-      projectProfile: 'FullProject',
+      projectProfile: 'FullContractGC',
       retainagePercent: 5,
       awardDate: '2026-01-15T00:00:00.000Z',
       currentPhase: 'Construction',
     });
-    expect(patch['projectProfile']).toBe('FullProject');
+    expect(patch['projectProfile']).toBe('FullContractGC');
     expect(patch['retainagePercent']).toBe(5);
     expect(patch['awardDate']).toBe('2026-01-15');
     expect(patch['currentPhase']).toBe('Construction');
@@ -66,7 +66,7 @@ describe('buildProjectApiUpdatePayload', () => {
   });
 
   it('omits Phase 1B fields that did not change', () => {
-    const current: Project = { ...base, projectProfile: 'FullProject', retainagePercent: 5 };
+    const current: Project = { ...base, projectProfile: 'FullContractGC', retainagePercent: 5 };
     const patch = buildProjectApiUpdatePayload(current, { projectName: 'X' });
     expect(patch).not.toHaveProperty('projectProfile');
     expect(patch).not.toHaveProperty('retainagePercent');

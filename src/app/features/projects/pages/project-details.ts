@@ -6,6 +6,7 @@ import { DataService } from '@core/services/data.service';
 import { ProjectApiService } from '@core/services/api/project-api.service';
 import { buildProjectApiUpdatePayload, hasApiUpdateFields } from '@core/services/api/project-api-update';
 import { apiConfig } from '@app/config/api.config';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { AuthService } from '@core/services/auth.service';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -35,10 +36,19 @@ import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ProjectOverviewPanelComponent } from '@app/components/project/project-overview-panel';
-import { ProjectWorkflowsPanelComponent } from '@app/components/project/project-workflows-panel';
-import { ProjectFinancialsPanelComponent } from '@app/components/project/project-financials-panel';
-import { ProjectDocumentsPanelComponent } from '@app/components/project/project-documents-panel';
-import { ProjectUtilityPanelComponent } from '@app/components/project/project-utility-panel';
+import { ProjectRecordHeaderComponent } from '@app/components/project/project-record-header';
+import {
+  ProjectRecordOverviewTabComponent,
+  ProjectRecordLaborTabComponent,
+  ProjectRecordMaterialsTabComponent,
+  ProjectRecordChangesTabComponent,
+  ProjectRecordDocumentsTabComponent,
+  ProjectRecordTodosTabComponent,
+  ProjectRecordActivitiesTabComponent,
+  ProjectRecordSubsTabComponent,
+} from '@app/components/project/project-record-tabs';
+import { JobRecordService } from '@features/projects/services/job-record.service';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 import {
   FinancialView,
   NewItemAction,
@@ -73,8 +83,11 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
     CommonModule, MatIconModule, RouterModule, FormsModule,
     ProjectPrimaryNavComponent, ProjectMoreMenuComponent,
     PageHeaderComponent, StatusChipComponent, EmptyStateComponent,
-    ProjectOverviewPanelComponent, ProjectWorkflowsPanelComponent,
-    ProjectFinancialsPanelComponent, ProjectDocumentsPanelComponent, ProjectUtilityPanelComponent,
+    ProjectRecordHeaderComponent,
+    ProjectRecordOverviewTabComponent, ProjectRecordLaborTabComponent,
+    ProjectRecordMaterialsTabComponent, ProjectRecordChangesTabComponent,
+    ProjectRecordDocumentsTabComponent, ProjectRecordTodosTabComponent,
+    ProjectRecordActivitiesTabComponent, ProjectRecordSubsTabComponent,
   ],
   template: `
     <div class="project-detail-density min-h-full overflow-y-auto bg-slate-50/50">
@@ -119,118 +132,42 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
             › <span class="text-slate-900">{{ p.projectNumber }}</span>
           </nav>
 
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <app-page-header
-                [title]="p.projectNumber + ' — ' + p.projectName"
-                [subtitle]="p.status || 'Active'" />
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <app-status-chip [tone]="statusTone(p.status)">{{ p.status || 'Active' }}</app-status-chip>
-              @if (p.driveFolderUrl || p.driveFolderId) {
-                <a [href]="p.driveFolderUrl" target="_blank" rel="noopener"
-                   class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
-                  <mat-icon class="!text-[16px]">folder_shared</mat-icon> Drive
-                </a>
-              }
-              <button type="button" (click)="openEdit()"
-                      class="text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5">
-                <mat-icon class="!text-[16px]">edit</mat-icon> Edit
-              </button>
-              <div class="relative">
-                <button type="button" (click)="newMenuOpen.set(!newMenuOpen())"
-                        class="bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-800 transition-colors flex items-center gap-1.5">
-                  <mat-icon class="!text-[16px]">add</mat-icon> New Item
-                  <mat-icon class="!text-[16px]">{{ newMenuOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </button>
-                @if (newMenuOpen()) {
-                  <div class="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl border border-slate-200 shadow-lg z-30 py-1">
-                    @for (item of newItems; track item.id) {
-                      <button type="button" (click)="selectNewItem(item)"
-                              class="w-full text-left px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
-                        <mat-icon class="!text-[18px] text-slate-400">{{ item.icon }}</mat-icon>
-                        {{ item.label }}
-                      </button>
-                    }
-                  </div>
-                }
-              </div>
-              <app-project-more-menu (utilitySelect)="openMore($event)" />
-            </div>
-          </div>
+          <app-project-record-header
+            [project]="p"
+            [totals]="jobTotals()"
+            [profit]="jobProfit()"
+            (edit)="openEdit()" />
 
           <app-project-primary-nav
             [active]="nav().section"
+            [showSubs]="showSubsTab()"
             (sectionChange)="setSection($event)" />
 
-          @if (nav().section !== 'overview') {
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <p class="text-xs text-slate-500">
-                @if (enabledModules().profile) {
-                  Profile: <span class="font-semibold text-slate-700">{{ enabledModules().profile }}</span>
-                }
-              </p>
-              <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 cursor-pointer">
-                <input type="checkbox" [checked]="showAllTools()" (change)="toggleShowAllTools($event)">
-                Show all tools
-              </label>
-            </div>
-          }
-
           <div>
-            @if (nav().utilityView) {
-              <app-project-utility-panel
-                [project]="p"
-                [view]="nav().utilityView!"
-                [driveFiles]="driveFiles()"
-                [loadingFiles]="loadingFiles()"
-                [driveError]="driveError()"
-                (close)="closeUtility()"
-                (editProject)="openEdit()"
-                (saveDrive)="saveDriveIdFromUtility($event)"
-                (saveSheet)="saveSheetIdFromUtility($event)"
-                (openUtility)="openMore($event)"
-                (refreshFiles)="loadDriveFiles()" />
-            } @else {
-              @switch (nav().section) {
-                @case ('overview') {
-                  <app-project-overview-panel
-                    [project]="p"
-                    [summary]="financialSummary()!"
-                    [actionItems]="projectExceptions()"
-                    [activityFeed]="activityFeed()"
-                    [latestChangeOrders]="latestChangeOrders()"
-                    [visibleWorkflowChips]="visibleWorkflowChips()"
-                    [lifecycleGroup]="lifecycleSnapshot()?.projectLifecycleGroup ?? ''"
-                    [nextAction]="nextAction()"
-                    (navigateWorkflow)="goWorkflow($event)"
-                    (navigateFinancial)="goFinancial($event)"
-                    (navigateAction)="goActionItem($event)"
-                    (editProject)="openEdit()" />
-                }
-                @case ('workflows') {
-                  <app-project-workflows-panel
-                    [project]="p"
-                    [activeView]="nav().workflowView"
-                    [modules]="enabledModules()"
-                    (viewChange)="goWorkflow($event)" />
-                }
-                @case ('financials') {
-                  <app-project-financials-panel
-                    [project]="p"
-                    [summary]="financialSummary()!"
-                    [activeView]="nav().financialView"
-                    [modules]="enabledModules()"
-                    (viewChange)="goFinancial($event)" />
-                }
-                @case ('documents') {
-                  <app-project-documents-panel
-                    [project]="p"
-                    [activeView]="nav().fileView"
-                    [modules]="enabledModules()"
-                    (utilitySelect)="openMore($event)"
-                    (fileViewChange)="goFileView($event)" />
-                }
+            @switch (nav().section) {
+              @case ('overview') {
+                <app-project-record-overview-tab [project]="p" />
+              }
+              @case ('labor') {
+                <app-project-record-labor-tab [project]="p" />
+              }
+              @case ('materials') {
+                <app-project-record-materials-tab [project]="p" />
+              }
+              @case ('changes') {
+                <app-project-record-changes-tab [project]="p" />
+              }
+              @case ('documents') {
+                <app-project-record-documents-tab [project]="p" />
+              }
+              @case ('todos') {
+                <app-project-record-todos-tab [project]="p" />
+              }
+              @case ('activities') {
+                <app-project-record-activities-tab [project]="p" />
+              }
+              @case ('subs') {
+                <app-project-record-subs-tab [project]="p" />
               }
             }
           </div>
@@ -246,9 +183,13 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
             <button type="button" (click)="showEditModal.set(false)" class="text-slate-400 hover:text-slate-600"><mat-icon>close</mat-icon></button>
           </div>
           <form (submit)="saveEdit(); $event.preventDefault()" class="p-6 space-y-4 overflow-y-auto">
-            @if (masterSheetLinked()) {
+            @if (masterSheetLinked() && !manualProjectEdit()) {
               <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
                 Fields synced from the Master Data Sheet are read-only here. PM, contract, status, and other app fields can still be edited.
+              </p>
+            } @else if (manualProjectEdit()) {
+              <p class="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                Manual project mode — edit job details here. Master sheet sync will not overwrite your changes to name, customer, or address.
               </p>
             }
             <div class="grid grid-cols-2 gap-4">
@@ -296,6 +237,26 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Superintendent</label>
                 <input type="text" [(ngModel)]="editDraft.superintendent" name="editSup" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
               </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Billed to Date ($)</label>
+                <input type="number" [(ngModel)]="editDraft.billedToDate" name="editBilled" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Estimated Total Cost ($)</label>
+                <input type="number" [(ngModel)]="editDraft.estimatedTotalCost" name="editEstCost" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.prevailingWage" name="editPw"> Prevailing Wage / CPR</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.retainageRequired" name="editRetReq"> Retainage Required</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.progressBilling" name="editProgBill"> Progress Billing</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.taxExempt" name="editTaxEx"> Tax Exempt</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.bondRequired" name="editBond"> Bond Required</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.hasSubcontractors" name="editHasSubs"> Has Subcontractors</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.tmBilling" name="editTm"> T&M Billing</label>
+              <label class="flex items-center gap-2"><input type="checkbox" [(ngModel)]="editDraft.archived" name="editArchived"> Archived</label>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -382,6 +343,26 @@ export class ProjectDetails implements OnInit {
   private budgetLineSvc = inject(BudgetLineService);
   private needsSvc = inject(ProjectNeedsService);
   private lifecycleSvc = inject(ProjectLifecycleService);
+  private jobRecord = inject(JobRecordService);
+
+  jobTotals = computed(() => {
+    const p = this.project();
+    if (!p) return { totalHours: 0, laborCost: 0, materialCost: 0, approvedChangeAmount: 0, pendingChangeAmount: 0, costToDate: 0 };
+    return this.jobRecord.totalsForProject(p.id, this.changeOrders() ?? []);
+  });
+
+  jobProfit = computed(() => {
+    const p = this.project();
+    if (!p) {
+      return this.jobRecord.profitForProject({} as Project, this.jobTotals());
+    }
+    return this.jobRecord.profitForProject(p, this.jobTotals());
+  });
+
+  showSubsTab = computed(() => {
+    const p = this.project();
+    return p ? this.jobRecord.showSubsTab(p) : false;
+  });
 
   projectId: string | null = this.route.snapshot.paramMap.get('id');
 
@@ -389,15 +370,12 @@ export class ProjectDetails implements OnInit {
   newMenuOpen = signal(false);
 
   readonly newItems: NewItemAction[] = [
-    { id: 'change-request', label: 'Change Request', icon: 'sync_alt', section: 'workflows', view: 'changes' },
-    { id: 'rfi', label: 'RFI', icon: 'help_outline', section: 'workflows', view: 'rfis' },
-    { id: 'submittal', label: 'Submittal', icon: 'inventory_2', section: 'workflows', view: 'submittals' },
-    { id: 'daily-log', label: 'Daily Log', icon: 'today', section: 'workflows', view: 'daily-logs' },
-    { id: 'field-issue', label: 'Field Issue', icon: 'report_problem', section: 'workflows', view: 'field-issues' },
-    { id: 'pay-app', label: 'Pay App', icon: 'request_quote', section: 'financials', view: 'billing' },
-    { id: 'po', label: 'PO', icon: 'shopping_cart', section: 'financials', view: 'pos' },
-    { id: 'cpr-week', label: 'Certified Payroll Week', icon: 'gavel', section: 'workflows', view: 'certified-payroll' },
-    { id: 'upload-doc', label: 'Upload Document', icon: 'upload_file', section: 'documents' },
+    { id: 'labor', label: 'Labor Entry', icon: 'schedule', section: 'labor' },
+    { id: 'material', label: 'Material Entry', icon: 'inventory', section: 'materials' },
+    { id: 'change', label: 'Change', icon: 'sync_alt', section: 'changes' },
+    { id: 'todo', label: 'Todo', icon: 'task_alt', section: 'todos' },
+    { id: 'upload-doc', label: 'Document Link', icon: 'upload_file', section: 'documents' },
+    { id: 'activity', label: 'Activity', icon: 'history', section: 'activities' },
   ];
 
   firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] });
@@ -405,7 +383,12 @@ export class ProjectDetails implements OnInit {
     const routeId = this.projectId;
     if (!routeId) return undefined;
 
-    const fallbackProject = this.fallbackProjectForRoute(routeId);
+    const firestoreProject = this.fallbackProjectForRoute(routeId);
+    if (manualFirstConfig.firestoreLiveEdits) {
+      return firestoreProject;
+    }
+
+    const fallbackProject = firestoreProject;
 
     const apiDetail = this.projectApi.detailProject();
     if (
@@ -651,6 +634,7 @@ export class ProjectDetails implements OnInit {
     const p = this.project();
     return p ? isMasterSheetLinkedProject(p) : false;
   });
+  manualProjectEdit = computed(() => qbSyncConfig.isManualMode());
 
   driveFiles = signal<DriveFile[]>([]);
   loadingFiles = signal(false);
@@ -831,12 +815,8 @@ export class ProjectDetails implements OnInit {
   }
 
   onNewItem(item: NewItemAction): void {
-    if (item.section === 'workflows' && item.view) {
-      this.goWorkflow(item.view as WorkflowView);
-    } else if (item.section === 'financials' && item.view) {
-      this.goFinancial(item.view as FinancialView);
-    } else if (item.section === 'documents') {
-      this.setSection('documents');
+    if (item.section) {
+      this.setSection(item.section);
     }
   }
 

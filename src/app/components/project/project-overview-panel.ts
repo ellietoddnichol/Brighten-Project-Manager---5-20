@@ -55,6 +55,7 @@ import { ProjectApiService } from '@core/services/api/project-api.service';
 import { buildProjectApiUpdatePayload, hasApiUpdateFields } from '@core/services/api/project-api-update';
 
 import { apiConfig } from '@app/config/api.config';
+import { isMasterSheetReadOnlyField } from '@shared/utils/master-sheet-fields';
 
 import { DriveService } from '@core/services/drive.service';
 
@@ -200,7 +201,7 @@ interface ActivityDisplayRow {
 
                     <span class="text-sm text-slate-900 min-w-0 truncate">{{ displayValue(field.key) }}</span>
 
-                    @if (field.editable) {
+                    @if (isInfoFieldEditable(field.key)) {
 
                       <span class="material-icons !text-[14px] text-slate-400 hover:text-slate-700 cursor-pointer shrink-0"
 
@@ -672,10 +673,22 @@ export class ProjectOverviewPanelComponent implements OnChanges, OnDestroy {
 
 
   startEdit(field: EditableField): void {
+    if (!this.isInfoFieldEditable(field)) return;
     this.editingField.set(field);
     this.editValue = field === 'address'
       ? (this.project.address?.trim() ?? '')
       : String(this.project[field] ?? '').trim();
+  }
+
+
+
+  isInfoFieldEditable(key: EditableField | 'projectNumber' | 'status' | 'profile'): boolean {
+    if (key === 'status' || key === 'profile') return false;
+    if (key === 'projectNumber') return !isMasterSheetReadOnlyField('projectNumber', this.project);
+    if (key === 'projectName' || key === 'address') {
+      return !isMasterSheetReadOnlyField(key, this.project);
+    }
+    return true;
   }
 
 

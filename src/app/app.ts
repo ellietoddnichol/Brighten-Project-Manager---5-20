@@ -9,6 +9,7 @@ import { ProjectDataService } from '@features/projects/services/project-data.ser
 import { DataService } from '@core/services/data.service';
 import { SubcontractorSeedService } from '@features/subcontractors/services/subcontractor-seed.service';
 import { QuickBooksSyncSheetsService } from '@core/services/quickbooks-sync-sheets.service';
+import { qbSyncConfig } from '@app/config/qb-sync.config';
 import { LaborDataService } from '@features/labor/services/labor-data.service';
 import { CertifiedPayrollService } from '@features/labor/services/certified-payroll.service';
 import { DriveWebhooksService } from '@core/services/drive-webhooks.service';
@@ -59,18 +60,22 @@ export class App {
             this.masterSheetSync.startAutoSync();
             this.poSheetSync.startAutoSync();
             this.timeDataSheetSync.startAutoSync();
-            this.qbSync.startAutoSync();
+            if (qbSyncConfig.useWorkbookSync) {
+              this.qbSync.startAutoSync();
+              void this.driveWebhooks.registerQBSpreadsheetWatch().catch(err => {
+                console.warn('QB spreadsheet watch registration failed:', err);
+              });
+            }
             this.driveWebhooks.start();
-            void this.driveWebhooks.registerQBSpreadsheetWatch().catch(err => {
-              console.warn('QB spreadsheet watch registration failed:', err);
-            });
           });
         } else {
           this.projectData.startAutoRefresh();
           this.masterSheetSync.startAutoSync();
           this.poSheetSync.startAutoSync();
           this.timeDataSheetSync.startAutoSync();
-          this.qbSync.startAutoSync();
+          if (qbSyncConfig.useWorkbookSync) {
+            this.qbSync.startAutoSync();
+          }
           this.driveWebhooks.start();
         }
       } else {
