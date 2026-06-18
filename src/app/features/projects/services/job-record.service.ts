@@ -5,7 +5,7 @@ import { Company, ProjectLaborEntry, ProjectMaterial } from '@app/models/job-rec
 import { DataService } from '@core/services/data.service';
 import { ActivityEventsService } from '@core/services/activity-events.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
-import { normalizeJobKey } from '@shared/utils/master-sheet-parser';
+import { timeEntryMatchesProject } from '@shared/utils/time-entry-project-match';
 import {
   computeProjectProfitMetrics,
   ProjectProfitInput,
@@ -23,16 +23,6 @@ export interface JobRecordTotals {
   syncedMaterialCost: number;
   manualLaborHours: number;
   manualMaterialCost: number;
-}
-
-function matchesProjectJob(project: Project, jobIdLabel?: string, projectNumber?: string): boolean {
-  const num = project.projectNumber?.trim();
-  if (!num) return false;
-  const keys = new Set([normalizeJobKey(num)]);
-  if (jobIdLabel) keys.add(normalizeJobKey(jobIdLabel));
-  if (projectNumber) keys.add(normalizeJobKey(projectNumber));
-  const labelKey = jobIdLabel ? normalizeJobKey(jobIdLabel) : '';
-  return keys.has(labelKey) || labelKey.startsWith(normalizeJobKey(num));
 }
 
 @Injectable({ providedIn: 'root' })
@@ -54,10 +44,7 @@ export class JobRecordService {
   }
 
   timeEntriesForProject(project: Project): TimeEntry[] {
-    return this.data.timeEntriesSnapshot().filter(e =>
-      e.projectId === project.id
-      || matchesProjectJob(project, e.jobIdLabel, e.jobIdLabel?.split(/\s*[-–—]/)[0]),
-    );
+    return this.data.timeEntriesSnapshot().filter(e => timeEntryMatchesProject(project, e));
   }
 
   posForProject(projectId: string): PO[] {
