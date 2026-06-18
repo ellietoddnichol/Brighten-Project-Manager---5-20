@@ -1,11 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Project } from '@app/models/types';
+import { Project, ChangeOrder, PO, TimeEntry } from '@app/models/types';
 import { Company, ProjectLaborEntry, ProjectMaterial } from '@app/models/job-record.types';
 import { DataService } from '@core/services/data.service';
 import { ActivityEventsService } from '@core/services/activity-events.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
-import { ChangeOrder } from '@app/models/types';
+import { normalizeJobKey } from '@shared/utils/master-sheet-parser';
 import {
   computeProjectProfitMetrics,
   ProjectProfitInput,
@@ -19,6 +19,20 @@ export interface JobRecordTotals {
   approvedChangeAmount: number;
   pendingChangeAmount: number;
   costToDate: number;
+  syncedLaborHours: number;
+  syncedMaterialCost: number;
+  manualLaborHours: number;
+  manualMaterialCost: number;
+}
+
+function matchesProjectJob(project: Project, jobIdLabel?: string, projectNumber?: string): boolean {
+  const num = project.projectNumber?.trim();
+  if (!num) return false;
+  const keys = new Set([normalizeJobKey(num)]);
+  if (jobIdLabel) keys.add(normalizeJobKey(jobIdLabel));
+  if (projectNumber) keys.add(normalizeJobKey(projectNumber));
+  const labelKey = jobIdLabel ? normalizeJobKey(jobIdLabel) : '';
+  return keys.has(labelKey) || labelKey.startsWith(normalizeJobKey(num));
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,12 +53,43 @@ export class JobRecordService {
     return this.data.projectLaborEntriesSnapshot().filter(e => e.projectId === projectId);
   }
 
-  totalsForProject(projectId: string, changeOrders: ChangeOrder[]): JobRecordTotals {
+  timeEntriesForProject(project: Project): TimeEntry[] {
+    return this.data.timeEntriesSnapshot().filter(e =>
+      e.projectId === project.id
+      || matchesProjectJob(project, e.jobIdLabel, e.jobIdLabel?.split(/\s*[-–—]/)[0]),
+    );
+  }
+
+  posForProject(projectId: string): PO[] {
+    return this.data.posSnapshot().filter(po => po.projectId === projectId);
+  }
+
+  totalsForProject(project: Project | string, changeOrders: ChangeOrder[]): JobRecordTotals {
+    const projectId = typeof project === 'string' ? project : project.id;
+    const projectRecord = typeof project === 'string'
+      ? this.data.projectsSnapshot().find(p => p.id === projectId)
+      : project;
+
     const labor = this.laborForProject(projectId);
     const materials = this.materialsForProject(projectId);
-    const totalHours = labor.reduce((s, e) => s + (e.totalHours ?? 0), 0);
-    const laborCost = labor.reduce((s, e) => s + (e.laborCost ?? 0), 0);
-    const materialCost = materials.reduce((s, m) => s + (m.totalCost ?? 0), 0);
+    const manualLaborHours = labor.reduce((s, e) => s + (e.totalHours ?? 0), 0);
+    const manualLaborCost = labor.reduce((s, e) => s + (e.laborCost ?? 0), 0);
+    const manualMaterialCost = materials.reduce((s, m) => s + (m.totalCost ?? 0), 0);
+
+    const timeEntries = projectRecord ? this.timeEntriesForProject(projectRecord) : [];
+    const syncedLaborHours = timeEntries.reduce((s, e) => s + (e.totalHours ?? 0), 0);
+
+    const pos = this.posForProject(projectId);
+    const syncedMaterialCost = pos.reduce((s, po) =>
+      s + (po.invoicedAmount ?? po.committedAmount ?? po.originalAmount ?? 0), 0);
+
+    const totalHours = Math.max(
+      manualLaborHours,
+      syncedLaborHours,
+      projectRecord?.totalLaborHours ?? 0,
+    );
+    const laborCost = manualLaborCost;
+    const materialCost = manualMaterialCost + syncedMaterialCost;
     const cos = changeOrders.filter(c => c.projectId === projectId);
     const coAmount = (c: ChangeOrder) =>
       c.approvedAmount ?? c.totalAmount ?? c.sellPrice ?? c.costImpact ?? 0;
@@ -61,6 +106,10 @@ export class JobRecordService {
       approvedChangeAmount,
       pendingChangeAmount,
       costToDate: laborCost + materialCost,
+      syncedLaborHours,
+      syncedMaterialCost,
+      manualLaborHours,
+      manualMaterialCost,
     };
   }
 

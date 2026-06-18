@@ -34,6 +34,7 @@ import {
   isHomeSourceHealthRow,
 } from '@shared/utils/home-hub.compute';
 import { Active2026ControlRow } from '@app/models/active-2026-control.types';
+import { compareJobNumbers } from '@shared/utils/project';
 
 interface DashboardBillingRecord extends ProjectSqlPayApp {
   projectName: string;
@@ -218,7 +219,9 @@ interface DashboardFinancialMetric {
           </div>
         } @else {
           <div class="p-5">
-            <app-empty-state title="No Pay App records yet" message="Billing snapshot will populate when SQL pay apps load." />
+            <app-empty-state
+              title="No Pay App records yet"
+              [message]="manualFirstConfig.firestoreLiveEdits ? 'Billing lives on each job profile. Open Financials from a project.' : 'Billing snapshot will populate when SQL pay apps load.'" />
           </div>
         }
       </section>
@@ -399,6 +402,7 @@ interface DashboardFinancialMetric {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Dashboard {
+  readonly manualFirstConfig = manualFirstConfig;
   globalNeeds = inject(GlobalNeedsService);
   private syncHealth = inject(SyncHealthService);
   private importReview = inject(ImportReviewService);
@@ -424,18 +428,17 @@ export class Dashboard {
   projectsError = signal<string | null>(null);
   readonly skeletonSlots = [1, 2, 3, 4, 5];
 
-  dashboardError = computed(() =>
-    this.projectsError()
-    ?? this.billingError()
-    ?? this.actionCenterApi.actionCenterError(),
-  );
-  dashboardLoading = computed(() => !this.projectsReady() || (this.billingLoading() && !this.billingRecords().length && this.globalNeeds.active2026Rows().length > 0));
+  /** Firestore load failures only — SQL reporting (action center, pay apps) is optional in manual-first mode. */
+  dashboardError = computed(() => this.projectsError());
+  dashboardLoading = computed(() => !this.projectsReady());
 
-  activeProjectRows = computed(() =>
-    [...this.globalNeeds.active2026Rows()]
-      .sort((a, b) => this.activeProjectRank(b) - this.activeProjectRank(a) || a.jobNumber.localeCompare(b.jobNumber))
-      .slice(0, 12),
-  );
+  activeProjectRows = computed(() => {
+    const rows = [...this.globalNeeds.active2026Rows()];
+    rows.sort((a, b) => manualFirstConfig.hideMainWorkflowWarnings
+      ? compareJobNumbers(a.jobNumber, b.jobNumber)
+      : this.activeProjectRank(b) - this.activeProjectRank(a) || compareJobNumbers(a.jobNumber, b.jobNumber));
+    return rows.slice(0, 12);
+  });
 
   topMetrics = computed<DashboardMetric[]>(() => {
     const rows = this.globalNeeds.active2026Rows();
@@ -448,7 +451,7 @@ export class Dashboard {
       || /review|missing/i.test(row.billingStatus),
     ).length + this.billingRecords().filter(record => this.billingNeedsReview(record)).length;
 
-    return [
+    const metrics: DashboardMetric[] = [
       {
         label: 'Active Jobs',
         value: rows.length.toString(),
@@ -485,6 +488,10 @@ export class Dashboard {
         route: '/projects',
       },
     ];
+
+    return manualFirstConfig.hideMainWorkflowWarnings
+      ? metrics.filter(metric => metric.label !== 'Review Items')
+      : metrics;
   });
 
   priorities = computed(() => {
@@ -611,24 +618,31 @@ export class Dashboard {
     this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
       next: () => {
         this.projectsReady.set(true);
-        void this.actionCenterApi.loadActionCenter();
-        void this.actionCenterApi.loadBackendReadiness();
-        void this.projectApi.loadProjects();
+        this.loadOptionalSqlReporting();
       },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
-        void this.actionCenterApi.loadActionCenter();
       },
     });
 
-    effect(() => {
-      const rows = this.globalNeeds.active2026Rows();
-      if (!this.billingLoadStarted && rows.length > 0) {
-        this.billingLoadStarted = true;
-        void this.loadBillingSnapshot(rows);
-      }
-    });
+    if (!manualFirstConfig.firestoreLiveEdits) {
+      effect(() => {
+        const rows = this.globalNeeds.active2026Rows();
+        if (!this.billingLoadStarted && rows.length > 0) {
+          this.billingLoadStarted = true;
+          void this.loadBillingSnapshot(rows);
+        }
+      });
+    }
+  }
+
+  /** Cloud SQL reads for reporting — skipped when Firestore is the live source of truth. */
+  private loadOptionalSqlReporting(): void {
+    if (manualFirstConfig.firestoreLiveEdits) return;
+    void this.actionCenterApi.loadActionCenter();
+    void this.actionCenterApi.loadBackendReadiness();
+    void this.projectApi.loadProjects();
   }
 
   fmt(value: number): string {
@@ -741,28 +755,26 @@ export class Dashboard {
   retryDashboard(): void {
     this.projectsError.set(null);
     this.billingError.set(null);
+    this.actionCenterApi.actionCenterError.set(null);
     this.billingLoadStarted = false;
     this.billingRecords.set([]);
     this.projectsReady.set(false);
     this.data.getProjects().pipe(take(1), takeUntilDestroyed()).subscribe({
       next: () => {
         this.projectsReady.set(true);
-        void this.actionCenterApi.loadActionCenter();
-        void this.actionCenterApi.loadBackendReadiness();
-        void this.projectApi.loadProjects();
+        this.loadOptionalSqlReporting();
       },
       error: (err) => {
         this.projectsReady.set(true);
         this.projectsError.set(err instanceof Error ? err.message : 'Could not load projects from Firestore.');
-        void this.actionCenterApi.loadActionCenter();
       },
     });
-    const rows = this.globalNeeds.active2026Rows();
-    if (rows.length) {
-      this.billingLoadStarted = true;
-      void this.loadBillingSnapshot(rows);
-    } else {
-      this.projectsReady.set(true);
+    if (!manualFirstConfig.firestoreLiveEdits) {
+      const rows = this.globalNeeds.active2026Rows();
+      if (rows.length) {
+        this.billingLoadStarted = true;
+        void this.loadBillingSnapshot(rows);
+      }
     }
   }
 

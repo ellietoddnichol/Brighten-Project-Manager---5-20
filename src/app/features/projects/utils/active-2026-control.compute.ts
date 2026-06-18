@@ -5,6 +5,7 @@ import {
   isActive2026ControlJob,
   normalizeJobNumber,
 } from '@app/config/active-2026-jobs.config';
+import { compareJobNumbers } from '@shared/utils/project';
 import { ARRecord, ProjectFinancial, WIPRecord } from '@app/models/financial.types';
 import {
   Active2026ControlRow,
@@ -619,26 +620,26 @@ export function sortControlRows(rows: Active2026ControlRow[], sortKey: ControlSo
   const copy = [...rows];
   switch (sortKey) {
     case 'highestAr':
-      return copy.sort((a, b) => b.arBalance - a.arBalance || a.jobNumber.localeCompare(b.jobNumber));
+      return copy.sort((a, b) => b.arBalance - a.arBalance || compareJobNumbers(a.jobNumber, b.jobNumber));
     case 'lowestMargin':
-      return copy.sort((a, b) => a.projectedMarginPct - b.projectedMarginPct || a.jobNumber.localeCompare(b.jobNumber));
+      return copy.sort((a, b) => a.projectedMarginPct - b.projectedMarginPct || compareJobNumbers(a.jobNumber, b.jobNumber));
     case 'largestContract':
-      return copy.sort((a, b) => b.currentContract - a.currentContract || a.jobNumber.localeCompare(b.jobNumber));
+      return copy.sort((a, b) => b.currentContract - a.currentContract || compareJobNumbers(a.jobNumber, b.jobNumber));
     case 'largestCostOverrun':
-      return copy.sort((a, b) => a.budgetVariance - b.budgetVariance || a.jobNumber.localeCompare(b.jobNumber));
+      return copy.sort((a, b) => a.budgetVariance - b.budgetVariance || compareJobNumbers(a.jobNumber, b.jobNumber));
     case 'mostMissing':
-      return copy.sort((a, b) => b.missingItemCount - a.missingItemCount || a.jobNumber.localeCompare(b.jobNumber));
+      return copy.sort((a, b) => b.missingItemCount - a.missingItemCount || compareJobNumbers(a.jobNumber, b.jobNumber));
     case 'nextBilling':
       return copy.sort((a, b) => {
         const score = (r: Active2026ControlRow) =>
           (r.hasApprovedCoNotBilled ? 100 : 0) + (r.leftToBill > 0 ? 50 : 0) + r.leftToBill / 1000;
-        return score(b) - score(a) || a.jobNumber.localeCompare(b.jobNumber);
+        return score(b) - score(a) || compareJobNumbers(a.jobNumber, b.jobNumber);
       });
     case 'projectName':
       return copy.sort((a, b) => a.projectName.localeCompare(b.projectName));
     case 'jobNumber':
     default:
-      return copy.sort((a, b) => parseInt(a.jobNumber, 10) - parseInt(b.jobNumber, 10));
+      return copy.sort((a, b) => compareJobNumbers(a.jobNumber, b.jobNumber));
   }
 }
 

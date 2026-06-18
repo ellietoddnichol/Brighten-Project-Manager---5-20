@@ -17,7 +17,7 @@ import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 
 import { dedupeProjectsForDisplay, findProjectMatches, pickCanonicalProject } from '@features/projects/utils/project-dedupe';
 
-import { projectSearchText, formatProjectDate } from '@shared/utils/project';
+import { projectSearchText, formatProjectDate, compareJobNumbers } from '@shared/utils/project';
 import { effectiveForeman } from '@features/projects/utils/project-setup.util';
 
 import { ProjectControlsService } from '@features/projects/services/project-controls.service';
@@ -46,8 +46,6 @@ import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
 
 import { SegmentedControlComponent } from '@app/components/ui/segmented-control';
-
-import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 
@@ -89,7 +87,7 @@ import {
 } from '@features/projects/utils/projects-hub.compute';
 
 type LifecycleStatusFilter = 'active' | 'closed' | 'all';
-type ProjectsSortKey = 'name' | 'jobNumber' | 'updated';
+type ProjectsSortKey = 'jobNumber' | 'name' | 'customer' | 'contract' | 'billed' | 'leftToBill' | 'updated';
 
 const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[] = [
 
@@ -135,8 +133,6 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
     SegmentedControlComponent,
 
-    StatusChipComponent,
-
     EmptyStateComponent,
 
     DetailDrawerComponent,
@@ -157,7 +153,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         title="Projects"
 
-        subtitle="Job list — open any record to edit and save in Firestore"
+        subtitle="Your job list — click any row to open and edit"
 
         primaryActionLabel="New Project"
 
@@ -193,7 +189,7 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
       }
 
-      @if (projectApi.error()) {
+      @if (projectApi.error() && !manualFirst.hideMainWorkflowWarnings) {
         <div class="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
           <mat-icon class="!text-[16px] text-amber-500 shrink-0">warning</mat-icon>
           <span>Could not load projects from API — using Firestore fallback. {{ projectApi.error() }}</span>
@@ -202,325 +198,219 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
         </div>
       }
 
-
-
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
-        @for (card of summaryCards(); track card.label) {
-
-          <button type="button" (click)="setView(card.view)"
-
-                  class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
-
-            <app-stat-card
-
-              [label]="card.label"
-
-              [value]="card.value"
-
-              [subtext]="card.subtext"
-
-              [icon]="card.icon"
-
-              [trend]="card.alert ? 'View jobs' : undefined"
-
-              [trendPositive]="true" />
-
-          </button>
-
-        }
-
-      </div>
-
-
-
-      @if (compactStats().length) {
-
-        <app-compact-stat-strip [stats]="compactStats()" />
-
-      }
-
-
-
-      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-4">
-
-        <div class="flex flex-col lg:flex-row lg:items-center gap-4">
-
-          <div class="relative flex-1 min-w-[220px]">
-
-            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
-
-            <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
-                   placeholder="Search projects…"
-                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-300 outline-none text-sm bg-white">
-
-          </div>
-
-          <select [(ngModel)]="sortKey" (ngModelChange)="resetVisibleCount()"
-                  class="shrink-0 border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white hover:bg-slate-50 transition-colors">
-            <option value="jobNumber">Job #</option>
-            <option value="name">Name</option>
-            <option value="updated">Last updated</option>
-          </select>
-
-          <button type="button" (click)="openFilterDrawer()"
-                  class="shrink-0 bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
-
-            <mat-icon class="!text-[18px]">tune</mat-icon>
-
-            Advanced filters
-
-            @if (advancedFilterCount()) {
-
-              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700">{{ advancedFilterCount() }}</span>
-
-            }
-
-          </button>
-
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          @for (opt of lifecycleFilterOptions; track opt.id) {
-            <button type="button" (click)="setLifecycleFilter(opt.id)"
-                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
-                    [class.bg-slate-900]="lifecycleStatusFilter() === opt.id"
-                    [class.text-white]="lifecycleStatusFilter() === opt.id"
-                    [class.bg-white]="lifecycleStatusFilter() !== opt.id"
-                    [class.border]="lifecycleStatusFilter() !== opt.id"
-                    [class.border-slate-200]="lifecycleStatusFilter() !== opt.id"
-                    [class.text-slate-700]="lifecycleStatusFilter() !== opt.id"
-                    [class.hover:bg-slate-50]="lifecycleStatusFilter() !== opt.id">
-              {{ opt.label }}
+      @if (!manualFirst.hideMainWorkflowWarnings) {
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          @for (card of summaryCards(); track card.label) {
+            <button type="button" (click)="setView(card.view)"
+                    class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
+              <app-stat-card
+                [label]="card.label"
+                [value]="card.value"
+                [subtext]="card.subtext"
+                [icon]="card.icon"
+                [trend]="card.alert ? 'View jobs' : undefined"
+                [trendPositive]="true" />
             </button>
           }
         </div>
 
-        <app-segmented-control
+        @if (compactStats().length) {
+          <app-compact-stat-strip [stats]="compactStats()" />
+        }
+      }
 
-          [options]="segmentOptions()"
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center gap-3">
+          <div class="relative flex-1 min-w-[200px]">
+            <mat-icon class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 !text-[18px]">search</mat-icon>
+            <input type="text" [ngModel]="searchQuery()" (ngModelChange)="onSearch($event)"
+                   placeholder="Search by job #, name, or customer…"
+                   class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-slate-300 outline-none text-sm bg-white">
+          </div>
 
-          [value]="viewMode()"
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <select [ngModel]="viewMode()" (ngModelChange)="setView($event)"
+                    class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white hover:bg-slate-50 transition-colors min-w-[140px]">
+              @for (opt of viewSelectOptions(); track opt.id) {
+                <option [value]="opt.id">{{ opt.label }}</option>
+              }
+            </select>
 
-          (select)="setView($event)" />
+            <select [ngModel]="sortKey()" (ngModelChange)="setSortFromDropdown($event)"
+                    class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white hover:bg-slate-50 transition-colors">
+              <option value="jobNumber">Sort: Job # (low → high)</option>
+              <option value="name">Sort: Name</option>
+              <option value="customer">Sort: Customer</option>
+              <option value="contract">Sort: Contract</option>
+              <option value="billed">Sort: Billed</option>
+              <option value="leftToBill">Sort: Left to bill</option>
+              <option value="updated">Sort: Last updated</option>
+            </select>
 
-
+            @if (!manualFirst.hideMainWorkflowWarnings) {
+              <button type="button" (click)="openFilterDrawer()"
+                      class="bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors flex items-center gap-1.5">
+                <mat-icon class="!text-[16px]">tune</mat-icon>
+                Filters
+                @if (advancedFilterCount()) {
+                  <span class="text-xs font-semibold text-slate-500">({{ advancedFilterCount() }})</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
 
         @if (showHiddenHint()) {
-
-          <p class="text-xs text-slate-500">
-
-            Closed and archived jobs are hidden from Active.
-
-            <button type="button" (click)="setView('all')" class="font-semibold text-indigo-700 underline">Use All</button>
-
-            to search every historical job.
-
+          <p class="px-4 py-2 text-xs text-slate-500 border-b border-slate-100">
+            Closed and archived jobs are hidden.
+            <button type="button" (click)="setView('all')" class="font-medium text-slate-700 underline hover:text-slate-900">Show all jobs</button>
           </p>
-
         }
 
+        @if (!manualFirst.hideMainWorkflowWarnings) {
+          <div class="px-4 py-2 border-b border-slate-100 flex flex-wrap items-center gap-2">
+            @for (opt of lifecycleFilterOptions; track opt.id) {
+              <button type="button" (click)="setLifecycleFilter(opt.id)"
+                      class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
+                      [class.bg-slate-800]="lifecycleStatusFilter() === opt.id"
+                      [class.text-white]="lifecycleStatusFilter() === opt.id"
+                      [class.text-slate-600]="lifecycleStatusFilter() !== opt.id"
+                      [class.hover:text-slate-900]="lifecycleStatusFilter() !== opt.id"
+                      [class.hover:bg-slate-100]="lifecycleStatusFilter() !== opt.id">
+                {{ opt.label }}
+              </button>
+            }
+            <app-segmented-control
+              [options]="segmentOptions()"
+              [value]="viewMode()"
+              (select)="setView($event)" />
+          </div>
+        }
       </div>
 
 
 
-      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <section class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
 
         @if (listLoading()) {
           <div class="p-4 space-y-3">
             @for (i of skeletonRows; track i) {
-              <div class="animate-pulse bg-slate-100 rounded h-12"></div>
+              <div class="animate-pulse bg-slate-100 rounded h-11"></div>
             }
           </div>
         } @else if (listRows().length) {
 
-          <p class="px-5 pt-4 pb-2 text-xs text-slate-500">
-            Showing {{ visibleListRows().length }} of {{ listRows().length }} projects
-          </p>
+          <div class="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-3">
+            <p class="text-sm text-slate-600">
+              <span class="font-semibold text-slate-900">{{ listRows().length }}</span>
+              {{ listRows().length === 1 ? 'job' : 'jobs' }}
+              @if (visibleListRows().length < listRows().length) {
+                <span class="text-slate-400">· showing {{ visibleListRows().length }}</span>
+              }
+            </p>
+          </div>
 
-          @if (tableLayout()) {
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm min-w-[1120px]">
+            <table class="w-full text-left text-sm min-w-[960px]">
               <thead>
-                <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                  <th class="px-4 py-3">Job #</th>
-                  <th class="px-4 py-3">Job name</th>
-                  <th class="px-4 py-3">Customer</th>
-                  <th class="px-4 py-3">Profile</th>
-                  <th class="px-4 py-3">Status</th>
-                  <th class="px-4 py-3 text-right">Contract</th>
-                  <th class="px-4 py-3 text-right">Billed</th>
-                  <th class="px-4 py-3 text-right">Cost</th>
-                  <th class="px-4 py-3 text-right">Hours</th>
-                  <th class="px-4 py-3 text-right">Profit</th>
-                  <th class="px-4 py-3"></th>
+                <tr class="text-xs font-medium text-slate-500 border-b border-slate-100">
+                  <th class="px-4 py-2.5 w-16">
+                    <button type="button" (click)="toggleSort('jobNumber')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium">
+                      Job # @if (sortKey() === 'jobNumber') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  <th class="px-4 py-2.5">
+                    <button type="button" (click)="toggleSort('name')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium">
+                      Project @if (sortKey() === 'name') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  <th class="px-4 py-2.5">
+                    <button type="button" (click)="toggleSort('customer')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium">
+                      Customer @if (sortKey() === 'customer') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  @if (!manualFirst.hideMainWorkflowWarnings) {
+                    <th class="px-4 py-2.5">Profile</th>
+                    <th class="px-4 py-2.5">Status</th>
+                  }
+                  <th class="px-4 py-2.5 text-right">
+                    <button type="button" (click)="toggleSort('contract')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium ml-auto">
+                      Contract @if (sortKey() === 'contract') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  <th class="px-4 py-2.5 text-right">
+                    <button type="button" (click)="toggleSort('billed')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium ml-auto">
+                      Billed @if (sortKey() === 'billed') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  <th class="px-4 py-2.5 text-right">
+                    <button type="button" (click)="toggleSort('leftToBill')" class="inline-flex items-center gap-0.5 hover:text-slate-800 font-medium ml-auto">
+                      Left to bill @if (sortKey() === 'leftToBill') { <mat-icon class="!text-[14px]">{{ sortAsc() ? 'arrow_upward' : 'arrow_downward' }}</mat-icon> }
+                    </button>
+                  </th>
+                  <th class="px-4 py-2.5 w-12"></th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
                 @for (row of visibleListRows(); track row.project.id) {
-                  <tr class="hover:bg-slate-50 transition-colors cursor-pointer" [class.opacity-70]="row.quietRow"
+                  <tr class="group hover:bg-slate-50/80 transition-colors cursor-pointer"
+                      [class.opacity-60]="row.quietRow"
                       (click)="navigateToProject(row, $event)">
-                    <td class="px-4 py-2.5 font-mono text-xs font-bold text-slate-900">{{ row.project.projectNumber }}</td>
-                    <td class="px-4 py-2.5">
-                      <a [routerLink]="['/projects', row.project.id]" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block max-w-[220px]">
+                    <td class="px-4 py-3 font-numeric text-sm font-semibold text-slate-900 tabular-nums">
+                      {{ row.project.projectNumber }}
+                    </td>
+                    <td class="px-4 py-3 max-w-[280px]">
+                      <a [routerLink]="['/projects', row.project.id]"
+                         class="text-sm font-semibold text-slate-900 group-hover:text-slate-700 truncate block">
                         {{ row.project.projectName }}
                       </a>
+                      @if (manualFirst.hideMainWorkflowWarnings) {
+                        <p class="text-xs text-slate-500 truncate mt-0.5">{{ profileLabel(row.project.projectProfile) }}</p>
+                      }
                     </td>
-                    <td class="px-4 py-2.5 text-xs text-slate-500 truncate max-w-[180px]">{{ row.project.customer || '—' }}</td>
-                    <td class="px-4 py-2.5 text-xs text-slate-600">{{ profileLabel(row.project.projectProfile) }}</td>
-                    <td class="px-4 py-2.5">
-                      <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
+                    <td class="px-4 py-3 text-sm text-slate-600 max-w-[200px] truncate">
+                      {{ row.project.customer || '—' }}
                     </td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.currentContractAmount) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.billedToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(row.financial.costToDate) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ hoursLabel(row.project) }}</td>
-                    <td class="px-4 py-2.5 text-right text-xs font-mono text-slate-700">{{ fmt(profitToDate(row)) }}</td>
-                    <td class="px-4 py-2.5 text-right">
-                      <a [routerLink]="['/projects', row.project.id]" class="text-xs font-semibold text-indigo-700 hover:underline">Open</a>
+                    @if (!manualFirst.hideMainWorkflowWarnings) {
+                      <td class="px-4 py-3 text-xs text-slate-600 max-w-[160px] truncate">
+                        {{ profileLabel(row.project.projectProfile) }}
+                      </td>
+                      <td class="px-4 py-3">
+                        <span class="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                          <span class="w-1.5 h-1.5 rounded-full shrink-0" [class]="statusDotClass(row)"></span>
+                          {{ row.displayStatus }}
+                        </span>
+                      </td>
+                    }
+                    <td class="px-4 py-3 text-right font-numeric text-sm text-slate-700 tabular-nums">
+                      {{ fmt(row.financial.currentContractAmount) }}
+                    </td>
+                    <td class="px-4 py-3 text-right font-numeric text-sm text-slate-700 tabular-nums">
+                      {{ fmt(row.financial.billedToDate) }}
+                    </td>
+                    <td class="px-4 py-3 text-right font-numeric text-sm tabular-nums"
+                        [class.text-slate-700]="!row.moneySecondaryAlert"
+                        [class.text-rose-700]="row.moneySecondaryAlert">
+                      {{ fmt(row.moneySecondaryValue) }}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <a [routerLink]="['/projects', row.project.id]"
+                         (click)="$event.stopPropagation()"
+                         class="text-slate-400 group-hover:text-slate-700 transition-colors inline-flex"
+                         title="Open project">
+                        <mat-icon class="!text-[18px]">chevron_right</mat-icon>
+                      </a>
                     </td>
                   </tr>
                 }
               </tbody>
             </table>
           </div>
-          } @else {
-
-          <div class="divide-y divide-slate-100">
-
-            @for (row of visibleListRows(); track row.project.id) {
-
-              <div class="group px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors cursor-pointer"
-
-                   [class.opacity-70]="row.quietRow"
-                   (click)="navigateToProject(row, $event)">
-
-                <div class="flex flex-wrap items-center gap-3 min-w-0 flex-1">
-
-                  <a [routerLink]="['/projects', row.project.id]" class="min-w-0 flex-1">
-
-                    <div class="flex flex-wrap items-center gap-2 mb-1">
-
-                      <span class="text-xs font-mono font-bold text-slate-900 w-12 shrink-0">{{ row.project.projectNumber }}</span>
-
-                      <span class="text-sm font-semibold text-slate-900 min-w-0 truncate flex-1 group-hover:text-indigo-700">
-
-                        {{ row.project.projectName }}
-
-                      </span>
-
-                      <app-status-chip [tone]="statusTone(row.displayStatus)">{{ row.displayStatus }}</app-status-chip>
-
-                      @if (row.health !== 'Neutral') {
-
-                        <app-status-chip [tone]="healthTone(row.health)">{{ row.health }}</app-status-chip>
-
-                      }
-
-                    </div>
-
-                    <p class="text-xs text-slate-500 truncate">
-
-                      {{ row.project.customer || '—' }} · {{ row.profileLabel }}
-
-                    </p>
-
-                    <div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs">
-
-                      <span><span class="text-slate-400">Contract</span> <span class="font-mono font-semibold">{{ fmt(row.financial.currentContractAmount) }}</span></span>
-
-                      <span><span class="text-slate-400">Billed</span> <span class="font-mono font-semibold">{{ fmt(row.financial.billedToDate) }}</span></span>
-
-                      <span>
-
-                        <span class="text-slate-400">{{ row.moneySecondaryLabel }}</span>
-
-                        <span class="font-mono font-semibold" [class.text-rose-700]="row.moneySecondaryAlert">{{ fmt(row.moneySecondaryValue) }}</span>
-
-                      </span>
-
-                    </div>
-
-                    @if (row.warnings.length) {
-
-                      <div class="flex flex-wrap gap-1.5 mt-2">
-
-                        @for (chip of row.warnings; track chip.id) {
-
-                          <app-status-chip [tone]="chip.kind === 'critical' ? 'red' : 'amber'">{{ chip.label }}</app-status-chip>
-
-                        }
-
-                      </div>
-
-                    }
-
-                  </a>
-
-
-
-                  <div class="flex flex-col items-end gap-2 shrink-0 ml-auto">
-
-                    <div class="flex items-center gap-2">
-
-                      @if (row.driveLinked) {
-
-                        <a [href]="row.project.driveFolderUrl" target="_blank" rel="noopener"
-
-                           (click)="$event.stopPropagation()"
-
-                           class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center hover:bg-indigo-100 transition-colors"
-
-                           title="Open Drive folder">
-
-                          <mat-icon class="!text-[16px]">folder_shared</mat-icon>
-
-                        </a>
-
-                      } @else {
-
-                        <span class="w-8 h-8 rounded-lg text-slate-300 flex items-center justify-center" title="Drive not linked">
-
-                          <mat-icon class="!text-[16px]">folder_off</mat-icon>
-
-                        </span>
-
-                      }
-
-                      <button type="button" (click)="openQuickView(row); $event.stopPropagation()"
-
-                              class="text-xs font-semibold text-slate-500 hover:text-indigo-700 px-2 py-1 rounded hover:bg-slate-100 transition-colors">
-
-                        Quick view
-
-                      </button>
-
-                    </div>
-
-                    <a [routerLink]="row.nextActionRoute"
-
-                       class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors">
-
-                      {{ row.nextActionLabel }}
-
-                    </a>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            }
-
-          </div>
-
-          }
 
           @if (visibleListRows().length < listRows().length) {
-            <div class="px-5 py-4 border-t border-slate-100 text-center">
+            <div class="px-4 py-3 border-t border-slate-100 text-center">
               <button type="button" (click)="loadMore()"
-                      class="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors">
+                      class="text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors">
                 Load more
               </button>
             </div>
@@ -528,16 +418,13 @@ const ADVANCED_FILTER_OPTIONS: { id: ProjectsAdvancedFilterId; label: string }[]
 
         } @else {
 
-          <div class="p-5">
-
-            <app-empty-state icon="folder_off" title="No projects found" message="Try adjusting your search or filters." />
-
+          <div class="p-8">
+            <app-empty-state icon="folder_off" [title]="emptyState().title" [message]="emptyState().hint ?? 'Try a different search or view.'" />
           </div>
 
         }
 
       </section>
-
 
 
       <app-detail-drawer
@@ -913,7 +800,8 @@ export class Projects implements OnInit {
 
   lifecycleStatusFilter = signal<LifecycleStatusFilter>('active');
 
-  sortKey: ProjectsSortKey = 'jobNumber';
+  sortKey = signal<ProjectsSortKey>('jobNumber');
+  sortAsc = signal(true);
 
   visibleCount = signal(25);
 
@@ -1076,6 +964,7 @@ export class Projects implements OnInit {
 
 
   compactStats = computed(() => {
+    if (manualFirstConfig.hideMainWorkflowWarnings) return [];
 
     const s = this.hubSummary();
 
@@ -1106,6 +995,22 @@ export class Projects implements OnInit {
   });
 
 
+
+  viewSelectOptions = computed(() => {
+    const s = this.hubSummary();
+    const options = manualFirstConfig.hideMainWorkflowWarnings
+      ? PROJECTS_VIEW_OPTIONS.filter(opt => opt.id === 'default' || opt.id === 'all')
+      : PROJECTS_VIEW_OPTIONS;
+
+    return options.map(opt => ({
+      id: opt.id,
+      label: opt.id === 'default'
+        ? `Active (${s.activeJobs})`
+        : opt.id === 'all'
+          ? 'All jobs'
+          : opt.label,
+    }));
+  });
 
   segmentOptions = computed(() => {
 
@@ -1165,7 +1070,7 @@ export class Projects implements OnInit {
 
 
 
-    return this.sortProjectRows(rows, this.sortKey);
+    return this.sortProjectRows(rows, this.sortKey(), this.sortAsc());
 
   });
 
@@ -1178,10 +1083,6 @@ export class Projects implements OnInit {
 
 
   emptyState = computed(() => projectsEmptyMessage(this.viewMode(), !!this.searchQuery().trim()));
-
-  tableLayout = computed(
-    () => this.projectApi.activeSource() === 'api' && (this.viewMode() === 'default' || this.viewMode() === 'all'),
-  );
 
   quickViewSubtitle = computed(() => this.quickViewRow()?.project.customer || '');
 
@@ -1322,19 +1223,64 @@ export class Projects implements OnInit {
     return filter === 'closed' ? isClosed : !isClosed;
   }
 
-  private sortProjectRows(rows: ProjectListRow[], key: ProjectsSortKey): ProjectListRow[] {
-    const copy = [...rows];
-    switch (key) {
-      case 'name':
-        return copy.sort((a, b) => a.project.projectName.localeCompare(b.project.projectName));
-      case 'updated':
-        return copy.sort((a, b) => this.projectUpdatedMs(b.project) - this.projectUpdatedMs(a.project));
-      case 'jobNumber':
-      default:
-        return copy.sort((a, b) =>
-          a.project.projectNumber.localeCompare(b.project.projectNumber, undefined, { numeric: true }),
-        );
+  private sortProjectRows(rows: ProjectListRow[], key: ProjectsSortKey, asc: boolean): ProjectListRow[] {
+    const dir = asc ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      let cmp = 0;
+      switch (key) {
+        case 'name':
+          cmp = a.project.projectName.localeCompare(b.project.projectName);
+          break;
+        case 'customer':
+          cmp = (a.project.customer ?? '').localeCompare(b.project.customer ?? '');
+          break;
+        case 'contract':
+          cmp = a.financial.currentContractAmount - b.financial.currentContractAmount;
+          break;
+        case 'billed':
+          cmp = a.financial.billedToDate - b.financial.billedToDate;
+          break;
+        case 'leftToBill':
+          cmp = a.moneySecondaryValue - b.moneySecondaryValue;
+          break;
+        case 'updated':
+          cmp = this.projectUpdatedMs(a.project) - this.projectUpdatedMs(b.project);
+          break;
+        case 'jobNumber':
+        default:
+          cmp = compareJobNumbers(a.project.projectNumber, b.project.projectNumber);
+          break;
+      }
+      if (cmp !== 0) return cmp * dir;
+      return compareJobNumbers(a.project.projectNumber, b.project.projectNumber);
+    });
+  }
+
+  private defaultSortAsc(key: ProjectsSortKey): boolean {
+    return key === 'updated' ? false : true;
+  }
+
+  toggleSort(key: ProjectsSortKey): void {
+    if (this.sortKey() === key) {
+      this.sortAsc.update(v => !v);
+    } else {
+      this.sortKey.set(key);
+      this.sortAsc.set(this.defaultSortAsc(key));
     }
+    this.resetVisibleCount();
+  }
+
+  setSortFromDropdown(key: ProjectsSortKey): void {
+    if (this.sortKey() !== key) {
+      this.sortKey.set(key);
+      this.sortAsc.set(this.defaultSortAsc(key));
+    }
+    this.resetVisibleCount();
+  }
+
+  resetDefaultSort(): void {
+    this.sortKey.set('jobNumber');
+    this.sortAsc.set(true);
   }
 
   private projectUpdatedMs(project: Project): number {
@@ -1382,44 +1328,13 @@ export class Projects implements OnInit {
 
 
 
-  statusTone(status: string): StatusTone {
-
-    switch (status) {
-
-      case 'Active': return 'blue';
-
-      case 'Upcoming': return 'slate';
-
-      case 'Closeout': return 'amber';
-
-      case 'Closed': return 'slate';
-
-      case 'Archived': return 'slate';
-
-      case 'Needs Review': return 'amber';
-
-      default: return 'slate';
-
-    }
-
-  }
-
-
-
-  healthTone(health: string): StatusTone {
-
-    switch (health) {
-
-      case 'Green': return 'green';
-
-      case 'Yellow': return 'amber';
-
-      case 'Red': return 'red';
-
-      default: return 'slate';
-
-    }
-
+  statusDotClass(row: ProjectListRow): Record<string, boolean> {
+    const status = row.displayStatus;
+    if (status === 'Active') return { 'bg-emerald-500': true };
+    if (status === 'Upcoming') return { 'bg-slate-300': true };
+    if (status === 'Closeout' || status === 'Needs Review') return { 'bg-amber-400': true };
+    if (row.health === 'Red') return { 'bg-rose-500': true };
+    return { 'bg-slate-300': true };
   }
 
 
@@ -1429,6 +1344,7 @@ export class Projects implements OnInit {
     this.viewMode.set(view);
 
     this.visibleCount.set(25);
+    this.resetDefaultSort();
 
     if (view === 'default' || view === 'active') this.lifecycleStatusFilter.set('active');
     else if (view === 'closed2026' || view === 'archive') this.lifecycleStatusFilter.set('closed');

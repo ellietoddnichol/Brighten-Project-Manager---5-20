@@ -83,7 +83,7 @@ const VALID_CONTROL_SEGMENTS = new Set<ControlSegmentId>([
               <span class="ml-1 text-[10px] bg-amber-500 text-white px-1.5 py-0.5 rounded-full">{{ activeFilters().size }}</span>
             }
           </button>
-          <select [(ngModel)]="sortKey" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white hover:bg-slate-50 transition-colors">
+          <select [ngModel]="sortKey()" (ngModelChange)="sortKey.set($event)" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white hover:bg-slate-50 transition-colors">
             @for (opt of sortOptions; track opt.id) {
               <option [value]="opt.id">{{ opt.label }}</option>
             }
@@ -318,7 +318,7 @@ export class Active2026ControlPage {
   readonly filterOptions = CONTROL_FILTER_OPTIONS;
   readonly rowWarningChips = rowWarningChips;
 
-  sortKey: ControlSortKey = 'jobNumber';
+  sortKey = signal<ControlSortKey>('jobNumber');
   activeFilters = signal<Set<ControlFilterId>>(new Set());
   activeSegment = signal<ControlSegmentId>('activeJobs');
   selectedRow = signal<Active2026ControlRow | null>(null);
@@ -418,7 +418,7 @@ export class Active2026ControlPage {
     if (filters.size) {
       rows = rows.filter(row => [...filters].every(f => matchesControlFilter(row, f)));
     }
-    return sortControlRows(rows, this.sortKey);
+    return sortControlRows(rows, this.sortKey());
   });
 
   segmentOptions = computed(() => {

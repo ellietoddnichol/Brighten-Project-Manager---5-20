@@ -1,18 +1,24 @@
 import { Component, ChangeDetectionStrategy, Input, inject, signal, computed, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { Project, ChangeOrder, ProjectTask } from '@app/models/types';
+import { Project, ChangeOrder, ProjectTask, PO, TimeEntry } from '@app/models/types';
 import { ProjectLaborEntry, ProjectMaterial } from '@app/models/job-record.types';
 import { DataService } from '@core/services/data.service';
 import { JobRecordService } from '@features/projects/services/job-record.service';
 import { ActivityEventsService } from '@core/services/activity-events.service';
 import { ActivityEvent } from '@app/models/activity-event.types';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { ChartCardComponent } from '@app/components/ui/chart-card';
+import { DonutChartComponent, DonutSlice } from '@app/components/charts/donut-chart';
 import { ChangesTabComponent } from '@features/projects/pages/changes-tab';
+import { TasksTabComponent } from '@features/projects/pages/tasks-tab';
 import { ProjectSubcontractorsTabComponent } from '@features/projects/pages/project-subcontractors-tab';
-import { formatMoney } from '@features/projects/utils/project-profit.compute';
+import { ProjectWorkflowSaveService } from '@features/projects/services/project-workflow-save.service';
+import { ProjectFilesRepository } from '@core/services/project-files.repository';
+import { formatMoney, formatPercent } from '@features/projects/utils/project-profit.compute';
 import { projectProfileLabel } from '@features/projects/utils/project-profile.compat';
 
 type SaveState = 'idle' | 'saving' | 'saved';
@@ -20,56 +26,159 @@ type SaveState = 'idle' | 'saving' | 'saved';
 @Component({
   selector: 'app-project-record-overview-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ChartCardComponent, DonutChartComponent],
   template: `
-    <section class="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-900">Job Overview</h2>
-        <span class="text-xs text-slate-500">{{ saveState() === 'saving' ? 'Saving…' : saveState() === 'saved' ? 'Saved' : '' }}</span>
+    <div class="space-y-4">
+      <div class="grid lg:grid-cols-2 gap-4">
+        <section class="bg-white rounded-xl border border-slate-200 p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-slate-900">Job Summary</h2>
+            <span class="text-xs text-slate-500">{{ saveState() === 'saving' ? 'Saving…' : saveState() === 'saved' ? 'Saved' : '' }}</span>
+          </div>
+          <ul class="space-y-2.5 text-sm">
+            @for (item of summaryBullets(); track item.label) {
+              <li class="flex gap-3">
+                <span class="text-slate-400 shrink-0 w-28 text-xs font-semibold uppercase tracking-wide">{{ item.label }}</span>
+                <span class="font-semibold text-slate-900 min-w-0">{{ item.value }}</span>
+              </li>
+            }
+          </ul>
+          @if (project.scopeSummary) {
+            <div class="mt-4 pt-4 border-t border-slate-100">
+              <p class="text-[10px] font-bold uppercase text-slate-500 mb-1">Scope</p>
+              <p class="text-sm text-slate-700 whitespace-pre-wrap">{{ project.scopeSummary }}</p>
+            </div>
+          }
+        </section>
+
+        <app-chart-card title="Cost Breakdown" [subtitle]="fmt(totals().costToDate) + ' to date'">
+          @if (costSlices().length) {
+            <app-donut-chart [slices]="costSlices()" [centerLabel]="fmt(totals().costToDate)" />
+          } @else {
+            <p class="text-sm text-slate-500 text-center py-8">No cost data entered yet.</p>
+          }
+        </app-chart-card>
       </div>
-      <div class="grid sm:grid-cols-2 gap-4 text-sm">
-        <div>
-          <label class="text-[10px] font-bold uppercase text-slate-500">Scope / Work Requested</label>
-          <textarea [(ngModel)]="scope" rows="3" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-                    (blur)="saveScope()"></textarea>
-        </div>
+
+      <section class="bg-white rounded-xl border border-slate-200 p-5">
+        <h3 class="text-sm font-bold text-slate-900 mb-3">Billing Progress</h3>
         <div class="space-y-3">
           <div>
-            <label class="text-[10px] font-bold uppercase text-slate-500">Project Manager</label>
-            <input [(ngModel)]="pm" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="savePm()" />
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-500">Billed to date</span>
+              <span class="font-semibold">{{ formatPercent(profit().billedPercent) }} · {{ fmt(project.billedToDate) }}</span>
+            </div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-indigo-500 rounded-full transition-all"
+                   [style.width.%]="(profit().billedPercent ?? 0) * 100"></div>
+            </div>
           </div>
           <div>
-            <label class="text-[10px] font-bold uppercase text-slate-500">Superintendent</label>
-            <input [(ngModel)]="sup" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="saveSup()" />
-          </div>
-          <div>
-            <label class="text-[10px] font-bold uppercase text-slate-500">Address</label>
-            <input [(ngModel)]="address" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="saveAddress()" />
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-500">Cost used</span>
+              <span class="font-semibold">{{ formatPercent(profit().costPercent) }} · {{ fmt(totals().costToDate) }}</span>
+            </div>
+            <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-amber-500 rounded-full transition-all"
+                   [style.width.%]="(profit().costPercent ?? 0) * 100"></div>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-        <div><span class="text-slate-500">Profile</span><p class="font-semibold">{{ profileLabel }}</p></div>
-        <div><span class="text-slate-500">Start</span><p class="font-semibold">{{ project.startDate || '—' }}</p></div>
-        <div><span class="text-slate-500">Target Finish</span><p class="font-semibold">{{ project.targetCompletionDate || '—' }}</p></div>
-        <div><span class="text-slate-500">County</span><p class="font-semibold">{{ project.county || '—' }}</p></div>
-      </div>
-    </section>
+        <div class="grid sm:grid-cols-3 gap-3 mt-4 text-sm">
+          <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p class="text-[10px] font-bold uppercase text-slate-500">Profit to Date</p>
+            <p class="font-bold text-slate-900">{{ fmt(profit().profitToDate) }}</p>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p class="text-[10px] font-bold uppercase text-slate-500">Projected Profit</p>
+            <p class="font-bold text-slate-900">{{ fmt(profit().projectedProfit) }}</p>
+          </div>
+          <div class="bg-slate-50 rounded-lg p-3 border border-slate-100">
+            <p class="text-[10px] font-bold uppercase text-slate-500">Projected Margin</p>
+            <p class="font-bold text-slate-900">{{ formatPercent(profit().projectedMargin) }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
+        <h3 class="text-sm font-bold text-slate-900">Edit Job Details</h3>
+        <div class="grid sm:grid-cols-2 gap-4 text-sm">
+          <div>
+            <label class="text-[10px] font-bold uppercase text-slate-500">Scope / Work Requested</label>
+            <textarea [(ngModel)]="scope" rows="3" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+                      (blur)="saveScope()"></textarea>
+          </div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-[10px] font-bold uppercase text-slate-500">Project Manager</label>
+              <input [(ngModel)]="pm" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="savePm()" />
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-slate-500">Superintendent</label>
+              <input [(ngModel)]="sup" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="saveSup()" />
+            </div>
+            <div>
+              <label class="text-[10px] font-bold uppercase text-slate-500">Address</label>
+              <input [(ngModel)]="address" class="w-full mt-1 border rounded-lg px-3 py-2 text-sm" (blur)="saveAddress()" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectRecordOverviewTabComponent implements OnChanges {
   @Input({ required: true }) project!: Project;
   private jobRecord = inject(JobRecordService);
+  private data = inject(DataService);
   saveState = signal<SaveState>('idle');
   scope = '';
   pm = '';
   sup = '';
   address = '';
 
-  get profileLabel(): string {
-    return projectProfileLabel(this.project.projectProfile);
-  }
+  private changeOrders = toSignal(this.data.getChangeOrders(), { initialValue: [] as ChangeOrder[] });
+
+  totals = computed(() =>
+    this.jobRecord.totalsForProject(this.project, this.changeOrders()),
+  );
+
+  profit = computed(() => this.jobRecord.profitForProject(this.project, this.totals()));
+
+  summaryBullets = computed(() => {
+    const p = this.project;
+    const t = this.totals();
+    const revised = p.revisedContractAmount
+      ?? ((p.originalContractAmount ?? 0) + t.approvedChangeAmount);
+    return [
+      { label: 'Customer', value: p.customer || '—' },
+      { label: 'Profile', value: projectProfileLabel(p.projectProfile) },
+      { label: 'Status', value: p.status || '—' },
+      { label: 'Contract', value: this.fmt(revised) },
+      { label: 'Billed', value: this.fmt(p.billedToDate) },
+      { label: 'Total Hours', value: t.totalHours.toFixed(1) },
+      { label: 'Labor Cost', value: this.fmt(t.laborCost) },
+      { label: 'Materials', value: this.fmt(t.materialCost) },
+      { label: 'Changes', value: `${this.fmt(t.approvedChangeAmount)} approved · ${this.fmt(t.pendingChangeAmount)} pending` },
+      { label: 'PM / Super', value: [p.projectManager, p.superintendent].filter(Boolean).join(' · ') || '—' },
+      { label: 'Dates', value: [p.startDate, p.targetCompletionDate].filter(Boolean).join(' → ') || '—' },
+      { label: 'County', value: p.county || '—' },
+    ];
+  });
+
+  costSlices = computed((): DonutSlice[] => {
+    const t = this.totals();
+    const other = Math.max(0, t.costToDate - t.laborCost - t.materialCost);
+    return [
+      { label: 'Labor', value: t.laborCost, color: '#6366f1' },
+      { label: 'Materials', value: t.materialCost, color: '#f59e0b' },
+      { label: 'Other', value: other, color: '#94a3b8' },
+    ].filter(s => s.value > 0);
+  });
+
+  fmt = formatMoney;
+  formatPercent = formatPercent;
 
   ngOnChanges(_changes: SimpleChanges): void {
     this.scope = this.project.scopeSummary ?? '';
@@ -101,7 +210,11 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
       <div class="px-5 py-3 border-b flex justify-between items-center">
         <div>
           <h2 class="text-sm font-bold">Labor</h2>
-          <p class="text-xs text-slate-500">Total hours: {{ totalHours.toFixed(1) }} · Labor cost: {{ fmt(totalCost) }}</p>
+          <p class="text-xs text-slate-500">
+            Total hours: {{ totalHours.toFixed(1) }}
+            @if (syncedHours > 0) { · {{ syncedHours.toFixed(1) }}h from Master Time }
+            · Labor cost: {{ fmt(totalCost) }}
+          </p>
         </div>
         <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Labor</button>
       </div>
@@ -131,11 +244,23 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
             <th class="px-4 py-2 text-right">OT</th>
             <th class="px-4 py-2 text-right">DT</th>
             <th class="px-4 py-2 text-right">Total</th>
-            <th class="px-4 py-2 text-right">Cost</th>
+            <th class="px-4 py-2 text-left">Source</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of entries(); track row.id) {
+          @for (row of syncedRows(); track row.id) {
+            <tr class="border-t border-slate-100 bg-indigo-50/30">
+              <td class="px-4 py-2">{{ row.workDate || '—' }}</td>
+              <td class="px-4 py-2">{{ row.employeeName || '—' }}</td>
+              <td class="px-4 py-2">{{ row.classification || '—' }}</td>
+              <td class="px-4 py-2 text-right">{{ row.regularHours }}</td>
+              <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
+              <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
+              <td class="px-4 py-2 text-right font-semibold">{{ row.totalHours }}</td>
+              <td class="px-4 py-2 text-xs text-indigo-700">Master Time</td>
+            </tr>
+          }
+          @for (row of manualEntries(); track row.id) {
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2">{{ row.workDate }}</td>
               <td class="px-4 py-2">{{ row.employeeName || '—' }}</td>
@@ -144,10 +269,11 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
               <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
               <td class="px-4 py-2 text-right font-semibold">{{ row.totalHours }}</td>
-              <td class="px-4 py-2 text-right">{{ fmt(row.laborCost) }}</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Manual</td>
             </tr>
-          } @empty {
-            <tr><td colspan="8"><app-empty-state title="No labor entered yet" message="Add labor hours for this job." /></td></tr>
+          }
+          @if (!syncedRows().length && !manualEntries().length) {
+            <tr><td colspan="8"><app-empty-state title="No labor entered yet" message="Sync Master Time Data Search or add labor manually." /></td></tr>
           }
         </tbody>
       </table>
@@ -163,13 +289,26 @@ export class ProjectRecordLaborTabComponent {
   draft: Partial<ProjectLaborEntry> = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
 
   private allLabor = toSignal(this.data.getProjectLaborEntries(), { initialValue: [] as ProjectLaborEntry[] });
-  entries = computed(() => this.allLabor().filter(e => e.projectId === this.project.id));
+  private allTime = toSignal(this.data.getTimeEntries(), { initialValue: [] as TimeEntry[] });
+
+  manualEntries = computed(() => this.allLabor().filter(e => e.projectId === this.project.id));
+
+  syncedRows = computed(() =>
+    this.jobRecord.timeEntriesForProject(this.project)
+      .sort((a, b) => (b.workDate ?? '').localeCompare(a.workDate ?? '')),
+  );
+
+  get syncedHours(): number {
+    return this.syncedRows().reduce((s, e) => s + (e.totalHours ?? 0), 0);
+  }
 
   get totalHours(): number {
-    return this.entries().reduce((s, e) => s + (e.totalHours ?? 0), 0);
+    const manual = this.manualEntries().reduce((s, e) => s + (e.totalHours ?? 0), 0);
+    return Math.max(manual, this.syncedHours, this.project.totalLaborHours ?? 0);
   }
+
   get totalCost(): number {
-    return this.entries().reduce((s, e) => s + (e.laborCost ?? 0), 0);
+    return this.manualEntries().reduce((s, e) => s + (e.laborCost ?? 0), 0);
   }
 
   fmt = formatMoney;
@@ -190,7 +329,10 @@ export class ProjectRecordLaborTabComponent {
       <div class="px-5 py-3 border-b flex justify-between items-center">
         <div>
           <h2 class="text-sm font-bold">Materials</h2>
-          <p class="text-xs text-slate-500">Total material cost: {{ fmt(totalCost) }}</p>
+          <p class="text-xs text-slate-500">
+            Total material cost: {{ fmt(totalCost) }}
+            @if (poCost > 0) { · {{ fmt(poCost) }} from PO log }
+          </p>
         </div>
         <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Material</button>
       </div>
@@ -216,18 +358,30 @@ export class ProjectRecordLaborTabComponent {
             <th class="px-4 py-2 text-left">Vendor</th>
             <th class="px-4 py-2 text-left">Description</th>
             <th class="px-4 py-2 text-right">Total</th>
+            <th class="px-4 py-2 text-left">Source</th>
           </tr>
         </thead>
         <tbody>
-          @for (row of entries(); track row.id) {
+          @for (row of poRows(); track row.id) {
+            <tr class="border-t border-slate-100 bg-amber-50/30">
+              <td class="px-4 py-2">{{ row.date || row.issuedAt || '—' }}</td>
+              <td class="px-4 py-2">{{ row.vendor || '—' }}</td>
+              <td class="px-4 py-2">{{ row.itemsPurchased || row.poNumber || 'PO' }}</td>
+              <td class="px-4 py-2 text-right font-semibold">{{ fmt(poAmount(row)) }}</td>
+              <td class="px-4 py-2 text-xs text-amber-700">PO Log</td>
+            </tr>
+          }
+          @for (row of manualEntries(); track row.id) {
             <tr class="border-t border-slate-100">
               <td class="px-4 py-2">{{ row.entryDate }}</td>
               <td class="px-4 py-2">{{ row.vendor || '—' }}</td>
               <td class="px-4 py-2">{{ row.description }}</td>
               <td class="px-4 py-2 text-right font-semibold">{{ fmt(row.totalCost) }}</td>
+              <td class="px-4 py-2 text-xs text-slate-500">Manual</td>
             </tr>
-          } @empty {
-            <tr><td colspan="4"><app-empty-state title="No materials entered yet" message="Add material costs for this job." /></td></tr>
+          }
+          @if (!poRows().length && !manualEntries().length) {
+            <tr><td colspan="5"><app-empty-state title="No materials entered yet" message="Sync PO log or add materials manually." /></td></tr>
           }
         </tbody>
       </table>
@@ -243,10 +397,22 @@ export class ProjectRecordMaterialsTabComponent {
   draft: Partial<ProjectMaterial> = { entryDate: new Date().toISOString().slice(0, 10), description: '', totalCost: 0 };
 
   private allMaterials = toSignal(this.data.getProjectMaterials(), { initialValue: [] as ProjectMaterial[] });
-  entries = computed(() => this.allMaterials().filter(m => m.projectId === this.project.id));
+  private allPos = toSignal(this.data.getPOs(), { initialValue: [] as PO[] });
+
+  manualEntries = computed(() => this.allMaterials().filter(m => m.projectId === this.project.id));
+  poRows = computed(() => this.jobRecord.posForProject(this.project.id));
+
+  poAmount(po: PO): number {
+    return po.invoicedAmount ?? po.committedAmount ?? po.originalAmount ?? 0;
+  }
+
+  get poCost(): number {
+    return this.poRows().reduce((s, po) => s + this.poAmount(po), 0);
+  }
 
   get totalCost(): number {
-    return this.entries().reduce((s, m) => s + (m.totalCost ?? 0), 0);
+    const manual = this.manualEntries().reduce((s, m) => s + (m.totalCost ?? 0), 0);
+    return manual + this.poCost;
   }
 
   fmt = formatMoney;
@@ -263,7 +429,7 @@ export class ProjectRecordMaterialsTabComponent {
   selector: 'app-project-record-changes-tab',
   standalone: true,
   imports: [ChangesTabComponent],
-  template: `<app-changes-tab [project]="project" />`,
+  template: `<app-changes-tab [project]="project" [coLogOnly]="true" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectRecordChangesTabComponent {
@@ -273,55 +439,12 @@ export class ProjectRecordChangesTabComponent {
 @Component({
   selector: 'app-project-record-todos-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmptyStateComponent],
-  template: `
-    <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div class="px-5 py-3 border-b flex justify-between items-center">
-        <h2 class="text-sm font-bold">Todos</h2>
-        <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Todo</button>
-      </div>
-      @if (showForm()) {
-        <div class="p-4 border-b bg-slate-50 space-y-2">
-          <input [(ngModel)]="draft.title" placeholder="Todo title" class="w-full border rounded-lg px-3 py-2 text-sm" />
-          <textarea [(ngModel)]="draft.description" placeholder="Description" rows="2" class="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
-          <div class="flex gap-2">
-            <button type="button" (click)="saveTodo()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
-            <button type="button" (click)="showForm.set(false)" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
-          </div>
-        </div>
-      }
-      <ul class="divide-y divide-slate-100">
-        @for (t of todos(); track t.id) {
-          <li class="px-5 py-3 flex justify-between gap-3">
-            <div>
-              <p class="font-semibold text-sm">{{ t.title }}</p>
-              @if (t.description) { <p class="text-xs text-slate-500">{{ t.description }}</p> }
-            </div>
-            <span class="text-xs text-slate-500 shrink-0">{{ t.status }}</span>
-          </li>
-        } @empty {
-          <li class="p-4"><app-empty-state title="No todos yet" message="Add a todo for this job." /></li>
-        }
-      </ul>
-    </section>
-  `,
+  imports: [TasksTabComponent],
+  template: `<app-tasks-tab [project]="project" />`,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProjectRecordTodosTabComponent {
   @Input({ required: true }) project!: Project;
-  private data = inject(DataService);
-  showForm = signal(false);
-  draft: Partial<ProjectTask> = { title: '', status: 'Not Started', source: 'manual' };
-
-  private allTodos = toSignal(this.data.getProjectTasks(), { initialValue: [] as ProjectTask[] });
-  todos = computed(() => this.allTodos().filter(t => t.projectId === this.project.id));
-
-  async saveTodo(): Promise<void> {
-    if (!this.draft.title?.trim()) return;
-    await firstValueFrom(this.data.createProjectTask({ ...this.draft, projectId: this.project.id }));
-    this.showForm.set(false);
-    this.draft = { title: '', status: 'Not Started', source: 'manual' };
-  }
 }
 
 @Component({
@@ -377,37 +500,62 @@ export class ProjectRecordSubsTabComponent {
 @Component({
   selector: 'app-project-record-documents-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, EmptyStateComponent],
   template: `
     <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div class="px-5 py-3 border-b flex justify-between items-center">
+      <div class="px-5 py-3 border-b flex flex-wrap justify-between items-center gap-2">
         <h2 class="text-sm font-bold">Documents</h2>
-        <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Document Link</button>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" (click)="showLinkForm.set(true)" class="text-xs font-semibold border border-slate-200 px-3 py-1.5 rounded-lg">Add Link</button>
+          @if (project.driveFolderId) {
+            <label class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg cursor-pointer flex items-center gap-1">
+              <mat-icon class="!text-[16px]">upload_file</mat-icon> Upload
+              <input type="file" class="hidden" (change)="onFileSelected($event)" />
+            </label>
+          }
+        </div>
       </div>
-      @if (showForm()) {
+      @if (!project.driveFolderId) {
+        <p class="px-5 py-2 text-xs text-amber-800 bg-amber-50 border-b border-amber-100">
+          Link a Drive folder on the job to upload files. You can still add document links below.
+        </p>
+      }
+      @if (uploading()) {
+        <p class="px-5 py-2 text-xs text-slate-500">Uploading…</p>
+      }
+      @if (uploadError()) {
+        <p class="px-5 py-2 text-xs text-rose-700">{{ uploadError() }}</p>
+      }
+      @if (showLinkForm()) {
         <div class="p-4 border-b bg-slate-50 grid sm:grid-cols-2 gap-3">
           <input [(ngModel)]="draft.fileName" placeholder="Document name" class="border rounded-lg px-3 py-2 text-sm" />
           <input [(ngModel)]="draft.fileUrl" placeholder="Drive or file URL" class="border rounded-lg px-3 py-2 text-sm" />
           <input [(ngModel)]="draft.documentType" placeholder="Type (Contract, COI, etc.)" class="border rounded-lg px-3 py-2 text-sm" />
           <div class="flex gap-2">
             <button type="button" (click)="saveDoc()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
-            <button type="button" (click)="showForm.set(false)" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
+            <button type="button" (click)="showLinkForm.set(false)" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
           </div>
         </div>
       }
       <ul class="divide-y divide-slate-100">
         @for (f of files(); track f.id) {
-          <li class="px-5 py-3 flex justify-between gap-3">
-            <div>
-              <p class="font-semibold text-sm">{{ f.fileName }}</p>
+          <li class="px-5 py-3 flex flex-wrap items-center gap-3">
+            <mat-icon class="!text-[20px] text-slate-400 shrink-0">description</mat-icon>
+            <div class="min-w-0 flex-1">
+              @if (f.fileUrl) {
+                <a [href]="f.fileUrl" target="_blank" rel="noopener" class="text-sm font-semibold text-slate-900 hover:text-indigo-700 truncate block">{{ f.fileName }}</a>
+              } @else {
+                <p class="text-sm font-semibold text-slate-900 truncate">{{ f.fileName }}</p>
+              }
               <p class="text-xs text-slate-500">{{ f.documentType }}</p>
             </div>
-            @if (f.fileUrl) {
-              <a [href]="f.fileUrl" target="_blank" rel="noopener" class="text-xs font-semibold text-indigo-700">Open</a>
-            }
+            <button type="button" (click)="removeDoc(f.id)"
+                    class="text-xs font-semibold text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg hover:bg-rose-100">
+              Delete
+            </button>
           </li>
         } @empty {
-          <li class="p-4"><app-empty-state title="No documents linked yet" message="Add a Drive link or document reference." /></li>
+          <li class="p-4"><app-empty-state title="No documents yet" message="Upload a file or add a document link." /></li>
         }
       </ul>
     </section>
@@ -417,7 +565,11 @@ export class ProjectRecordSubsTabComponent {
 export class ProjectRecordDocumentsTabComponent {
   @Input({ required: true }) project!: Project;
   private data = inject(DataService);
-  showForm = signal(false);
+  private workflowSave = inject(ProjectWorkflowSaveService);
+  private projectFiles = inject(ProjectFilesRepository);
+  showLinkForm = signal(false);
+  uploading = signal(false);
+  uploadError = signal<string | null>(null);
   draft = { fileName: '', fileUrl: '', documentType: 'Other' };
 
   private allFiles = toSignal(this.data.getProjectFiles(), { initialValue: [] });
@@ -433,7 +585,37 @@ export class ProjectRecordDocumentsTabComponent {
       documentStatus: 'Linked',
       sourceType: 'manual',
     }));
-    this.showForm.set(false);
+    this.showLinkForm.set(false);
     this.draft = { fileName: '', fileUrl: '', documentType: 'Other' };
+  }
+
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !this.project.driveFolderId) return;
+    this.uploading.set(true);
+    this.uploadError.set(null);
+    try {
+      await this.workflowSave.saveProjectWorkflowFile({
+        projectId: this.project.id,
+        workflowType: 'closeout',
+        folderKey: 'CORRESPONDENCE',
+        fallbackFolderKeys: ['BILLING', 'SUBS', 'RFIS'],
+        fileName: file.name,
+        content: file,
+        mimeType: file.type || 'application/octet-stream',
+        documentType: 'General',
+        requestAuthIfNeeded: true,
+      });
+    } catch (err) {
+      this.uploadError.set(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      this.uploading.set(false);
+      input.value = '';
+    }
+  }
+
+  async removeDoc(id: string): Promise<void> {
+    await firstValueFrom(this.projectFiles.archive(id, 'Removed from job profile'));
   }
 }

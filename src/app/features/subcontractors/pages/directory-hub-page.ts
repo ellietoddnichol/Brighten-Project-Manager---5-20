@@ -234,7 +234,8 @@ import {
                 <a [routerLink]="row.route" class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-slate-900">{{ row.customerName }}</span>
-                    <app-status-chip tone="slate">Customer</app-status-chip>
+                    <app-status-chip tone="slate">{{ row.companyType }}</app-status-chip>
+                    <app-status-chip tone="blue">{{ row.sourceLabel }}</app-status-chip>
                   </div>
                   <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                     <span><span class="text-slate-400">Active jobs</span> <span class="font-semibold">{{ row.activeProjects }}</span></span>
@@ -249,7 +250,7 @@ import {
               </div>
             } @empty {
               <div class="p-5">
-                <app-empty-state title="No customers on active projects" message="Customer names appear when jobs are loaded." />
+                <app-empty-state title="No companies yet" message="Companies appear when you enter customers on jobs, add subs, or create directory records." />
               </div>
             }
           </section>
@@ -407,9 +408,13 @@ export class DirectoryHubPage {
   private employees = toSignal(this.data.getEmployees(), { initialValue: [] });
   private arRecords = toSignal(this.data.getArRecords(), { initialValue: [] });
 
+  private companies = toSignal(this.data.getCompanies(), { initialValue: [] });
+
   summary = computed(() => summarizeDirectoryHub({
     subs: this.subs() ?? [],
     projectSubs: this.projectSubs() ?? [],
+    companies: this.companies() ?? [],
+    projects: this.projects() ?? [],
   }));
 
   compactStats = computed(() => {
@@ -457,6 +462,8 @@ export class DirectoryHubPage {
       lifecycleByProjectId,
       financialByProjectId,
       arRecords: this.arRecords() ?? [],
+      companies: this.companies() ?? [],
+      subs: this.subs() ?? [],
     });
   });
 

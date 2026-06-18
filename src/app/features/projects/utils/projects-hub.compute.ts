@@ -166,6 +166,9 @@ export function deriveProjectHealth(warnings: ProjectListWarning[]): 'Green' | '
 
 function deriveNextAction(project: Project, lifecycle: ProjectLifecycleSnapshot, financial: ProjectFinancial, warnings: ProjectListWarning[]): { label: string; route: string } {
   const pid = project.id;
+  if (manualFirstConfig.hideMainWorkflowWarnings) {
+    return { label: 'Open', route: `/projects/${pid}` };
+  }
   const top = warnings[0];
   if (top?.id === 'missing-contract') return { label: 'Add contract', route: `/projects/${pid}`, };
   if (top?.id === 'missing-drive') return { label: 'Link Drive', route: `/projects/${pid}`, };
@@ -203,7 +206,9 @@ export function buildProjectListRow(input: {
     financial: input.financial,
     displayStatus: projectDisplayStatus(input.lifecycle),
     profileLabel: profileLabelFor(input.project),
-    health: isQuietRow(input.lifecycle) && !warnings.length ? 'Neutral' : deriveProjectHealth(warnings),
+    health: manualFirstConfig.hideMainWorkflowWarnings
+      ? 'Neutral'
+      : (isQuietRow(input.lifecycle) && !warnings.length ? 'Neutral' : deriveProjectHealth(warnings)),
     warnings,
     nextActionLabel: next.label,
     nextActionRoute: next.route,

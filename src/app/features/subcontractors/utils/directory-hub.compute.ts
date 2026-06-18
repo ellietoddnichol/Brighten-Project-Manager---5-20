@@ -9,6 +9,7 @@ import {
   W9Status,
 } from '@app/models/subcontractor.types';
 import { Employee, Project } from '@app/models/types';
+import { Company } from '@app/models/job-record.types';
 import {
   countActiveProjectsForSub,
   isCoiExpiringSoon,
@@ -96,6 +97,8 @@ export interface DirectoryVendorRow {
 export interface DirectoryCustomerRow {
   id: string;
   customerName: string;
+  companyType: string;
+  sourceLabel: string;
   activeProjects: number;
   openAr: number;
   contractValue: number;
@@ -131,7 +134,7 @@ export const DIRECTORY_SEGMENT_OPTIONS: { id: DirectorySegmentId; label: string 
   { id: 'overview', label: 'Overview' },
   { id: 'subcontractors', label: 'Subcontractors' },
   { id: 'vendors', label: 'Vendors' },
-  { id: 'customers', label: 'Customers' },
+  { id: 'customers', label: 'Companies' },
   { id: 'employees', label: 'Employees / Contacts' },
   { id: 'needsReview', label: 'Needs Review' },
 ];
@@ -286,12 +289,24 @@ export function matchesSubHubFilter(
 export function summarizeDirectoryHub(input: {
   subs: Subcontractor[];
   projectSubs: ProjectSubcontractor[];
+  companies?: Company[];
+  projects?: Project[];
 }): DirectoryHubSummary {
   const subs = input.subs.filter(s => effectiveVendorClassification(s) !== 'Ignore');
   const today = new Date();
+  const companyNames = new Set<string>();
+  for (const c of input.companies ?? []) {
+    if (c.name?.trim()) companyNames.add(normalizeCompanyName(c.name));
+  }
+  for (const p of input.projects ?? []) {
+    if (p.customer?.trim()) companyNames.add(normalizeCompanyName(p.customer));
+  }
+  for (const s of subs) {
+    if (s.companyName?.trim()) companyNames.add(normalizeCompanyName(s.companyName));
+  }
 
   return {
-    companies: subs.length,
+    companies: companyNames.size,
     needsReview: subs.filter(s => effectiveVendorClassification(s) === 'NeedsReview').length,
     missingCoi: subs.filter(s => s.insuranceStatus === 'Missing').length,
     missingW9: subs.filter(s => s.w9Status === 'Missing').length,
@@ -376,18 +391,53 @@ export function buildDirectoryCustomerRows(input: {
   lifecycleByProjectId: Map<string, ProjectLifecycleSnapshot>;
   financialByProjectId: Map<string, ProjectFinancial>;
   arRecords: { projectId: string; status: string; openBalance?: number }[];
+  companies?: Company[];
+  subs?: Subcontractor[];
 }): DirectoryCustomerRow[] {
-  const byCustomer = new Map<string, {
+  const byKey = new Map<string, {
+    customerName: string;
+    companyType: string;
+    sourceLabel: string;
     projects: Project[];
     openAr: number;
     contractValue: number;
     primaryContact?: string;
   }>();
 
+  const ensure = (
+    name: string,
+    companyType: string,
+    sourceLabel: string,
+    contact?: string,
+  ) => {
+    const key = normalizeCompanyName(name);
+    if (!key) return;
+    const bucket = byKey.get(key) ?? {
+      customerName: name.trim(),
+      companyType,
+      sourceLabel,
+      projects: [],
+      openAr: 0,
+      contractValue: 0,
+      primaryContact: contact,
+    };
+    if (!bucket.primaryContact && contact) bucket.primaryContact = contact;
+    byKey.set(key, bucket);
+    return bucket;
+  };
+
+  for (const company of input.companies ?? []) {
+    ensure(company.name, company.type ?? 'Company', 'Job record', company.contactName);
+  }
+
+  for (const sub of input.subs ?? []) {
+    ensure(sub.companyName, 'Subcontractor', sub.source ?? 'Manual', sub.contactName);
+  }
+
   for (const project of input.projects) {
     const customer = project.customer?.trim();
     if (!customer) continue;
-    const bucket = byCustomer.get(customer) ?? { projects: [], openAr: 0, contractValue: 0 };
+    const bucket = ensure(customer, 'Customer', 'Job') ?? byKey.get(normalizeCompanyName(customer))!;
     bucket.projects.push(project);
     const financial = input.financialByProjectId.get(project.id);
     bucket.contractValue += financial?.currentContractAmount ?? project.originalContractAmount ?? 0;
@@ -395,24 +445,25 @@ export function buildDirectoryCustomerRows(input: {
       .filter(r => r.projectId === project.id && isOpenArRecord(r.status))
       .reduce((s, r) => s + (r.openBalance ?? 0), 0);
     if (!bucket.primaryContact && project.owner?.trim()) bucket.primaryContact = project.owner.trim();
-    byCustomer.set(customer, bucket);
   }
 
-  return [...byCustomer.entries()]
-    .map(([customerName, bucket]) => {
+  return [...byKey.values()]
+    .map(bucket => {
       const activeProjects = bucket.projects.filter(p => {
         const lc = input.lifecycleByProjectId.get(p.id);
         return lc?.includeInDefaultScope ?? ['Active', 'Awarded', 'Setup Needed', 'Closeout'].includes(p.status);
       }).length;
       const sampleProject = bucket.projects.find(p => activeProjects > 0) ?? bucket.projects[0];
       return {
-        id: normalizeCompanyName(customerName),
-        customerName,
+        id: normalizeCompanyName(bucket.customerName),
+        customerName: bucket.customerName,
+        companyType: bucket.companyType,
+        sourceLabel: bucket.sourceLabel,
         activeProjects,
         openAr: bucket.openAr,
         contractValue: bucket.contractValue,
         primaryContact: bucket.primaryContact,
-        nextAction: activeProjects > 0 ? 'View jobs' : 'Review customer',
+        nextAction: activeProjects > 0 ? 'View jobs' : 'Review company',
         route: sampleProject ? `/projects/${sampleProject.id}` : '/projects',
       };
     })

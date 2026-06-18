@@ -347,8 +347,13 @@ export class ProjectDetails implements OnInit {
 
   jobTotals = computed(() => {
     const p = this.project();
-    if (!p) return { totalHours: 0, laborCost: 0, materialCost: 0, approvedChangeAmount: 0, pendingChangeAmount: 0, costToDate: 0 };
-    return this.jobRecord.totalsForProject(p.id, this.changeOrders() ?? []);
+    if (!p) {
+      return {
+        totalHours: 0, laborCost: 0, materialCost: 0, approvedChangeAmount: 0, pendingChangeAmount: 0,
+        costToDate: 0, syncedLaborHours: 0, syncedMaterialCost: 0, manualLaborHours: 0, manualMaterialCost: 0,
+      };
+    }
+    return this.jobRecord.totalsForProject(p, this.changeOrders() ?? []);
   });
 
   jobProfit = computed(() => {

@@ -44,6 +44,24 @@ export function projectSearchText(p: Project): string {
   ].filter(Boolean).join(' ').toLowerCase();
 }
 
+/** Numeric job-number order (low → high), with string fallback for non-numeric codes. */
+export function compareJobNumbers(a: string | undefined | null, b: string | undefined | null): number {
+  const left = String(a ?? '').trim();
+  const right = String(b ?? '').trim();
+  if (!left && !right) return 0;
+  if (!left) return 1;
+  if (!right) return -1;
+
+  const numLeft = extractLeadingJobNumber(left) || left.replace(/^J/i, '');
+  const numRight = extractLeadingJobNumber(right) || right.replace(/^J/i, '');
+  const intLeft = parseInt(numLeft, 10);
+  const intRight = parseInt(numRight, 10);
+  if (Number.isFinite(intLeft) && Number.isFinite(intRight) && intLeft !== intRight) {
+    return intLeft - intRight;
+  }
+  return left.localeCompare(right, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export function isFullyBilled(project: Project): boolean {
   const contract = project.originalContractAmount ?? 0;
   const billed = project.billedToDate ?? 0;

@@ -26,6 +26,8 @@ import {
   normalizeCoStatus,
   isApprovedUnbilledCo,
   isOpenChangeRequest,
+  isPendingCo,
+  isApprovedCo,
   coStatusMatches,
 } from '@features/projects/utils/change-management';
 import {
@@ -45,7 +47,126 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
   imports: [CommonModule, MatIconModule, FormsModule, WorkflowDocumentsSectionComponent, ListRowComponent, StatusChipComponent, EmptyStateComponent],
   template: `
     <div class="space-y-4">
-      @if (simplified && !showAllTools) {
+      @if (coLogOnly) {
+        <div class="grid grid-cols-2 gap-3">
+          <div class="bg-white p-4 rounded-lg border border-slate-200">
+            <p class="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Pending COs</p>
+            <p class="text-xl font-bold text-amber-700">{{ pendingCoTotal() | currency }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ pendingCos().length }} change order(s)</p>
+          </div>
+          <div class="bg-white p-4 rounded-lg border border-slate-200">
+            <p class="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Approved COs</p>
+            <p class="text-xl font-bold text-emerald-700">{{ approvedCoTotal() | currency }}</p>
+            <p class="text-xs text-slate-500 mt-1">{{ approvedCos().length }} change order(s)</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+          <div class="p-5 border-b bg-slate-50 flex justify-between items-center">
+            <h3 class="text-sm font-semibold text-slate-900">Change Order Log</h3>
+            <button type="button" (click)="openNewCo()" class="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2">
+              <mat-icon class="!text-[18px]">add</mat-icon> Add Change Order
+            </button>
+          </div>
+
+          @if (showCoForm()) {
+            <div class="p-6 border-b bg-slate-50 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">CO #</label>
+                  <input [(ngModel)]="draftCo.changeOrderNumber" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Title</label>
+                  <input [(ngModel)]="draftCo.title" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Status</label>
+                  <select [(ngModel)]="draftCo.status" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
+                    @for (s of coStatuses; track s) { <option [value]="s">{{ s }}</option> }
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Amount</label>
+                  <input type="number" [(ngModel)]="draftCo.sellPrice" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm">
+                </div>
+                <div class="sm:col-span-3">
+                  <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Description</label>
+                  <textarea [(ngModel)]="draftCo.description" rows="2" class="w-full px-3 py-2 bg-white rounded border border-slate-300 text-sm"></textarea>
+                </div>
+              </div>
+              <div class="flex justify-end gap-2">
+                <button type="button" (click)="cancelCoForm()" class="px-4 py-2 rounded-lg font-bold text-slate-600 hover:bg-slate-200 text-sm">Cancel</button>
+                <button type="button" (click)="saveCo()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
+              </div>
+            </div>
+          }
+
+          <div class="px-5 py-3 border-b bg-amber-50/50">
+            <h4 class="text-xs font-bold uppercase text-amber-800">Pending</h4>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b">
+                  <th class="px-3 py-2 text-left">CO #</th>
+                  <th class="px-3 py-2 text-left">Title</th>
+                  <th class="px-3 py-2 text-left">Status</th>
+                  <th class="px-3 py-2 text-right">Amount</th>
+                  <th class="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (co of pendingCos(); track co.id) {
+                  <tr class="hover:bg-slate-50 text-xs">
+                    <td class="px-3 py-2.5 font-bold">{{ coNumberFn(co) || '—' }}</td>
+                    <td class="px-3 py-2.5">{{ co.title || co.description || '—' }}</td>
+                    <td class="px-3 py-2.5"><app-status-chip [tone]="coStatusTone(co.status)" [label]="normalizeCoStatus(co.status)" /></td>
+                    <td class="px-3 py-2.5 text-right font-semibold">{{ coTotalAmountFn(co) | currency }}</td>
+                    <td class="px-3 py-2.5 text-right">
+                      <button type="button" (click)="editCo(co)" class="text-indigo-700 font-semibold hover:underline">Edit</button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="px-5 py-4 text-slate-500 italic">No pending change orders.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <div class="px-5 py-3 border-b border-t bg-emerald-50/50">
+            <h4 class="text-xs font-bold uppercase text-emerald-800">Approved</h4>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b">
+                  <th class="px-3 py-2 text-left">CO #</th>
+                  <th class="px-3 py-2 text-left">Title</th>
+                  <th class="px-3 py-2 text-left">Status</th>
+                  <th class="px-3 py-2 text-right">Amount</th>
+                  <th class="px-3 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                @for (co of approvedCos(); track co.id) {
+                  <tr class="hover:bg-slate-50 text-xs">
+                    <td class="px-3 py-2.5 font-bold">{{ coNumberFn(co) || '—' }}</td>
+                    <td class="px-3 py-2.5">{{ co.title || co.description || '—' }}</td>
+                    <td class="px-3 py-2.5"><app-status-chip [tone]="coStatusTone(co.status)" [label]="normalizeCoStatus(co.status)" /></td>
+                    <td class="px-3 py-2.5 text-right font-semibold">{{ coApprovedAmount(co) | currency }}</td>
+                    <td class="px-3 py-2.5 text-right">
+                      <button type="button" (click)="editCo(co)" class="text-indigo-700 font-semibold hover:underline">Edit</button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="5" class="px-5 py-4 text-slate-500 italic">No approved change orders yet.</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else if (simplified && !showAllTools) {
         <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-5 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
             <h3 class="text-sm font-semibold text-slate-900">Changes</h3>
@@ -605,6 +726,7 @@ type ChangesViewTab = 'log-cr' | 'log-co' | 'needs-pricing' | 'awaiting-approval
 export class ChangesTabComponent {
   @Input({ required: true }) project!: Project;
   @Input() simplified = false;
+  @Input() coLogOnly = false;
   @Input() showAllTools = false;
   @Input() changeSegment: ChangeListSegment = 'all';
 
@@ -713,6 +835,11 @@ export class ChangesTabComponent {
   projectCosSorted = computed(() =>
     [...this.projectCos()].sort((a, b) => coNumber(a).localeCompare(coNumber(b), undefined, { numeric: true })),
   );
+
+  pendingCos = computed(() => this.projectCosSorted().filter(co => isPendingCo(co)));
+  approvedCos = computed(() => this.projectCosSorted().filter(co => isApprovedCo(co)));
+  pendingCoTotal = computed(() => this.pendingCos().reduce((s, co) => s + coTotalAmount(co), 0));
+  approvedCoTotal = computed(() => this.approvedCos().reduce((s, co) => s + coApprovedAmount(co), 0));
 
   summaryDraftPricing = computed(() =>
     this.projectCos()
