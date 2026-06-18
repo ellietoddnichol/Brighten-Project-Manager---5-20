@@ -67,7 +67,10 @@ service cloud.firestore {
         'foreman-bonus-records',
         'foreman-bonus-payments',
         'labor-code-mappings',
-        'drive-watch-channels'
+        'drive-watch-channels',
+        'companies',
+        'project-materials',
+        'project-labor-entries'
       ];
     }
     function readOnlyOwnerCollections() {

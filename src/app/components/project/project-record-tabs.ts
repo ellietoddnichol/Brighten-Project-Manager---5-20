@@ -216,8 +216,11 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
             · Labor cost: {{ fmt(totalCost) }}
           </p>
         </div>
-        <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Labor</button>
+        <button type="button" (click)="openLaborForm()" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Labor Cost</button>
       </div>
+      @if (saveError()) {
+        <p class="px-5 py-2 text-xs text-rose-700 bg-rose-50 border-b border-rose-100">{{ saveError() }}</p>
+      }
       @if (showForm()) {
         <div class="p-4 border-b bg-slate-50 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input type="date" [(ngModel)]="draft.workDate" class="border rounded-lg px-3 py-2 text-sm" />
@@ -227,10 +230,11 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
           <input type="number" [(ngModel)]="draft.regularHours" placeholder="Reg hrs" class="border rounded-lg px-3 py-2 text-sm" />
           <input type="number" [(ngModel)]="draft.overtimeHours" placeholder="OT hrs" class="border rounded-lg px-3 py-2 text-sm" />
           <input type="number" [(ngModel)]="draft.doubleTimeHours" placeholder="DT hrs" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.costRate" placeholder="Cost rate" class="border rounded-lg px-3 py-2 text-sm" />
-          <div class="sm:col-span-2 flex gap-2">
-            <button type="button" (click)="saveLabor()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
-            <button type="button" (click)="showForm.set(false)" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
+          <input type="number" [(ngModel)]="draft.costRate" placeholder="Cost rate ($/hr)" class="border rounded-lg px-3 py-2 text-sm" />
+          <input type="number" [(ngModel)]="draft.laborCost" placeholder="Or total labor cost ($)" class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
+          <div class="sm:col-span-2 flex gap-2 items-center">
+            <button type="button" (click)="saveLabor()" [disabled]="saving()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">{{ saving() ? 'Saving…' : 'Save' }}</button>
+            <button type="button" (click)="closeLaborForm()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
           </div>
         </div>
       }
@@ -243,7 +247,8 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
             <th class="px-4 py-2 text-right">Reg</th>
             <th class="px-4 py-2 text-right">OT</th>
             <th class="px-4 py-2 text-right">DT</th>
-            <th class="px-4 py-2 text-right">Total</th>
+            <th class="px-4 py-2 text-right">Total Hrs</th>
+            <th class="px-4 py-2 text-right">Cost</th>
             <th class="px-4 py-2 text-left">Source</th>
           </tr>
         </thead>
@@ -257,6 +262,7 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
               <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
               <td class="px-4 py-2 text-right font-semibold">{{ row.totalHours }}</td>
+              <td class="px-4 py-2 text-right text-slate-400">—</td>
               <td class="px-4 py-2 text-xs text-indigo-700">Master Time</td>
             </tr>
           }
@@ -268,12 +274,13 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
               <td class="px-4 py-2 text-right">{{ row.regularHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
-              <td class="px-4 py-2 text-right font-semibold">{{ row.totalHours }}</td>
+              <td class="px-4 py-2 text-right">{{ row.totalHours }}</td>
+              <td class="px-4 py-2 text-right font-semibold">{{ fmt(row.laborCost ?? 0) }}</td>
               <td class="px-4 py-2 text-xs text-slate-500">Manual</td>
             </tr>
           }
           @if (!syncedRows().length && !manualEntries().length) {
-            <tr><td colspan="8"><app-empty-state title="No labor entered yet" message="Sync Master Time Data Search or add labor manually." /></td></tr>
+            <tr><td colspan="9"><app-empty-state title="No labor entered yet" message="Sync Master Time Data Search or add labor manually." /></td></tr>
           }
         </tbody>
       </table>
@@ -286,6 +293,8 @@ export class ProjectRecordLaborTabComponent {
   private jobRecord = inject(JobRecordService);
   private data = inject(DataService);
   showForm = signal(false);
+  saving = signal(false);
+  saveError = signal<string | null>(null);
   draft: Partial<ProjectLaborEntry> = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
 
   private allLabor = toSignal(this.data.getProjectLaborEntries(), { initialValue: [] as ProjectLaborEntry[] });
@@ -313,10 +322,38 @@ export class ProjectRecordLaborTabComponent {
 
   fmt = formatMoney;
 
-  async saveLabor(): Promise<void> {
-    await this.jobRecord.createLaborEntry({ ...this.draft, projectId: this.project.id });
+  openLaborForm(): void {
+    this.saveError.set(null);
+    this.showForm.set(true);
+  }
+
+  closeLaborForm(): void {
     this.showForm.set(false);
-    this.draft = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
+    this.saveError.set(null);
+  }
+
+  async saveLabor(): Promise<void> {
+    const reg = this.draft.regularHours ?? 0;
+    const ot = this.draft.overtimeHours ?? 0;
+    const dt = this.draft.doubleTimeHours ?? 0;
+    const totalHours = reg + ot + dt;
+    const hasCost = (this.draft.laborCost ?? 0) > 0
+      || ((this.draft.costRate ?? 0) > 0 && totalHours > 0);
+    if (totalHours <= 0 && !hasCost) {
+      this.saveError.set('Enter hours or a labor cost amount.');
+      return;
+    }
+    this.saveError.set(null);
+    this.saving.set(true);
+    try {
+      await this.jobRecord.createLaborEntry({ ...this.draft, projectId: this.project.id });
+      this.closeLaborForm();
+      this.draft = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Could not save labor entry.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 }
 
@@ -334,20 +371,23 @@ export class ProjectRecordLaborTabComponent {
             @if (poCost > 0) { · {{ fmt(poCost) }} from PO log }
           </p>
         </div>
-        <button type="button" (click)="showForm.set(true)" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Material</button>
+        <button type="button" (click)="openMaterialForm()" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Material Cost</button>
       </div>
+      @if (saveError()) {
+        <p class="px-5 py-2 text-xs text-rose-700 bg-rose-50 border-b border-rose-100">{{ saveError() }}</p>
+      }
       @if (showForm()) {
         <div class="p-4 border-b bg-slate-50 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input type="date" [(ngModel)]="draft.entryDate" class="border rounded-lg px-3 py-2 text-sm" />
           <input [(ngModel)]="draft.vendor" placeholder="Vendor" class="border rounded-lg px-3 py-2 text-sm" />
-          <input [(ngModel)]="draft.description" placeholder="Description" class="border rounded-lg px-3 py-2 text-sm" />
+          <input [(ngModel)]="draft.description" placeholder="Description *" class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
           <input [(ngModel)]="draft.category" placeholder="Category" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.quantity" placeholder="Qty" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.unitCost" placeholder="Unit cost" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.totalCost" placeholder="Total cost" class="border rounded-lg px-3 py-2 text-sm" />
-          <div class="flex gap-2">
-            <button type="button" (click)="saveMaterial()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
-            <button type="button" (click)="showForm.set(false)" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
+          <input type="number" [(ngModel)]="draft.quantity" (ngModelChange)="recalcTotal()" placeholder="Qty" class="border rounded-lg px-3 py-2 text-sm" />
+          <input type="number" [(ngModel)]="draft.unitCost" (ngModelChange)="recalcTotal()" placeholder="Unit cost" class="border rounded-lg px-3 py-2 text-sm" />
+          <input type="number" [(ngModel)]="draft.totalCost" placeholder="Total cost ($)" class="border rounded-lg px-3 py-2 text-sm" />
+          <div class="flex gap-2 items-center">
+            <button type="button" (click)="saveMaterial()" [disabled]="saving()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">{{ saving() ? 'Saving…' : 'Save' }}</button>
+            <button type="button" (click)="closeMaterialForm()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
           </div>
         </div>
       }
@@ -394,6 +434,8 @@ export class ProjectRecordMaterialsTabComponent {
   private jobRecord = inject(JobRecordService);
   private data = inject(DataService);
   showForm = signal(false);
+  saving = signal(false);
+  saveError = signal<string | null>(null);
   draft: Partial<ProjectMaterial> = { entryDate: new Date().toISOString().slice(0, 10), description: '', totalCost: 0 };
 
   private allMaterials = toSignal(this.data.getProjectMaterials(), { initialValue: [] as ProjectMaterial[] });
@@ -417,11 +459,51 @@ export class ProjectRecordMaterialsTabComponent {
 
   fmt = formatMoney;
 
-  async saveMaterial(): Promise<void> {
-    if (!this.draft.description?.trim()) return;
-    await this.jobRecord.createMaterial({ ...this.draft, projectId: this.project.id });
+  openMaterialForm(): void {
+    this.saveError.set(null);
+    this.showForm.set(true);
+  }
+
+  closeMaterialForm(): void {
     this.showForm.set(false);
-    this.draft = { entryDate: new Date().toISOString().slice(0, 10), description: '', totalCost: 0 };
+    this.saveError.set(null);
+  }
+
+  recalcTotal(): void {
+    const qty = this.draft.quantity;
+    const unit = this.draft.unitCost;
+    if (qty != null && unit != null && qty > 0 && unit > 0) {
+      this.draft.totalCost = qty * unit;
+    }
+  }
+
+  async saveMaterial(): Promise<void> {
+    if (!this.draft.description?.trim()) {
+      this.saveError.set('Enter a description.');
+      return;
+    }
+    const total = this.draft.totalCost
+      ?? ((this.draft.quantity ?? 0) * (this.draft.unitCost ?? 0));
+    if (!total || total <= 0) {
+      this.saveError.set('Enter a total cost or qty × unit cost.');
+      return;
+    }
+    this.saveError.set(null);
+    this.saving.set(true);
+    try {
+      await this.jobRecord.createMaterial({
+        ...this.draft,
+        description: this.draft.description.trim(),
+        projectId: this.project.id,
+        totalCost: total,
+      });
+      this.closeMaterialForm();
+      this.draft = { entryDate: new Date().toISOString().slice(0, 10), description: '', totalCost: 0 };
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Could not save material entry.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 }
 
