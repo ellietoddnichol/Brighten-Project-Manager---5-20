@@ -364,9 +364,13 @@ export class ProjectDetails implements OnInit {
     return this.jobRecord.profitForProject(p, this.jobTotals());
   });
 
+  private allProjectSubs = toSignal(this.dataService.getProjectSubcontractors(), { initialValue: [] });
+
   showSubsTab = computed(() => {
     const p = this.project();
-    return p ? this.jobRecord.showSubsTab(p) : false;
+    if (!p) return false;
+    if (p.hasSubcontractors) return true;
+    return this.allProjectSubs().some(ps => ps.projectId === p.id);
   });
 
   projectId: string | null = this.route.snapshot.paramMap.get('id');
@@ -381,6 +385,7 @@ export class ProjectDetails implements OnInit {
     { id: 'todo', label: 'Todo', icon: 'task_alt', section: 'todos' },
     { id: 'upload-doc', label: 'Document Link', icon: 'upload_file', section: 'documents' },
     { id: 'activity', label: 'Activity', icon: 'history', section: 'activities' },
+    { id: 'sub', label: 'Subcontractor', icon: 'engineering', section: 'subs' },
   ];
 
   firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] });

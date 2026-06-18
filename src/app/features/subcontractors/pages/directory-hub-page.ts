@@ -11,6 +11,7 @@ import { ImportReviewService } from '@core/services/import-review.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
 import { QuickBooksSyncDataService } from '@core/services/quickbooks-sync-data.service';
+import { manualFirstConfig } from '@app/config/manual-first.config';
 import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { StatCardComponent } from '@app/components/ui/stat-card';
 import { CompactStatStripComponent } from '@app/components/ui/compact-stat-strip';
@@ -58,10 +59,11 @@ import {
   template: `
     <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-page-header
-        title="Directory"
-        subtitle="Companies, subcontractors, vendors, customers, and contacts"
-        primaryActionLabel="New Contact / Company"
+        [title]="manualFirst ? 'Subcontractors' : 'Directory'"
+        [subtitle]="manualFirst ? 'Add subcontractors here, then assign them to jobs from the project Subs tab' : 'Companies, subcontractors, vendors, customers, and contacts'"
+        [primaryActionLabel]="manualFirst ? 'Add Subcontractor' : 'New Contact / Company'"
         (primaryAction)="openNew()">
+        @if (!manualFirst) {
         <button type="button" (click)="discoverSubs()" [disabled]="discovering()"
                 class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 disabled:opacity-50 flex items-center gap-2">
           <mat-icon class="!text-[18px]">{{ discovering() ? 'hourglass_empty' : 'travel_explore' }}</mat-icon>
@@ -75,6 +77,7 @@ import {
                 class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50">
           Export CSV
         </button>
+        }
       </app-page-header>
 
       @if (discoverMessage()) {
@@ -84,6 +87,7 @@ import {
         <p class="text-sm text-rose-700 -mt-2">{{ discoverError() }}</p>
       }
 
+      @if (!manualFirst) {
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Companies" [value]="num(summary().companies)" icon="business" />
         <button type="button" (click)="setSegment('needsReview')" class="text-left rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-300">
@@ -99,8 +103,9 @@ import {
                          [trend]="summary().missingW9 ? 'Collect W-9' : undefined" [trendPositive]="false" />
         </button>
       </div>
+      }
 
-      @if (compactStats().length) {
+      @if (!manualFirst && compactStats().length) {
         <app-compact-stat-strip [stats]="compactStats()" />
       }
 
@@ -108,6 +113,10 @@ import {
         [options]="segmentOptions()"
         [value]="segment()"
         (select)="setSegment($event)" />
+
+      @if (manualFirst && segment() !== 'subcontractors') {
+        <p class="text-xs text-slate-500">Assign subs to jobs from each project's <strong>Subs</strong> tab (appears after the first assignment).</p>
+      }
 
       @switch (segment()) {
         @case ('overview') {
@@ -155,10 +164,12 @@ import {
 
         @case ('subcontractors') {
           <div class="space-y-4">
+            @if (!manualFirst) {
             <div class="flex flex-wrap items-center justify-between gap-3">
               <app-segmented-control [options]="subFilterOptions()" [value]="subFilter()" (select)="setSubFilter($event)" />
               <a routerLink="/subcontractors" class="text-xs font-bold text-indigo-700 hover:underline">Open full subcontractors view</a>
             </div>
+            }
             <section class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden divide-y divide-slate-100">
               @for (row of filteredSubRows(); track row.id) {
                 <div class="px-5 py-4 hover:bg-slate-50 transition-colors">
@@ -169,14 +180,21 @@ import {
                         @if (row.trade) {
                           <app-status-chip tone="slate">{{ row.trade }}</app-status-chip>
                         }
+                        @if (!manualFirst) {
                         <app-status-chip tone="blue">{{ row.sourceLabel }}</app-status-chip>
+                        }
                       </div>
                       <div class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                         <span><span class="text-slate-400">Active jobs</span> <span class="font-semibold">{{ row.activeProjects }}</span></span>
+                        @if (!manualFirst) {
                         <span><span class="text-slate-400">W-9</span> <span class="font-semibold" [class.text-rose-700]="row.w9Status === 'Missing'">{{ row.w9Status }}</span></span>
                         <span><span class="text-slate-400">COI</span> <span class="font-semibold" [class.text-rose-700]="row.coiLabel === 'Missing' || row.coiLabel === 'Expired'">{{ row.coiLabel }}</span></span>
                         <span><span class="text-slate-400">Cost</span> <span class="font-mono font-semibold">{{ row.costLabel }}</span></span>
                         <span><span class="text-slate-400">Status</span> <span class="font-semibold">{{ row.status }}</span></span>
+                        }
+                        @if (manualFirst && row.sub.contactName) {
+                        <span><span class="text-slate-400">Contact</span> <span class="font-semibold">{{ row.sub.contactName }}</span></span>
+                        }
                       </div>
                       @if (row.badges.length) {
                         <div class="flex flex-wrap gap-1.5 mt-2">
@@ -313,7 +331,7 @@ import {
         <div class="fixed inset-0 z-40 bg-black/30" (click)="closeDrawer()"></div>
         <aside class="fixed top-0 right-0 z-50 h-full w-full max-w-lg bg-white shadow-xl overflow-y-auto">
           <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="text-lg font-bold">{{ editingId() ? 'Edit Contact / Company' : 'New Contact / Company' }}</h3>
+            <h3 class="text-lg font-bold">{{ editingId() ? 'Edit Subcontractor' : (manualFirst ? 'Add Subcontractor' : 'New Contact / Company') }}</h3>
             <button type="button" (click)="closeDrawer()">✕</button>
           </div>
           <div class="p-5 space-y-4">
@@ -341,6 +359,7 @@ import {
                 <input [(ngModel)]="draft.email" class="w-full px-3 py-2 border rounded-lg text-sm">
               </div>
             </div>
+            @if (!manualFirst) {
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">W-9 Status</label>
@@ -364,9 +383,12 @@ import {
                 }
               </select>
             </div>
+            }
             <div class="flex flex-wrap gap-2 pt-2">
               <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
+              @if (!manualFirst) {
               <a routerLink="/subcontractors" class="border px-4 py-2 rounded-lg text-sm">Open full view</a>
+              }
             </div>
           </div>
         </aside>
@@ -376,6 +398,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DirectoryHubPage {
+  readonly manualFirst = manualFirstConfig;
   private data = inject(DataService);
   private subSvc = inject(SubcontractorService);
   private subSeed = inject(SubcontractorSeedService);
@@ -387,7 +410,7 @@ export class DirectoryHubPage {
   private router = inject(Router);
   private currency = inject(CurrencyPipe);
 
-  segment = signal<DirectorySegmentId>('overview');
+  segment = signal<DirectorySegmentId>(manualFirstConfig.hideMainWorkflowWarnings ? 'subcontractors' : 'overview');
   subFilter = signal<DirectorySubFilterId>('all');
   discovering = signal(false);
   discoverMessage = signal<string | null>(null);
@@ -545,7 +568,7 @@ export class DirectoryHubPage {
       w9Status: 'Missing',
       insuranceStatus: 'Missing',
       status: 'PendingSetup',
-      vendorClassification: 'NeedsReview',
+      vendorClassification: manualFirstConfig.hideMainWorkflowWarnings ? 'Subcontractor' : 'NeedsReview',
       source: 'Manual',
     };
     this.drawerOpen.set(true);

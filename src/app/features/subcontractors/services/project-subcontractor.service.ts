@@ -53,6 +53,9 @@ export class ProjectSubcontractorService {
     }));
 
     await this.refreshCompliance(ps.id);
+    if (!project.hasSubcontractors) {
+      await firstValueFrom(this.data.updateProject(project.id, { hasSubcontractors: true }));
+    }
     return ps;
   }
 
