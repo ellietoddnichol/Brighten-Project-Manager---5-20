@@ -64,5 +64,5 @@ substitutions:
   # Secret Manager secret id (not the password). Create once — see docs/sql-api-integration.md
   _DB_PASSWORD_SECRET: brighten-pm-db-password
   # Set to your live Cloud Run URL (override in the Cloud Build trigger if needed)
-  _CORS_ORIGIN: https://projectmanager06-810681729268.europe-west1.run.app,https://projectmanager06-zzehjpfjea-ew.a.run.app
+  _CORS_ORIGIN: https://projectmanager06-810681729268.europe-west1.run.app
   _TRIGGER_ID: 09726dad-508a-4cc1-806f-4998a223f618
