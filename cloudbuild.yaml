@@ -38,8 +38,9 @@ steps:
         --add-cloudsql-instances=$_CLOUD_SQL_INSTANCE
       - >-
         --update-env-vars=DB_SOCKET_PATH=/cloudsql/$_CLOUD_SQL_INSTANCE,DB_NAME=$_DB_NAME,DB_USER=$_DB_USER,CORS_ORIGIN=$_CORS_ORIGIN,APP_STATIC_DIR=/app/public,FIREBASE_PROJECT_ID=brighten-project-manager,API_AUTH_REQUIRED=true
+      - '--remove-env-vars=DB_PASSWORD'
       - >-
-        --set-secrets=DB_PASSWORD=$_DB_PASSWORD_SECRET:latest
+        --update-secrets=DB_PASSWORD=$_DB_PASSWORD_SECRET:latest
       - '--quiet'
     id: Deploy
 
