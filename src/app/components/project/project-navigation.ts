@@ -16,6 +16,20 @@ const PRIMARY_SECTIONS = new Set<ProjectPrimarySection>([
   'todos',
   'activities',
   'subs',
+  'financials',
+]);
+
+const FINANCIAL_VIEWS = new Set<FinancialView>([
+  'summary',
+  'budget',
+  'pos',
+  'billing',
+  'wip',
+  'ar',
+  'labor-bonus',
+  'sub-invoices',
+  'cost-transactions',
+  'import-source',
 ]);
 
 const LEGACY_TAB_MAP: Record<string, Partial<ProjectNavState>> = {
@@ -27,20 +41,21 @@ const LEGACY_TAB_MAP: Record<string, Partial<ProjectNavState>> = {
   todos: { section: 'todos' },
   activities: { section: 'activities' },
   subs: { section: 'subs' },
+  financials: { section: 'financials' },
   tasks: { section: 'todos', workflowView: 'tasks' },
   co: { section: 'changes' },
-  billing: { section: 'overview', financialView: 'billing' },
-  budget: { section: 'overview', financialView: 'budget' },
+  billing: { section: 'financials', financialView: 'billing' },
+  budget: { section: 'financials', financialView: 'budget' },
   rfis: { section: 'todos', workflowView: 'rfis' },
   submittals: { section: 'todos', workflowView: 'submittals' },
   'daily-logs': { section: 'todos', workflowView: 'daily-logs' },
   'field-issues': { section: 'todos', workflowView: 'field-issues' },
   'certified-payroll': { section: 'todos', workflowView: 'certified-payroll' },
-  pos: { section: 'overview', financialView: 'pos' },
-  wip: { section: 'overview', financialView: 'wip' },
-  ar: { section: 'overview', financialView: 'ar' },
-  'labor-bonus': { section: 'overview', financialView: 'labor-bonus' },
-  'import-source': { section: 'overview', financialView: 'import-source' },
+  pos: { section: 'financials', financialView: 'pos' },
+  wip: { section: 'financials', financialView: 'wip' },
+  ar: { section: 'financials', financialView: 'ar' },
+  'labor-bonus': { section: 'financials', financialView: 'labor-bonus' },
+  'import-source': { section: 'financials', financialView: 'import-source' },
   'drive-mapping': { section: 'documents', fileView: 'drive-mapping' },
   setup: { section: 'overview', utilityView: 'setup' },
   files: { section: 'documents', utilityView: 'files' },
@@ -50,7 +65,7 @@ const LEGACY_TAB_MAP: Record<string, Partial<ProjectNavState>> = {
 
 const LEGACY_SECTION_MAP: Record<string, ProjectPrimarySection> = {
   workflows: 'todos',
-  financials: 'overview',
+  financials: 'financials',
 };
 
 export function normalizeWorkflowView(view: WorkflowView): WorkflowView {
@@ -80,23 +95,20 @@ export function resolveNavFromQuery(
     return mapped;
   }
 
-  let legacySection: 'workflows' | 'financials' | null = null;
-
   if (section === 'workflows' || section === 'financials') {
-    legacySection = section;
     base.section = LEGACY_SECTION_MAP[section];
+    if (view && FINANCIAL_VIEWS.has(view as FinancialView)) {
+      base.financialView = view as FinancialView;
+    }
   } else if (section && PRIMARY_SECTIONS.has(section as ProjectPrimarySection)) {
     base.section = section as ProjectPrimarySection;
+    if (base.section === 'financials' && view && FINANCIAL_VIEWS.has(view as FinancialView)) {
+      base.financialView = view as FinancialView;
+    }
   }
 
-  if (view) {
-    if (legacySection === 'workflows') {
-      base.workflowView = normalizeWorkflowView(view as WorkflowView);
-    } else if (legacySection === 'financials') {
-      base.financialView = view as FinancialView;
-    } else if (base.section === 'documents') {
-      base.fileView = view as FileView;
-    }
+  if (view && base.section === 'documents') {
+    base.fileView = view as FileView;
   }
 
   return base;
@@ -109,6 +121,14 @@ export function navQueryParams(state: ProjectNavState): Record<string, string> {
 
   if (state.section === 'documents' && state.fileView !== 'all') {
     return { section: 'documents', view: state.fileView };
+  }
+
+  if (state.section === 'financials') {
+    const params: Record<string, string> = { section: 'financials' };
+    if (state.financialView && state.financialView !== 'summary') {
+      params['view'] = state.financialView;
+    }
+    return params;
   }
 
   if (state.section === 'overview') {
@@ -129,7 +149,7 @@ export function openWorkflow(view: WorkflowView): ProjectNavState {
 }
 
 export function openFinancial(view: FinancialView): ProjectNavState {
-  return { ...defaultNavState(), section: 'overview', financialView: view, utilityView: null };
+  return { ...defaultNavState(), section: 'financials', financialView: view, utilityView: null };
 }
 
 export function openFileView(view: FileView): ProjectNavState {

@@ -5,6 +5,7 @@ import { DataService } from '@core/services/data.service';
 import { dedupeProjectsForDisplay } from '@features/projects/utils/project-dedupe';
 import { isOverheadJob } from '@shared/utils/project';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { downloadCsv } from '@shared/utils/csv-export';
 import { StatusChipComponent } from '@app/components/ui/status-chip';
 
 @Component({
@@ -19,10 +20,12 @@ import { StatusChipComponent } from '@app/components/ui/status-chip';
           <p class="text-slate-500 text-sm mt-1">Work in progress and job costing by project.</p>
         </div>
         <div class="flex gap-3">
-          <button class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
+          <button type="button" (click)="printReport()"
+                  class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-50 transition-colors flex items-center gap-2">
              <mat-icon class="!text-[18px] w-4 h-4 text-slate-500">print</mat-icon> Print Report
           </button>
-          <button class="bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-900 transition-all flex items-center gap-2">
+          <button type="button" (click)="exportCsv()"
+                  class="bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-semibold shadow-sm hover:bg-slate-900 transition-all flex items-center gap-2">
             <mat-icon class="!text-[18px] w-4 h-4">file_download</mat-icon> Export CSV
           </button>
         </div>
@@ -187,5 +190,30 @@ export class Reports {
 
   pctLabel(value: number): string {
     return `${value.toFixed(1)}%`;
+  }
+
+  printReport(): void {
+    window.print();
+  }
+
+  exportCsv(): void {
+    const rows = this.wipData().map(r => [
+      r.projectNumber,
+      r.projectName,
+      r.estimatedCost,
+      r.actualCost,
+      r.pctComplete,
+      r.contractAmount,
+      r.earnedRev,
+      r.billedAmount,
+      r.overUnder,
+      r.profit,
+      r.margin,
+    ]);
+    downloadCsv(
+      `wip-report-${new Date().toISOString().slice(0, 10)}.csv`,
+      ['Job #', 'Project', 'Est Costs', 'Act Costs', '% Complete', 'Contract', 'Earned Rev', 'Billed', 'Over/(Under)', 'Profit', 'Margin'],
+      rows,
+    );
   }
 }

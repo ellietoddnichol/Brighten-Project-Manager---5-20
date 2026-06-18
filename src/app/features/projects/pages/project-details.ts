@@ -37,6 +37,7 @@ import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip'
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ProjectOverviewPanelComponent } from '@app/components/project/project-overview-panel';
 import { ProjectRecordHeaderComponent } from '@app/components/project/project-record-header';
+import { ProjectFinancialsPanelComponent } from '@app/components/project/project-financials-panel';
 import {
   ProjectRecordOverviewTabComponent,
   ProjectRecordLaborTabComponent,
@@ -88,6 +89,7 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
     ProjectRecordMaterialsTabComponent, ProjectRecordChangesTabComponent,
     ProjectRecordDocumentsTabComponent, ProjectRecordTodosTabComponent,
     ProjectRecordActivitiesTabComponent, ProjectRecordSubsTabComponent,
+    ProjectFinancialsPanelComponent,
   ],
   template: `
     <div class="project-detail-density min-h-full overflow-y-auto bg-slate-50/50">
@@ -168,6 +170,14 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
               }
               @case ('subs') {
                 <app-project-record-subs-tab [project]="p" />
+              }
+              @case ('financials') {
+                <app-project-financials-panel
+                  [project]="p"
+                  [summary]="financialSummary()"
+                  [activeView]="nav().financialView"
+                  [modules]="enabledModules()"
+                  (viewChange)="setFinancialView($event)" />
               }
             }
           </div>
@@ -386,6 +396,7 @@ export class ProjectDetails implements OnInit {
     { id: 'upload-doc', label: 'Document Link', icon: 'upload_file', section: 'documents' },
     { id: 'activity', label: 'Activity', icon: 'history', section: 'activities' },
     { id: 'sub', label: 'Subcontractor', icon: 'engineering', section: 'subs' },
+    { id: 'billing', label: 'Pay App', icon: 'request_quote', section: 'financials', view: 'billing' },
   ];
 
   firestoreProjects = toSignal(this.dataService.getProjects(), { initialValue: [] });
@@ -782,7 +793,15 @@ export class ProjectDetails implements OnInit {
   }
 
   setSection(section: ProjectPrimarySection): void {
-    this.applyNav({ ...defaultNavState(), section, utilityView: null });
+    const state = { ...defaultNavState(), section, utilityView: null };
+    if (section === 'financials') {
+      state.financialView = 'summary';
+    }
+    this.applyNav(state);
+  }
+
+  setFinancialView(view: FinancialView): void {
+    this.applyNav({ ...this.nav(), section: 'financials', financialView: view, utilityView: null });
   }
 
   goWorkflow(view: WorkflowView | 'billing'): void {
@@ -825,6 +844,14 @@ export class ProjectDetails implements OnInit {
   }
 
   onNewItem(item: NewItemAction): void {
+    if (item.section === 'financials' && item.view) {
+      this.applyNav({
+        ...defaultNavState(),
+        section: 'financials',
+        financialView: item.view as FinancialView,
+      });
+      return;
+    }
     if (item.section) {
       this.setSection(item.section);
     }

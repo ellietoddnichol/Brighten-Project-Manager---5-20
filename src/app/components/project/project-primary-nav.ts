@@ -47,6 +47,7 @@ export class ProjectPrimaryNavComponent {
     { id: 'documents', label: 'Documents', icon: 'folder_open' },
     { id: 'todos', label: 'Todos', icon: 'checklist' },
     { id: 'activities', label: 'Activities', icon: 'history' },
+    { id: 'financials', label: 'Financials', icon: 'payments' },
   ];
 
   visibleItems = computed(() =>

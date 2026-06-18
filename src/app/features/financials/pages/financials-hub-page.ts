@@ -305,7 +305,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     </div>
 
-                    <a [routerLink]="row.route" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg">
+                    <a [routerLink]="row.route" [queryParams]="overviewLinkParams(row)" class="text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg">
 
                       {{ row.nextAction }}
 
@@ -351,7 +351,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                   <div class="flex flex-wrap items-start gap-4">
 
-                    <a [routerLink]="['/projects', row.record.projectId]" class="min-w-0 flex-1">
+                    <a [routerLink]="['/projects', row.record.projectId]" [queryParams]="projectFinancialParams('wip')" class="min-w-0 flex-1">
 
                       <div class="flex flex-wrap items-center gap-2 mb-1">
 
@@ -395,7 +395,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     </a>
 
-                    <a [routerLink]="['/projects', row.record.projectId]" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
+                    <a [routerLink]="['/projects', row.record.projectId]" [queryParams]="projectFinancialParams('wip')" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg shrink-0">{{ row.nextAction }}</a>
 
                   </div>
 
@@ -445,7 +445,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                 <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
-                  <a [routerLink]="['/projects', row.projectId]" class="min-w-0 flex-1">
+                  <a [routerLink]="['/projects', row.projectId]" [queryParams]="projectFinancialParams('ar')" class="min-w-0 flex-1">
 
                     <div class="flex flex-wrap items-center gap-2">
 
@@ -525,7 +525,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                 <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
-                  <a [routerLink]="['/projects', row.projectId]" class="min-w-0 flex-1">
+                  <a [routerLink]="['/projects', row.projectId]" [queryParams]="projectFinancialParams('billing')" class="min-w-0 flex-1">
 
                     <div class="flex flex-wrap items-center gap-2">
 
@@ -541,7 +541,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                   </a>
 
-                  <a [routerLink]="['/projects', row.projectId]" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">{{ row.nextAction }}</a>
+                  <a [routerLink]="['/projects', row.projectId]" [queryParams]="projectFinancialParams('billing')" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">{{ row.nextAction }}</a>
 
                 </div>
 
@@ -633,7 +633,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                   <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
 
-                    <a [routerLink]="['/projects', row.record.projectId]" class="min-w-0 flex-1">
+                    <a [routerLink]="['/projects', row.record.projectId]" [queryParams]="projectFinancialParams('labor-bonus')" class="min-w-0 flex-1">
 
                       <div class="flex flex-wrap items-center gap-2">
 
@@ -663,7 +663,7 @@ type FinancialsDateRange = 'thisMonth' | 'last3Months' | 'thisYear' | 'allTime';
 
                     </a>
 
-                    <a [routerLink]="['/projects', row.record.projectId]" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">{{ row.nextAction }}</a>
+                    <a [routerLink]="['/projects', row.record.projectId]" [queryParams]="projectFinancialParams('labor-bonus')" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">{{ row.nextAction }}</a>
 
                   </div>
 
@@ -1101,6 +1101,21 @@ export class FinancialsHubPage {
 
   groupLabel(group: WipGroup): string {
     return wipGroupLabel(group);
+  }
+
+  projectFinancialParams(view: 'summary' | 'budget' | 'billing' | 'wip' | 'ar' | 'pos' | 'labor-bonus'): Record<string, string> {
+    return view === 'summary' ? { section: 'financials' } : { section: 'financials', view };
+  }
+
+  overviewLinkParams(row: { projectId: string; section?: string }): Record<string, string> | null {
+    if (!row.projectId) return null;
+    if (row.section === 'billing' || row.section === 'approvedCo') {
+      return this.projectFinancialParams('billing');
+    }
+    if (row.section === 'underMargin') {
+      return this.projectFinancialParams('wip');
+    }
+    return this.projectFinancialParams('summary');
   }
 
 

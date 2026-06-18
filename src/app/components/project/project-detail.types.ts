@@ -6,7 +6,8 @@ export type ProjectPrimarySection =
   | 'documents'
   | 'todos'
   | 'activities'
-  | 'subs';
+  | 'subs'
+  | 'financials';
 
 /** @deprecated Legacy sections — kept for deep-link compatibility during migration. */
 export type LegacyProjectSection = 'workflows' | 'financials';
@@ -96,6 +97,7 @@ export const SECTION_LABELS: Record<ProjectPrimarySection, string> = {
   todos: 'Todos',
   activities: 'Activities',
   subs: 'Subs',
+  financials: 'Financials',
 };
 
 export const WORKFLOW_VIEW_LABELS: Partial<Record<WorkflowView, string>> = {

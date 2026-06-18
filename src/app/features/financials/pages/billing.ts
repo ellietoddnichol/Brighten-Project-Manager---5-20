@@ -83,7 +83,7 @@ import { Billing as BillingRecord } from '@app/models/types';
           <div class="divide-y divide-slate-100">
             @for (row of draftInvoices(); track row.id) {
               <div class="px-5 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50 transition-colors">
-                <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'billing' }"
                    class="text-xs font-numeric font-bold text-indigo-700 min-w-[80px]">{{ row.payAppNumber || '—' }}</a>
                 <span class="text-sm font-semibold text-slate-900 flex-1 min-w-0 truncate">{{ row.projectLabel }}</span>
                 <span class="text-xs font-numeric text-slate-700">{{ row.totalBilledToDate | currency:'USD':'symbol':'1.0-0' }}</span>
@@ -115,7 +115,7 @@ import { Billing as BillingRecord } from '@app/models/types';
               @for (row of openInvoices(); track row.id) {
                 <tr class="hover:bg-slate-50 transition-colors">
                   <td class="px-5 py-3">
-                    <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                    <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'billing' }"
                        class="text-xs font-numeric font-bold text-indigo-700">{{ row.payAppNumber || '—' }}</a>
                   </td>
                   <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>
@@ -159,7 +159,7 @@ import { Billing as BillingRecord } from '@app/models/types';
                   @for (row of paidInvoices(); track row.id) {
                     <tr class="hover:bg-slate-50 transition-colors">
                       <td class="px-5 py-3">
-                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'billing' }"
+                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'billing' }"
                            class="text-xs font-numeric font-bold text-slate-700">{{ row.payAppNumber || '—' }}</a>
                       </td>
                       <td class="px-5 py-3 text-slate-700">{{ row.projectLabel }}</td>

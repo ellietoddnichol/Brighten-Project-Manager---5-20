@@ -180,7 +180,7 @@ interface LaborGroupRow {
                   <tr class="border-b hover:bg-slate-50 transition-colors">
                     <td class="px-4 py-3">
                       @if (row.projectId) {
-                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', financial: 'budget' }"
+                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'financials', view: 'budget' }"
                            class="text-indigo-700 font-medium hover:underline">{{ row.label }}</a>
                       } @else {
                         {{ row.label }}

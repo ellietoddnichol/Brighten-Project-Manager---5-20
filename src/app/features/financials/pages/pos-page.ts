@@ -1,5 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { DataService } from '@core/services/data.service';
 import { PO } from '@app/models/types';
@@ -55,7 +56,7 @@ interface EnrichedPo extends PO {
               { label: 'Source', value: po.sourceLabel },
             ]"
             [nextAction]="po.nextAction"
-            (rowClick)="null" />
+            (rowClick)="openPo(po)" />
         } @empty {
           <app-empty-state title="No purchase orders match this filter." />
         }
@@ -65,6 +66,7 @@ interface EnrichedPo extends PO {
 })
 export class PosPage {
   private data = inject(DataService);
+  private router = inject(Router);
   private pos = toSignal(this.data.getPOs(), { initialValue: [] as PO[] });
   private projects = toSignal(this.data.getProjects(), { initialValue: [] });
 
@@ -140,5 +142,12 @@ export class PosPage {
 
   fmt(n: number): string {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n || 0);
+  }
+
+  openPo(po: EnrichedPo): void {
+    if (!po.projectId) return;
+    void this.router.navigate(['/projects', po.projectId], {
+      queryParams: { section: 'financials', view: 'pos' },
+    });
   }
 }
