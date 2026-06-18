@@ -34,12 +34,21 @@ app.use('/api', subcontractorsRouter);
 app.use('/api', webhookEventsRouter);
 
 if (staticDir) {
-  app.use(express.static(staticDir));
+  app.use(express.static(staticDir, {
+    setHeaders(res, filePath) {
+      if (path.basename(filePath) === 'index.html') {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else if (/\.[a-f0-9]{8,}\.(js|css)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+    },
+  }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api/')) {
       next();
       return;
     }
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(staticDir, 'index.html'));
   });
 }

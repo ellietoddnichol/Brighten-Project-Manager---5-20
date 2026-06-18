@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --host 0.0.0.0 --port 3000",
-    "dev": "ng serve --host 0.0.0.0 --port 3000",
+    "start": "ng serve --host 0.0.0.0 --port 3000 --configuration production",
+    "dev": "ng serve --host 0.0.0.0 --port 3000 --configuration production",
+    "dev:fast": "ng serve --host 0.0.0.0 --port 3000 --configuration development",
     "dev:api": "npm run dev --prefix api",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
