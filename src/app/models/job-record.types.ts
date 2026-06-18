@@ -18,6 +18,7 @@ export interface ProjectLaborEntry extends FirestoreAuditFields {
   id: string;
   projectId: string;
   workDate: string;
+  employeeId?: string;
   employeeName?: string;
   classification?: string;
   laborCode?: string;

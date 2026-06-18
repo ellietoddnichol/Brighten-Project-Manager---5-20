@@ -1,11 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Project, ChangeOrder, PO, TimeEntry } from '@app/models/types';
+import { Employee, Project, ChangeOrder, PO, TimeEntry } from '@app/models/types';
 import { Company, ProjectLaborEntry, ProjectMaterial } from '@app/models/job-record.types';
 import { DataService } from '@core/services/data.service';
 import { ActivityEventsService } from '@core/services/activity-events.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { timeEntryMatchesProject } from '@shared/utils/time-entry-project-match';
+import {
+  computeLaborCostFromHours,
+  laborCostForManualEntry,
+  laborCostForTimeEntry,
+  resolveHourlyRate,
+} from '@shared/utils/labor-cost.compute';
 import {
   computeProjectProfitMetrics,
   ProjectProfitInput,
@@ -35,6 +41,10 @@ export class JobRecordService {
     return this.data.companiesSnapshot();
   }
 
+  employees(): Employee[] {
+    return this.data.employeesSnapshot();
+  }
+
   materialsForProject(projectId: string): ProjectMaterial[] {
     return this.data.projectMaterialsSnapshot().filter(m => m.projectId === projectId);
   }
@@ -60,7 +70,8 @@ export class JobRecordService {
     const labor = this.laborForProject(projectId);
     const materials = this.materialsForProject(projectId);
     const manualLaborHours = labor.reduce((s, e) => s + (e.totalHours ?? 0), 0);
-    const manualLaborCost = labor.reduce((s, e) => s + (e.laborCost ?? 0), 0);
+    const employees = this.employees();
+    const manualLaborCost = labor.reduce((s, e) => s + laborCostForManualEntry(e, employees), 0);
     const manualMaterialCost = materials.reduce((s, m) => s + (m.totalCost ?? 0), 0);
 
     const timeEntries = projectRecord ? this.timeEntriesForProject(projectRecord) : [];
@@ -75,7 +86,11 @@ export class JobRecordService {
       syncedLaborHours,
       projectRecord?.totalLaborHours ?? 0,
     );
-    const laborCost = manualLaborCost;
+    const syncedLaborCost = timeEntries.reduce(
+      (s, e) => s + laborCostForTimeEntry(e, employees),
+      0,
+    );
+    const laborCost = manualLaborCost + syncedLaborCost;
     const materialCost = manualMaterialCost + syncedMaterialCost;
     const cos = changeOrders.filter(c => c.projectId === projectId);
     const coAmount = (c: ChangeOrder) =>
@@ -148,7 +163,15 @@ export class JobRecordService {
     const ot = entry.overtimeHours ?? 0;
     const dt = entry.doubleTimeHours ?? 0;
     const totalHours = entry.totalHours ?? reg + ot + dt;
-    const laborCost = entry.laborCost ?? (entry.costRate != null ? totalHours * entry.costRate : undefined);
+    const employees = this.employees();
+    const rate = resolveHourlyRate(employees, {
+      employeeId: entry.employeeId,
+      employeeName: entry.employeeName,
+      costRate: entry.costRate,
+    });
+    const laborCost = rate > 0
+      ? computeLaborCostFromHours(reg, ot, dt, rate)
+      : entry.laborCost;
     const saved = await firstValueFrom(this.data.createProjectLaborEntry({
       ...entry,
       regularHours: reg,

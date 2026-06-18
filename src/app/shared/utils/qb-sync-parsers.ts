@@ -53,10 +53,83 @@ function isParentTotalRow(label: string): boolean {
   return lower === 'total' || lower.startsWith('total ') || lower.includes('grand total');
 }
 
-export function parseCustomersRows(rows: string[][]): QuickBooksCustomerProject[] {
-  const records = recordsFromSheetRows(rows);
-  const out: QuickBooksCustomerProject[] = [];
+function isQbReportPreamble(label: string): boolean {
+  const lower = label.toLowerCase();
+  return !label
+    || lower === 'customers'
+    || lower === 'bill payments'
+    || lower === 'invoice details'
+    || lower.includes('income by customer')
+    || lower.includes('a/r aging')
+    || lower.includes('vendor balance')
+    || lower.includes('period:')
+    || lower.includes('accounting method')
+    || lower === 'all dates'
+    || lower.includes('aging summary report');
+}
 
+/** Locate the real column-header row in a QuickBooks multi-row report export. */
+export function findQbTableHeaderRow(
+  rows: string[][],
+  signatures: readonly (readonly string[])[],
+): number {
+  for (let i = 0; i < Math.min(rows.length, 40); i++) {
+    const headers = (rows[i] ?? []).map(c => normalizeHeader(c));
+    const nonEmpty = headers.filter(Boolean);
+    if (nonEmpty.length < 2) continue;
+    for (const sig of signatures) {
+      const hits = sig.filter(s => {
+        const key = normalizeHeader(s);
+        return headers.some(h => h === key || h.includes(key) || key.includes(h));
+      });
+      if (hits.length >= Math.min(2, sig.length)) return i;
+    }
+  }
+  return -1;
+}
+
+export function recordsFromQbExportRows(
+  rows: string[][],
+  headerSignatures: readonly (readonly string[])[],
+): Record<string, string>[] {
+  const idx = findQbTableHeaderRow(rows, headerSignatures);
+  if (idx < 0) return recordsFromSheetRows(rows);
+  return recordsFromSheetRows(rows.slice(idx));
+}
+
+/** QuickBooks Customers export — job labels appear in columns A/B without a single header row. */
+export function parseCustomersReportRows(rows: string[][]): QuickBooksCustomerProject[] {
+  const byJob = new Map<string, QuickBooksCustomerProject>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    for (const col of [0, 1]) {
+      const label = cellStr(row[col]);
+      if (!label || isQbReportPreamble(label)) continue;
+      const { jobNumber, projectName } = parseJobFromLabel(label);
+      if (!jobNumber) continue;
+
+      const fullName = cellStr(row[1]) || label;
+      const importKey = stableQbKey(['customer', jobNumber, fullName]);
+      byJob.set(jobNumber, {
+        id: uuidv4(),
+        jobNumber,
+        customerName: projectName || fullName,
+        fullName,
+        balance: parseMoney(row[12]),
+        email: cellStr(row[11]) || undefined,
+        sourceRow: i + 1,
+        status: 'Imported',
+        importKey,
+      });
+    }
+  }
+
+  return [...byJob.values()];
+}
+
+function parseCustomersTableRows(records: Record<string, string>[]): QuickBooksCustomerProject[] {
+  const out: QuickBooksCustomerProject[] = [];
   for (const rec of records) {
     const customer = pick(rec, 'customer', 'customer_full_name', 'customer_fullname', 'name');
     const fullName = pick(rec, 'customer_full_name', 'customer_fullname', 'customer') || customer;
@@ -83,10 +156,51 @@ export function parseCustomersRows(rows: string[][]): QuickBooksCustomerProject[
   return out;
 }
 
-export function parseIncomeByCustomerRows(rows: string[][]): QuickBooksIncomeByCustomer[] {
-  const records = recordsFromSheetRows(rows);
+export function parseCustomersRows(rows: string[][]): QuickBooksCustomerProject[] {
+  const report = parseCustomersReportRows(rows);
+  if (report.length) return report;
+  const records = recordsFromQbExportRows(rows, [
+    ['customer', 'balance'],
+    ['customer_full_name', 'email'],
+  ]);
+  return parseCustomersTableRows(records);
+}
+
+/** QuickBooks Income by Customer Summary — hierarchical report (job rows in column A). */
+export function parseIncomeByCustomerReportRows(rows: string[][]): QuickBooksIncomeByCustomer[] {
   const out: QuickBooksIncomeByCustomer[] = [];
 
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    const label = cellStr(row[0]);
+    if (!label || isQbReportPreamble(label) || isParentTotalRow(label)) continue;
+
+    const { jobNumber } = parseJobFromLabel(label);
+    if (!jobNumber) continue;
+
+    const income = parseMoney(row[1]);
+    const expenses = parseMoney(row[2]);
+    const netIncome = parseMoney(row[3]) || (income - expenses);
+    if (!income && !expenses && !netIncome) continue;
+
+    out.push({
+      id: uuidv4(),
+      jobNumber,
+      customerLabel: label,
+      income,
+      expenses,
+      netIncome,
+      sourceRow: i + 1,
+      status: 'Imported',
+      importKey: stableQbKey(['income', jobNumber, income, expenses]),
+    });
+  }
+
+  return out;
+}
+
+function parseIncomeByCustomerTableRows(records: Record<string, string>[]): QuickBooksIncomeByCustomer[] {
+  const out: QuickBooksIncomeByCustomer[] = [];
   for (const rec of records) {
     const label = pick(rec, 'customer', 'project', 'project_name', 'customer_project', 'name');
     if (!label || isParentTotalRow(label)) continue;
@@ -112,8 +226,22 @@ export function parseIncomeByCustomerRows(rows: string[][]): QuickBooksIncomeByC
   return out;
 }
 
+export function parseIncomeByCustomerRows(rows: string[][]): QuickBooksIncomeByCustomer[] {
+  const report = parseIncomeByCustomerReportRows(rows);
+  if (report.length) return report;
+  const records = recordsFromQbExportRows(rows, [
+    ['income', 'expenses', 'net income'],
+    ['customer', 'income', 'expenses'],
+  ]);
+  return parseIncomeByCustomerTableRows(records);
+}
+
 export function parseInvoiceDetailRows(rows: string[][]): QuickBooksInvoiceLine[] {
-  const records = recordsFromSheetRows(rows);
+  const records = recordsFromQbExportRows(rows, [
+    ['memo', 'item amount line'],
+    ['memo/description', 'item amount line'],
+    ['line order', 'memo'],
+  ]);
   const out: QuickBooksInvoiceLine[] = [];
 
   for (const rec of records) {
@@ -126,7 +254,7 @@ export function parseInvoiceDetailRows(rows: string[][]): QuickBooksInvoiceLine[
     const fromMemo = parseJobFromLabel(memo);
     const fromCustomer = parseJobFromLabel(customer);
     const jobNumber = fromMemo.jobNumber ?? fromCustomer.jobNumber;
-    const invoiceDate = parseDate(pick(rec, 'date'));
+    const invoiceDate = parseDate(pick(rec, 'date', 'service_date'));
     const paidDate = parseDate(pick(rec, 'paid_date', 'paid date'));
 
     out.push({
@@ -197,7 +325,13 @@ export function parseArAgingSummaryReportRows(rows: string[][]): QuickBooksArAgi
 }
 
 export function parseArAgingRows(rows: string[][]): QuickBooksArAging[] {
-  const records = recordsFromSheetRows(rows);
+  const report = parseArAgingSummaryReportRows(rows);
+  if (report.length) return report;
+
+  const records = recordsFromQbExportRows(rows, [
+    ['current', '1 - 30', '31 - 60'],
+    ['customer', 'current', 'total'],
+  ]);
   const out: QuickBooksArAging[] = [];
 
   for (const rec of records) {
@@ -231,8 +365,39 @@ export function parseArAgingRows(rows: string[][]): QuickBooksArAging[] {
   return out;
 }
 
+/** QuickBooks Vendor Balance Summary — vendor name in column A, balance in column B. */
+export function parseVendorBalanceReportRows(rows: string[][]): QuickBooksVendorBalance[] {
+  const out: QuickBooksVendorBalance[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i] ?? [];
+    const vendorName = cellStr(row[0]);
+    if (!vendorName || isQbReportPreamble(vendorName) || isParentTotalRow(vendorName)) continue;
+
+    const totalOpenBalance = parseMoney(row[1]);
+    if (!totalOpenBalance) continue;
+
+    out.push({
+      id: uuidv4(),
+      vendorName,
+      totalOpenBalance,
+      sourceRow: i + 1,
+      status: 'Imported',
+      importKey: stableQbKey(['vendor-bal', vendorName, totalOpenBalance]),
+    });
+  }
+
+  return out;
+}
+
 export function parseVendorBalanceRows(rows: string[][]): QuickBooksVendorBalance[] {
-  const records = recordsFromSheetRows(rows);
+  const report = parseVendorBalanceReportRows(rows);
+  if (report.length) return report;
+
+  const records = recordsFromQbExportRows(rows, [
+    ['vendor', 'total'],
+    ['vendor', 'balance'],
+  ]);
   const out: QuickBooksVendorBalance[] = [];
 
   for (const rec of records) {
@@ -254,7 +419,10 @@ export function parseVendorBalanceRows(rows: string[][]): QuickBooksVendorBalanc
 }
 
 export function parseBillPaymentRows(rows: string[][]): QuickBooksBillPayment[] {
-  const records = recordsFromSheetRows(rows);
+  const records = recordsFromQbExportRows(rows, [
+    ['id', 'line.amount'],
+    ['id', 'date', 'line.amount'],
+  ]);
   const out: QuickBooksBillPayment[] = [];
 
   for (const rec of records) {
@@ -327,7 +495,12 @@ export function parseQuickBooksProjectCostDetailRows(
   rows: string[][],
   sourceTabName: string,
 ): QuickBooksProjectCostTransaction[] {
-  const records = recordsFromSheetRows(rows);
+  const records = recordsFromQbExportRows(rows, [
+    ['date', 'amount'],
+    ['transaction date', 'amount'],
+    ['vendor', 'customer', 'amount'],
+    ['date', 'vendor', 'amount'],
+  ]);
   const out: QuickBooksProjectCostTransaction[] = [];
   const seenKeys = new Set<string>();
 

@@ -1,10 +1,11 @@
 import { Component, ChangeDetectionStrategy, Input, inject, signal, computed, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
-import { Project, ChangeOrder, ProjectTask, PO, TimeEntry } from '@app/models/types';
+import { Project, ChangeOrder, ProjectTask, PO, TimeEntry, Employee } from '@app/models/types';
 import { ProjectLaborEntry, ProjectMaterial } from '@app/models/job-record.types';
 import { DataService } from '@core/services/data.service';
 import { JobRecordService } from '@features/projects/services/job-record.service';
@@ -20,6 +21,13 @@ import { ProjectWorkflowSaveService } from '@features/projects/services/project-
 import { ProjectFilesRepository } from '@core/services/project-files.repository';
 import { formatMoney, formatPercent } from '@features/projects/utils/project-profit.compute';
 import { projectProfileLabel } from '@features/projects/utils/project-profile.compat';
+import {
+  computeLaborCostFromHours,
+  laborCostForManualEntry,
+  laborCostForTimeEntry,
+  resolveHourlyRate,
+} from '@shared/utils/labor-cost.compute';
+import { EmployeeDirectoryService } from '@features/labor/services/employee-directory.service';
 
 type SaveState = 'idle' | 'saving' | 'saved';
 
@@ -204,10 +212,10 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
 @Component({
   selector: 'app-project-record-labor-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, RouterLink, EmptyStateComponent],
   template: `
     <section class="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      <div class="px-5 py-3 border-b flex justify-between items-center">
+      <div class="px-5 py-3 border-b flex flex-wrap justify-between items-center gap-2">
         <div>
           <h2 class="text-sm font-bold">Labor</h2>
           <p class="text-xs text-slate-500">
@@ -216,26 +224,45 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
             · Labor cost: {{ fmt(totalCost) }}
           </p>
         </div>
-        <button type="button" (click)="openLaborForm()" class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">Add Labor Cost</button>
+        <a routerLink="/employees" class="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg">
+          Employees & wages
+        </a>
       </div>
+      @if (missingPayCount() > 0) {
+        <p class="px-5 py-2 text-xs text-amber-800 bg-amber-50 border-b border-amber-100">
+          {{ missingPayCount() }} Master Time name(s) on this job need a wage on the
+          <a routerLink="/employees" class="font-semibold underline">Employees</a> page before cost can calculate.
+        </p>
+      }
       @if (saveError()) {
         <p class="px-5 py-2 text-xs text-rose-700 bg-rose-50 border-b border-rose-100">{{ saveError() }}</p>
       }
       @if (showForm()) {
         <div class="p-4 border-b bg-slate-50 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Employee</label>
+            <select [(ngModel)]="draft.employeeId" (ngModelChange)="onEmployeeSelected($event)" class="w-full border rounded-lg px-3 py-2 text-sm">
+              <option value="">Select employee</option>
+              @for (emp of employees(); track emp.id) {
+                <option [value]="emp.id">{{ emp.name }} — {{ fmt(emp.payPerHour ?? 0) }}/hr</option>
+              }
+            </select>
+          </div>
           <input type="date" [(ngModel)]="draft.workDate" class="border rounded-lg px-3 py-2 text-sm" />
-          <input [(ngModel)]="draft.employeeName" placeholder="Employee / crew" class="border rounded-lg px-3 py-2 text-sm" />
-          <input [(ngModel)]="draft.classification" placeholder="Classification" class="border rounded-lg px-3 py-2 text-sm" />
-          <input [(ngModel)]="draft.laborCode" placeholder="Labor code" class="border rounded-lg px-3 py-2 text-sm" />
           <input type="number" [(ngModel)]="draft.regularHours" placeholder="Reg hrs" class="border rounded-lg px-3 py-2 text-sm" />
           <input type="number" [(ngModel)]="draft.overtimeHours" placeholder="OT hrs" class="border rounded-lg px-3 py-2 text-sm" />
           <input type="number" [(ngModel)]="draft.doubleTimeHours" placeholder="DT hrs" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.costRate" placeholder="Cost rate ($/hr)" class="border rounded-lg px-3 py-2 text-sm" />
-          <input type="number" [(ngModel)]="draft.laborCost" placeholder="Or total labor cost ($)" class="border rounded-lg px-3 py-2 text-sm sm:col-span-2" />
-          <div class="sm:col-span-2 flex gap-2 items-center">
+          <div class="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3">
+            <p class="text-sm text-slate-600">
+              Calculated cost: <span class="font-bold text-slate-900">{{ fmt(draftPreviewCost()) }}</span>
+            </p>
             <button type="button" (click)="saveLabor()" [disabled]="saving()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">{{ saving() ? 'Saving…' : 'Save' }}</button>
             <button type="button" (click)="closeLaborForm()" class="border px-4 py-2 rounded-lg text-sm">Cancel</button>
           </div>
+        </div>
+      } @else {
+        <div class="px-5 py-2 border-b bg-slate-50">
+          <button type="button" (click)="openLaborForm()" class="text-xs font-semibold text-slate-700">+ Add manual hours</button>
         </div>
       }
       <table class="w-full text-sm">
@@ -262,7 +289,13 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
               <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
               <td class="px-4 py-2 text-right font-semibold">{{ row.totalHours }}</td>
-              <td class="px-4 py-2 text-right text-slate-400">—</td>
+              <td class="px-4 py-2 text-right font-semibold">
+                @if (syncedRowCost(row) > 0) {
+                  {{ fmt(syncedRowCost(row)) }}
+                } @else {
+                  <a routerLink="/employees" class="text-xs text-amber-700 font-semibold">Set wage</a>
+                }
+              </td>
               <td class="px-4 py-2 text-xs text-indigo-700">Master Time</td>
             </tr>
           }
@@ -275,12 +308,12 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
               <td class="px-4 py-2 text-right">{{ row.overtimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.doubleTimeHours }}</td>
               <td class="px-4 py-2 text-right">{{ row.totalHours }}</td>
-              <td class="px-4 py-2 text-right font-semibold">{{ fmt(row.laborCost ?? 0) }}</td>
+              <td class="px-4 py-2 text-right font-semibold">{{ fmt(manualRowCost(row)) }}</td>
               <td class="px-4 py-2 text-xs text-slate-500">Manual</td>
             </tr>
           }
           @if (!syncedRows().length && !manualEntries().length) {
-            <tr><td colspan="9"><app-empty-state title="No labor entered yet" message="Sync Master Time Data Search or add labor manually." /></td></tr>
+            <tr><td colspan="9"><app-empty-state title="No labor on this job yet" message="Hours from Master Time will appear here. Set wages on the Employees page to calculate cost." /></td></tr>
           }
         </tbody>
       </table>
@@ -291,14 +324,21 @@ export class ProjectRecordOverviewTabComponent implements OnChanges {
 export class ProjectRecordLaborTabComponent {
   @Input({ required: true }) project!: Project;
   private jobRecord = inject(JobRecordService);
+  private employeeSvc = inject(EmployeeDirectoryService);
   private data = inject(DataService);
   showForm = signal(false);
   saving = signal(false);
   saveError = signal<string | null>(null);
-  draft: Partial<ProjectLaborEntry> = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
+  draft: Partial<ProjectLaborEntry> = {
+    workDate: new Date().toISOString().slice(0, 10),
+    regularHours: 0,
+    overtimeHours: 0,
+    doubleTimeHours: 0,
+    employeeId: '',
+  };
 
   private allLabor = toSignal(this.data.getProjectLaborEntries(), { initialValue: [] as ProjectLaborEntry[] });
-  private allTime = toSignal(this.data.getTimeEntries(), { initialValue: [] as TimeEntry[] });
+  employees = toSignal(this.data.getEmployees(), { initialValue: [] as Employee[] });
 
   manualEntries = computed(() => this.allLabor().filter(e => e.projectId === this.project.id));
 
@@ -306,6 +346,15 @@ export class ProjectRecordLaborTabComponent {
     this.jobRecord.timeEntriesForProject(this.project)
       .sort((a, b) => (b.workDate ?? '').localeCompare(a.workDate ?? '')),
   );
+
+  missingPayCount = computed(() => {
+    const names = new Set(
+      this.syncedRows()
+        .map(r => (r.employeeName ?? '').trim())
+        .filter(Boolean),
+    );
+    return [...names].filter(n => this.employeeSvc.namesMissingPayRate().includes(n)).length;
+  });
 
   get syncedHours(): number {
     return this.syncedRows().reduce((s, e) => s + (e.totalHours ?? 0), 0);
@@ -317,10 +366,42 @@ export class ProjectRecordLaborTabComponent {
   }
 
   get totalCost(): number {
-    return this.manualEntries().reduce((s, e) => s + (e.laborCost ?? 0), 0);
+    const emps = this.employees();
+    const manual = this.manualEntries().reduce((s, e) => s + laborCostForManualEntry(e, emps), 0);
+    const synced = this.syncedRows().reduce((s, e) => s + laborCostForTimeEntry(e, emps), 0);
+    return manual + synced;
   }
 
   fmt = formatMoney;
+
+  syncedRowCost(row: TimeEntry): number {
+    return laborCostForTimeEntry(row, this.employees());
+  }
+
+  manualRowCost(row: ProjectLaborEntry): number {
+    return laborCostForManualEntry(row, this.employees());
+  }
+
+  draftPreviewCost(): number {
+    const rate = resolveHourlyRate(this.employees(), {
+      employeeId: this.draft.employeeId,
+      employeeName: this.draft.employeeName,
+      costRate: this.draft.costRate,
+    });
+    return computeLaborCostFromHours(
+      this.draft.regularHours ?? 0,
+      this.draft.overtimeHours ?? 0,
+      this.draft.doubleTimeHours ?? 0,
+      rate,
+    );
+  }
+
+  onEmployeeSelected(employeeId: string): void {
+    const emp = this.employees().find(e => e.id === employeeId);
+    if (!emp) return;
+    this.draft.employeeName = emp.name;
+    this.draft.costRate = emp.payPerHour;
+  }
 
   openLaborForm(): void {
     this.saveError.set(null);
@@ -337,18 +418,35 @@ export class ProjectRecordLaborTabComponent {
     const ot = this.draft.overtimeHours ?? 0;
     const dt = this.draft.doubleTimeHours ?? 0;
     const totalHours = reg + ot + dt;
-    const hasCost = (this.draft.laborCost ?? 0) > 0
-      || ((this.draft.costRate ?? 0) > 0 && totalHours > 0);
-    if (totalHours <= 0 && !hasCost) {
-      this.saveError.set('Enter hours or a labor cost amount.');
+    const rate = resolveHourlyRate(this.employees(), {
+      employeeId: this.draft.employeeId,
+      employeeName: this.draft.employeeName,
+      costRate: this.draft.costRate,
+    });
+    if (totalHours <= 0) {
+      this.saveError.set('Enter hours for this entry.');
+      return;
+    }
+    if (rate <= 0) {
+      this.saveError.set('Select an employee with a wage set on the Employees page.');
       return;
     }
     this.saveError.set(null);
     this.saving.set(true);
     try {
-      await this.jobRecord.createLaborEntry({ ...this.draft, projectId: this.project.id });
+      await this.jobRecord.createLaborEntry({
+        ...this.draft,
+        projectId: this.project.id,
+        employeeId: this.draft.employeeId || undefined,
+      });
       this.closeLaborForm();
-      this.draft = { workDate: new Date().toISOString().slice(0, 10), regularHours: 0, overtimeHours: 0, doubleTimeHours: 0 };
+      this.draft = {
+        workDate: new Date().toISOString().slice(0, 10),
+        regularHours: 0,
+        overtimeHours: 0,
+        doubleTimeHours: 0,
+        employeeId: '',
+      };
     } catch (err) {
       this.saveError.set(err instanceof Error ? err.message : 'Could not save labor entry.');
     } finally {

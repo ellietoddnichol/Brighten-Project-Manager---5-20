@@ -8,6 +8,7 @@ export type GlobalNavSectionId =
   | 'field'
   | 'documents'
   | 'people'
+  | 'employees'
   | 'payroll'
   | 'settings';
 
@@ -100,6 +101,14 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     isActive: path => pathMatches(path, '/documents'),
   },
   {
+    id: 'employees',
+    label: 'Employees',
+    route: '/employees',
+    icon: 'groups',
+    group: 'people',
+    isActive: path => pathMatches(path, '/employees'),
+  },
+  {
     id: 'people',
     label: 'Directory',
     route: '/directory',
@@ -152,7 +161,7 @@ export const DIRECTORY_HUB_LINKS: HubLink[] = [
   { title: 'Subcontractors', description: 'Sub compliance, agreements, and project assignments.', route: '/subcontractors', icon: 'engineering' },
   { title: 'Vendors', description: 'Vendor balances and AP-related contacts.', route: '/subcontractors', icon: 'storefront', queryParams: { view: 'directory' } },
   { title: 'Customers', description: 'Job customers synced from projects and QuickBooks.', route: '/projects', icon: 'business' },
-  { title: 'Employees & Contacts', description: 'PMs, supers, and key job contacts from project records.', route: '/projects', icon: 'groups' },
+  { title: 'Employees', description: 'Hourly wages for Master Time — drives labor cost on every job.', route: '/employees', icon: 'groups' },
 ];
 
 export const TASKS_HUB_LINKS: HubLink[] = [
