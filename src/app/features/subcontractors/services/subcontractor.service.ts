@@ -22,13 +22,16 @@ export class SubcontractorService {
   }
 
   async saveSubcontractor(draft: Partial<Subcontractor>, editingId?: string | null): Promise<Subcontractor> {
+    const activeCount = editingId
+      ? countActiveProjectsForSub(editingId, this.data.projectSubcontractorsSnapshot())
+      : 0;
     const payload: Partial<Subcontractor> = {
       ...draft,
       w9Status: draft.w9Status ?? 'Missing',
       insuranceStatus: draft.insuranceStatus ?? 'Missing',
       status: draft.status ?? 'PendingSetup',
     };
-    payload.status = computeMasterSubcontractorStatus(payload as Subcontractor);
+    payload.status = computeMasterSubcontractorStatus(payload as Subcontractor, activeCount);
 
     return editingId
       ? firstValueFrom(this.data.updateSubcontractor(editingId, payload))
@@ -36,8 +39,9 @@ export class SubcontractorService {
   }
 
   async markApproved(sub: Subcontractor): Promise<Subcontractor> {
+    const activeCount = countActiveProjectsForSub(sub.id, this.data.projectSubcontractorsSnapshot());
     return firstValueFrom(this.data.updateSubcontractor(sub.id, {
-      status: computeMasterSubcontractorStatus({ ...sub, status: 'Approved' }),
+      status: computeMasterSubcontractorStatus({ ...sub, status: 'Approved' }, activeCount),
     }));
   }
 
@@ -58,6 +62,7 @@ export class SubcontractorService {
     const insuranceStatus = deriveMasterInsuranceStatus(docs, subcontractorId, sub.coiExpirationDate);
     const coi = docs.find(d => d.documentType === 'CertificateOfInsurance' && d.expirationDate);
 
+    const activeCount = countActiveProjectsForSub(subcontractorId, this.data.projectSubcontractorsSnapshot());
     const updated: Partial<Subcontractor> = {
       w9Status,
       insuranceStatus,
@@ -66,7 +71,7 @@ export class SubcontractorService {
         ...sub,
         w9Status,
         insuranceStatus,
-      }),
+      }, activeCount),
     };
 
     void firstValueFrom(this.data.updateSubcontractor(subcontractorId, updated));

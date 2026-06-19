@@ -8,6 +8,7 @@ import {
   ProjectSubcontractor,
   Subcontractor,
   SubcontractorInvoice,
+  ProjectSubcontractorStatus,
 } from '@app/models/subcontractor.types';
 import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
@@ -99,6 +100,35 @@ import { manualFirstConfig } from '@app/config/manual-first.config';
                 <div class="mt-3">
                   <label class="block text-xs text-slate-500 mb-1">Scope of work</label>
                   <textarea [(ngModel)]="draft.scopeOfWork" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Cost code</label>
+                    <input [(ngModel)]="draft.costCode" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. 03-300">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Status</label>
+                    <select [(ngModel)]="draft.status" class="w-full px-3 py-2 border rounded-lg text-sm">
+                      <option value="Planned">Planned</option>
+                      <option value="PendingContract">Pending contract</option>
+                      <option value="Active">Active</option>
+                      <option value="ApprovedToStart">Approved to start</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Start date</label>
+                    <input type="date" [(ngModel)]="draft.startDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Finish date</label>
+                    <input type="date" [(ngModel)]="draft.finishDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                  </div>
+                </div>
+                <div class="mt-3">
+                  <label class="block text-xs text-slate-500 mb-1">Notes</label>
+                  <textarea [(ngModel)]="draft.notes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
                 </div>
                 <div class="mt-3 grid grid-cols-3 gap-2 text-xs">
                   <div class="bg-slate-50 rounded-lg p-2 border">
@@ -199,9 +229,37 @@ import { manualFirstConfig } from '@app/config/manual-first.config';
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contract amount</label>
                 <input type="number" [(ngModel)]="assignContract" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Total subcontract amount">
               </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cost code</label>
+                  <input [(ngModel)]="assignCostCode" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="e.g. 03-300">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job status</label>
+                  <select [(ngModel)]="assignStatus" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    <option value="Planned">Planned</option>
+                    <option value="PendingContract">Pending contract</option>
+                    <option value="Active">Active</option>
+                  </select>
+                </div>
+              </div>
               <div>
                 <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Scope of work</label>
                 <textarea [(ngModel)]="assignScope" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Start date</label>
+                  <input type="date" [(ngModel)]="assignStartDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Finish date</label>
+                  <input type="date" [(ngModel)]="assignFinishDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
+                <textarea [(ngModel)]="assignNotes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Contract notes, PO reference, etc."></textarea>
               </div>
               <button type="button" (click)="assign()" [disabled]="saving()"
                       class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 w-full">
@@ -240,6 +298,11 @@ export class ProjectSubcontractorsTabComponent implements OnChanges {
   assignTrade = '';
   assignContract: number | null = null;
   assignScope = '';
+  assignCostCode = '';
+  assignStartDate = '';
+  assignFinishDate = '';
+  assignNotes = '';
+  assignStatus: ProjectSubcontractorStatus = 'Active';
   billingDraft: Partial<SubcontractorInvoice> = {};
 
   projectSubs = computed(() =>
@@ -280,6 +343,11 @@ export class ProjectSubcontractorsTabComponent implements OnChanges {
     this.assignTrade = '';
     this.assignContract = null;
     this.assignScope = '';
+    this.assignCostCode = '';
+    this.assignStartDate = '';
+    this.assignFinishDate = '';
+    this.assignNotes = '';
+    this.assignStatus = 'Active';
     this.saveError.set(null);
     this.drawerOpen.set(true);
   }
@@ -291,6 +359,11 @@ export class ProjectSubcontractorsTabComponent implements OnChanges {
       originalCommitmentAmount: ps.originalCommitmentAmount ?? ps.currentCommitmentAmount,
       trade: ps.trade,
       scopeOfWork: ps.scopeOfWork,
+      costCode: ps.costCode,
+      startDate: ps.startDate,
+      finishDate: ps.finishDate,
+      notes: ps.notes,
+      status: ps.status,
     };
     this.billingDraft = { invoiceDate: new Date().toISOString().slice(0, 10) };
     this.showNewBilling.set(false);
@@ -335,9 +408,13 @@ export class ProjectSubcontractorsTabComponent implements OnChanges {
       await this.psSvc.assignToProject(this.project, sub, {
         trade: this.assignTrade.trim() || sub.trade,
         scopeOfWork: this.assignScope.trim() || undefined,
+        costCode: this.assignCostCode.trim() || undefined,
+        startDate: this.assignStartDate || undefined,
+        finishDate: this.assignFinishDate || undefined,
+        notes: this.assignNotes.trim() || undefined,
         originalCommitmentAmount: contract,
         currentCommitmentAmount: contract,
-        status: 'Active',
+        status: this.assignStatus,
       });
       this.closeDrawer();
     } catch (err) {

@@ -204,14 +204,19 @@ export function subCoiLabel(sub: Subcontractor, today = new Date()): string {
   return sub.insuranceStatus;
 }
 
-export function subBadges(sub: Subcontractor, today = new Date()): string[] {
+export function subBadges(sub: Subcontractor, activeProjects = 0, today = new Date()): string[] {
   const badges: string[] = [];
   if (sub.status === 'DoNotUse') badges.push('Do Not Use');
-  if (sub.w9Status === 'Missing') badges.push('Missing W-9');
-  if (sub.insuranceStatus === 'Missing') badges.push('Missing COI');
-  if (sub.insuranceStatus === 'Expired' || (sub.coiExpirationDate && isDocumentExpired(sub.coiExpirationDate, today))) {
+  if (activeProjects === 0 && (sub.status === 'PendingSetup' || sub.status === 'MissingCompliance')) {
+    badges.push('Not on a job yet');
+    if (effectiveVendorClassification(sub) === 'NeedsReview') badges.push('Needs Review');
+    return badges;
+  }
+  if (activeProjects > 0 && sub.w9Status === 'Missing') badges.push('Missing W-9');
+  if (activeProjects > 0 && sub.insuranceStatus === 'Missing') badges.push('Missing COI');
+  if (activeProjects > 0 && (sub.insuranceStatus === 'Expired' || (sub.coiExpirationDate && isDocumentExpired(sub.coiExpirationDate, today)))) {
     badges.push('Expired COI');
-  } else if (sub.coiExpirationDate && isCoiExpiringSoon(sub.coiExpirationDate, today)) {
+  } else if (activeProjects > 0 && sub.coiExpirationDate && isCoiExpiringSoon(sub.coiExpirationDate, today)) {
     badges.push('Expiring');
   }
   if (effectiveVendorClassification(sub) === 'NeedsReview') badges.push('Needs Review');
@@ -235,8 +240,9 @@ function qbBalanceForSub(sub: Subcontractor, vendorBalances: QuickBooksVendorBal
 function subNextAction(sub: Subcontractor, activeProjects: number): string {
   if (sub.status === 'DoNotUse') return 'Review status';
   if (effectiveVendorClassification(sub) === 'NeedsReview') return 'Classify vendor';
-  if (sub.w9Status === 'Missing') return 'Collect W-9';
-  if (sub.insuranceStatus === 'Missing' || sub.insuranceStatus === 'Expired') return 'Collect COI';
+  if (activeProjects === 0 && sub.status === 'PendingSetup') return 'Assign to job';
+  if (activeProjects > 0 && sub.w9Status === 'Missing') return 'Collect W-9';
+  if (activeProjects > 0 && (sub.insuranceStatus === 'Missing' || sub.insuranceStatus === 'Expired')) return 'Collect COI';
   if (sub.coiExpirationDate && isCoiExpiringSoon(sub.coiExpirationDate)) return 'Renew COI';
   if (activeProjects > 0) return 'Open record';
   if (sub.status === 'PendingSetup') return 'Complete setup';
@@ -270,9 +276,9 @@ export function matchesSubHubFilter(
         && sub.status !== 'Inactive'
         && sub.status !== 'DoNotUse';
     case 'missingW9':
-      return sub.w9Status === 'Missing';
+      return activeProjects > 0 && sub.w9Status === 'Missing';
     case 'missingCoi':
-      return sub.insuranceStatus === 'Missing';
+      return activeProjects > 0 && sub.insuranceStatus === 'Missing';
     case 'expiringCoi':
       return !!(sub.coiExpirationDate && isCoiExpiringSoon(sub.coiExpirationDate, today) && !isDocumentExpired(sub.coiExpirationDate, today));
     case 'needsReview':
@@ -305,11 +311,17 @@ export function summarizeDirectoryHub(input: {
     if (s.companyName?.trim()) companyNames.add(normalizeCompanyName(s.companyName));
   }
 
+  const subsOnActiveJobs = new Set(
+    input.projectSubs
+      .filter(ps => ['ApprovedToStart', 'Active', 'WorkComplete', 'FinalWaiverNeeded', 'PendingCompliance', 'PendingContract'].includes(ps.status))
+      .map(ps => ps.subcontractorId),
+  );
+
   return {
     companies: companyNames.size,
     needsReview: subs.filter(s => effectiveVendorClassification(s) === 'NeedsReview').length,
-    missingCoi: subs.filter(s => s.insuranceStatus === 'Missing').length,
-    missingW9: subs.filter(s => s.w9Status === 'Missing').length,
+    missingCoi: subs.filter(s => subsOnActiveJobs.has(s.id) && s.insuranceStatus === 'Missing').length,
+    missingW9: subs.filter(s => subsOnActiveJobs.has(s.id) && s.w9Status === 'Missing').length,
     fromQuickBooks: subs.filter(s => isQuickBooksSource(s.source)).length,
     fromDrive: subs.filter(s => isDriveSource(s.source)).length,
     activeProjectSubs: new Set(
@@ -349,7 +361,7 @@ export function buildDirectorySubRows(input: {
         costLabel: balance != null && balance > 0 ? `$${Math.round(balance).toLocaleString()} QB` : cost,
         status: sub.status,
         nextAction: subNextAction(sub, activeProjects),
-        badges: subBadges(sub),
+        badges: subBadges(sub, activeProjects),
         sub,
       };
     })
@@ -646,7 +658,7 @@ export function buildDirectoryOverviewRows(input: {
       });
     }
 
-    if (sub.status === 'MissingCompliance' || (active > 0 && (sub.w9Status === 'Missing' || sub.insuranceStatus === 'Missing'))) {
+    if (active > 0 && (sub.status === 'MissingCompliance' || sub.w9Status === 'Missing' || sub.insuranceStatus === 'Missing')) {
       rows.push({
         ...base,
         id: `comp-${sub.id}`,
@@ -668,14 +680,17 @@ export function buildDirectoryOverviewRows(input: {
       });
     }
 
-    if (active > 0 && effectiveVendorClassification(sub) === 'Subcontractor') {
+    const complianceBadges = subBadges(sub, active, today).filter(b =>
+      b.includes('Missing') || b === 'Expired COI' || b === 'Expiring',
+    );
+    if (active > 0 && complianceBadges.length) {
       rows.push({
         ...base,
         id: `active-${sub.id}`,
         section: 'activeSubs',
-        complianceIssue: subBadges(sub, today)[0],
-        nextAction: 'Open subcontractor',
-        severity: subBadges(sub, today).length ? 'warning' : 'warning',
+        complianceIssue: complianceBadges[0],
+        nextAction: subNextAction(sub, active),
+        severity: complianceBadges.some(b => b.includes('Missing') || b === 'Expired COI') ? 'error' : 'warning',
       });
     }
   }

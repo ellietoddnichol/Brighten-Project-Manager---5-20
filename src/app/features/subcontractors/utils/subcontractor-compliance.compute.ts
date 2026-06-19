@@ -152,8 +152,12 @@ export function validateApprovedToStartStatus(
 
 export function computeMasterSubcontractorStatus(
   sub: Pick<Subcontractor, 'w9Status' | 'insuranceStatus' | 'status'>,
+  activeProjectCount = 0,
 ): SubcontractorStatus {
   if (sub.status === 'DoNotUse' || sub.status === 'Inactive') return sub.status;
+  if (activeProjectCount === 0 && (sub.status === 'PendingSetup' || sub.status === 'MissingCompliance')) {
+    return 'PendingSetup';
+  }
   if (sub.w9Status !== 'NotRequired' && sub.w9Status !== 'OnFile') return 'MissingCompliance';
   if (sub.insuranceStatus === 'Missing' || sub.insuranceStatus === 'Expired') return 'MissingCompliance';
   if (sub.status === 'PendingSetup') return 'PendingSetup';

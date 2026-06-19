@@ -1,5 +1,6 @@
 import { Employee } from '@app/models/types';
 import { ProjectLaborEntry } from '@app/models/job-record.types';
+import { employeeNameMatchKey } from '@shared/utils/employee-name-match';
 
 export function computeLaborCostFromHours(
   regularHours: number,
@@ -14,9 +15,13 @@ export function computeLaborCostFromHours(
 }
 
 export function findEmployeeByName(employees: Employee[], name?: string): Employee | undefined {
-  const key = (name ?? '').trim().toLowerCase();
+  const raw = (name ?? '').trim();
+  if (!raw) return undefined;
+  const exact = employees.find(e => (e.name ?? '').trim().toLowerCase() === raw.toLowerCase());
+  if (exact) return exact;
+  const key = employeeNameMatchKey(raw);
   if (!key) return undefined;
-  return employees.find(e => (e.name ?? '').trim().toLowerCase() === key);
+  return employees.find(e => employeeNameMatchKey(e.name ?? '') === key);
 }
 
 export function resolveHourlyRate(

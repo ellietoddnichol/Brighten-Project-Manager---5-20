@@ -54,7 +54,7 @@ describe('directory-hub.compute', () => {
       }],
     });
     expect(summary.companies).toBe(2);
-    expect(summary.missingW9).toBe(2);
+    expect(summary.missingW9).toBe(1);
     expect(summary.activeProjectSubs).toBe(1);
   });
 

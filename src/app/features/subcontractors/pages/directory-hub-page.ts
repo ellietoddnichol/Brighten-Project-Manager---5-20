@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { DataService } from '@core/services/data.service';
 import { SubcontractorService } from '@features/subcontractors/services/subcontractor.service';
 import { SubcontractorSeedService } from '@features/subcontractors/services/subcontractor-seed.service';
+import { ProjectSubcontractorService } from '@features/subcontractors/services/project-subcontractor.service';
 import { ImportReviewService } from '@core/services/import-review.service';
 import { ProjectLifecycleService } from '@features/projects/services/project-lifecycle.service';
 import { ProjectFinancialService } from '@features/projects/services/project-financial.service';
@@ -19,7 +20,7 @@ import { SegmentedControlComponent } from '@app/components/ui/segmented-control'
 import { StatusChipComponent } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { downloadCsv } from '@shared/utils/csv-export';
-import { Subcontractor, VendorClassification } from '@app/models/subcontractor.types';
+import { Subcontractor, ProjectSubcontractor, ProjectSubcontractorStatus, VendorClassification } from '@app/models/subcontractor.types';
 import { Project } from '@app/models/types';
 import {
   buildDirectoryContactRows,
@@ -203,7 +204,9 @@ import {
                                   [class.bg-rose-100]="b.includes('Missing') || b === 'Do Not Use' || b === 'Expired COI'"
                                   [class.text-rose-800]="b.includes('Missing') || b === 'Do Not Use' || b === 'Expired COI'"
                                   [class.bg-amber-100]="b === 'Expiring' || b === 'Needs Review'"
-                                  [class.text-amber-800]="b === 'Expiring' || b === 'Needs Review'">{{ b }}</span>
+                                  [class.text-amber-800]="b === 'Expiring' || b === 'Needs Review'"
+                                  [class.bg-slate-100]="b === 'Not on a job yet'"
+                                  [class.text-slate-600]="b === 'Not on a job yet'">{{ b }}</span>
                           }
                         </div>
                       }
@@ -359,6 +362,114 @@ import {
                 <input [(ngModel)]="draft.email" class="w-full px-3 py-2 border rounded-lg text-sm">
               </div>
             </div>
+            @if (manualFirst) {
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Address</label>
+              <input [(ngModel)]="draft.address" class="w-full px-3 py-2 border rounded-lg text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Notes</label>
+              <textarea [(ngModel)]="draft.notes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Internal notes about this subcontractor"></textarea>
+            </div>
+            }
+            @if (manualFirst && editingId() && editingAssignments().length) {
+            <div class="rounded-lg border border-slate-200 divide-y divide-slate-100">
+              <div class="px-4 py-3 bg-slate-50">
+                <h4 class="text-xs font-bold text-slate-700 uppercase">Job contracts</h4>
+              </div>
+              @for (ps of editingAssignments(); track ps.id) {
+                <div class="p-4 space-y-3">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="text-sm font-semibold text-slate-900">{{ ps.jobNumber }} · {{ ps.projectName }}</p>
+                    <a [routerLink]="['/projects', ps.projectId]" fragment="subs" class="text-xs font-semibold text-indigo-700 hover:underline">Open job</a>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs text-slate-500 mb-1">Contract amount</label>
+                      <input type="number" [(ngModel)]="assignmentEdits[ps.id].currentCommitmentAmount" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-500 mb-1">Cost code</label>
+                      <input [(ngModel)]="assignmentEdits[ps.id].costCode" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Scope of work</label>
+                    <textarea [(ngModel)]="assignmentEdits[ps.id].scopeOfWork" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs text-slate-500 mb-1">Start date</label>
+                      <input type="date" [(ngModel)]="assignmentEdits[ps.id].startDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-500 mb-1">Finish date</label>
+                      <input type="date" [(ngModel)]="assignmentEdits[ps.id].finishDate" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-500 mb-1">Job notes</label>
+                    <textarea [(ngModel)]="assignmentEdits[ps.id].notes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm"></textarea>
+                  </div>
+                </div>
+              }
+            </div>
+            }
+            @if (manualFirst) {
+            <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+              <div>
+                <h4 class="text-xs font-bold text-slate-700 uppercase">{{ editingId() ? 'Add to another job (optional)' : 'Assign to a job (optional)' }}</h4>
+                <p class="text-xs text-slate-500 mt-1">Enter contract details here. W-9 and COI are only required after assignment.</p>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job</label>
+                <select [(ngModel)]="setupProjectId" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  <option value="">— {{ editingId() ? 'Skip new assignment' : 'Add to directory only' }} —</option>
+                  @for (p of setupProjects(); track p.id) {
+                    <option [value]="p.id">{{ p.projectNumber }} · {{ p.projectName }}</option>
+                  }
+                </select>
+              </div>
+              @if (setupProjectId) {
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Contract amount</label>
+                    <input type="number" [(ngModel)]="setupContract" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" placeholder="0">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Cost code</label>
+                    <input [(ngModel)]="setupCostCode" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" placeholder="e.g. 03-300">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Scope of work</label>
+                  <textarea [(ngModel)]="setupScope" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" placeholder="What this sub is doing on the job"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Start date</label>
+                    <input type="date" [(ngModel)]="setupStartDate" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Finish date</label>
+                    <input type="date" [(ngModel)]="setupFinishDate" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job status</label>
+                  <select [(ngModel)]="setupJobStatus" class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                    <option value="Planned">Planned</option>
+                    <option value="PendingContract">Pending contract</option>
+                    <option value="Active">Active</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Job notes</label>
+                  <textarea [(ngModel)]="setupJobNotes" rows="2" class="w-full px-3 py-2 border rounded-lg text-sm bg-white" placeholder="Contract notes, PO reference, etc."></textarea>
+                </div>
+              }
+            </div>
+            }
             @if (!manualFirst) {
             <div class="grid grid-cols-2 gap-4">
               <div>
@@ -384,6 +495,9 @@ import {
               </select>
             </div>
             }
+            @if (saveError()) {
+              <p class="text-xs text-rose-700 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">{{ saveError() }}</p>
+            }
             <div class="flex flex-wrap gap-2 pt-2">
               <button type="button" (click)="save()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Save</button>
               @if (!manualFirst) {
@@ -402,6 +516,7 @@ export class DirectoryHubPage {
   private data = inject(DataService);
   private subSvc = inject(SubcontractorService);
   private subSeed = inject(SubcontractorSeedService);
+  private psSvc = inject(ProjectSubcontractorService);
   private importReview = inject(ImportReviewService);
   private lifecycleSvc = inject(ProjectLifecycleService);
   private financialSvc = inject(ProjectFinancialService);
@@ -418,6 +533,16 @@ export class DirectoryHubPage {
   drawerOpen = signal(false);
   editingId = signal<string | null>(null);
   draft: Partial<Subcontractor> = {};
+  setupProjectId = '';
+  setupContract: number | null = null;
+  setupScope = '';
+  setupCostCode = '';
+  setupStartDate = '';
+  setupFinishDate = '';
+  setupJobNotes = '';
+  setupJobStatus: ProjectSubcontractorStatus = 'Active';
+  assignmentEdits: Record<string, Partial<ProjectSubcontractor>> = {};
+  saveError = signal<string | null>(null);
 
   readonly vendorClassifications: VendorClassification[] = [
     'Subcontractor', 'Supplier', 'Consultant', 'Ignore', 'NeedsReview',
@@ -432,6 +557,18 @@ export class DirectoryHubPage {
   private arRecords = toSignal(this.data.getArRecords(), { initialValue: [] });
 
   private companies = toSignal(this.data.getCompanies(), { initialValue: [] });
+
+  setupProjects = computed(() =>
+    [...(this.projects() ?? [])]
+      .filter(p => p.status !== 'Closed')
+      .sort((a, b) => String(a.projectNumber).localeCompare(String(b.projectNumber), undefined, { numeric: true })),
+  );
+
+  editingAssignments = computed(() => {
+    const id = this.editingId();
+    if (!id) return [] as ProjectSubcontractor[];
+    return (this.projectSubs() ?? []).filter(ps => ps.subcontractorId === id);
+  });
 
   summary = computed(() => summarizeDirectoryHub({
     subs: this.subs() ?? [],
@@ -565,19 +702,47 @@ export class DirectoryHubPage {
   openNew(): void {
     this.editingId.set(null);
     this.draft = {
-      w9Status: 'Missing',
-      insuranceStatus: 'Missing',
       status: 'PendingSetup',
       vendorClassification: manualFirstConfig.hideMainWorkflowWarnings ? 'Subcontractor' : 'NeedsReview',
       source: 'Manual',
     };
+    this.resetSetupJobFields();
+    this.assignmentEdits = {};
+    this.saveError.set(null);
     this.drawerOpen.set(true);
   }
 
   selectSub(sub: Subcontractor): void {
     this.editingId.set(sub.id);
     this.draft = { ...sub };
+    this.resetSetupJobFields();
+    this.assignmentEdits = Object.fromEntries(
+      (this.projectSubs() ?? [])
+        .filter(ps => ps.subcontractorId === sub.id)
+        .map(ps => [ps.id, {
+          currentCommitmentAmount: ps.currentCommitmentAmount,
+          originalCommitmentAmount: ps.originalCommitmentAmount ?? ps.currentCommitmentAmount,
+          scopeOfWork: ps.scopeOfWork,
+          costCode: ps.costCode,
+          startDate: ps.startDate,
+          finishDate: ps.finishDate,
+          notes: ps.notes,
+          status: ps.status,
+        }]),
+    );
+    this.saveError.set(null);
     this.drawerOpen.set(true);
+  }
+
+  private resetSetupJobFields(): void {
+    this.setupProjectId = '';
+    this.setupContract = null;
+    this.setupScope = '';
+    this.setupCostCode = '';
+    this.setupStartDate = '';
+    this.setupFinishDate = '';
+    this.setupJobNotes = '';
+    this.setupJobStatus = 'Active';
   }
 
   openFromOverview(row: { id: string; nextAction: string; route: string }): void {
@@ -601,12 +766,62 @@ export class DirectoryHubPage {
 
   closeDrawer(): void {
     this.drawerOpen.set(false);
+    this.saveError.set(null);
   }
 
   async save(): Promise<void> {
     if (!this.draft.companyName?.trim()) return;
-    await this.subSvc.saveSubcontractor(this.draft, this.editingId());
-    this.closeDrawer();
+    this.saveError.set(null);
+    if (this.setupProjectId && (this.setupContract ?? 0) <= 0) {
+      this.saveError.set('Enter a contract amount to assign this subcontractor to a job.');
+      return;
+    }
+    try {
+      const saved = await this.subSvc.saveSubcontractor(this.draft, this.editingId());
+
+      for (const ps of this.editingAssignments()) {
+        const edits = this.assignmentEdits[ps.id];
+        if (!edits) continue;
+        const contract = edits.currentCommitmentAmount ?? 0;
+        if (contract <= 0) {
+          this.saveError.set(`Enter a contract amount for ${ps.projectName ?? 'the job'}.`);
+          return;
+        }
+        await this.psSvc.saveProjectSubcontractor(ps, {
+          ...edits,
+          originalCommitmentAmount: edits.originalCommitmentAmount ?? contract,
+          currentCommitmentAmount: contract,
+        });
+      }
+
+      if (this.setupProjectId) {
+        const project = (this.projects() ?? []).find(p => p.id === this.setupProjectId);
+        if (project) {
+          const alreadyAssigned = (this.projectSubs() ?? []).some(
+            ps => ps.subcontractorId === saved.id && ps.projectId === project.id,
+          );
+          if (alreadyAssigned) {
+            this.saveError.set('This subcontractor is already assigned to that job.');
+            return;
+          }
+          await this.psSvc.assignToProject(project, saved, {
+            trade: saved.trade,
+            scopeOfWork: this.setupScope.trim() || undefined,
+            costCode: this.setupCostCode.trim() || undefined,
+            startDate: this.setupStartDate || undefined,
+            finishDate: this.setupFinishDate || undefined,
+            notes: this.setupJobNotes.trim() || undefined,
+            originalCommitmentAmount: this.setupContract ?? 0,
+            currentCommitmentAmount: this.setupContract ?? 0,
+            status: this.setupJobStatus,
+          });
+          this.subSvc.refreshDerivedStatus(saved.id);
+        }
+      }
+      this.closeDrawer();
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Could not save subcontractor.');
+    }
   }
 
   async discoverSubs(): Promise<void> {

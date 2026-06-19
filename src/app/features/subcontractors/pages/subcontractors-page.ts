@@ -175,8 +175,8 @@ type SubFilter =
                   <td class="px-4 py-3">{{ row.sub.w9Status }}</td>
                   <td class="px-4 py-3">{{ row.sub.insuranceStatus }}</td>
                   <td class="px-4 py-3">
-                    <app-status-chip [tone]="complianceTone(row.sub)" [attr.title]="complianceTooltip(row.sub)">
-                      {{ complianceLabel(row.sub) }}
+                    <app-status-chip [tone]="complianceTone(row.sub, row.activeProjects)" [attr.title]="complianceTooltip(row.sub, row.activeProjects)">
+                      {{ complianceLabel(row.sub, row.activeProjects) }}
                     </app-status-chip>
                   </td>
                   <td class="px-4 py-3">{{ row.sub.coiExpirationDate || '—' }}</td>
@@ -444,7 +444,7 @@ export class SubcontractorsPage implements OnInit {
   filteredRows = computed(() => {
     const filter = this.activeFilter();
     const q = this.searchQuery().trim().toLowerCase();
-    return this.rows().filter(({ sub }) => {
+    return this.rows().filter(({ sub, activeProjects }) => {
       if (q) {
         const haystack = [sub.companyName, sub.contactName, sub.trade, sub.email, sub.phone].filter(Boolean).join(' ').toLowerCase();
         if (!haystack.includes(q)) return false;
@@ -453,8 +453,8 @@ export class SubcontractorsPage implements OnInit {
         case 'Approved': return sub.status === 'Approved';
         case 'PendingSetup': return sub.status === 'PendingSetup';
         case 'MissingCompliance': return sub.status === 'MissingCompliance';
-        case 'MissingW9': return sub.w9Status === 'Missing';
-        case 'MissingCOI': return sub.insuranceStatus === 'Missing';
+        case 'MissingW9': return activeProjects > 0 && sub.w9Status === 'Missing';
+        case 'MissingCOI': return activeProjects > 0 && sub.insuranceStatus === 'Missing';
         case 'ExpiringCOI': return isCoiExpiringSoon(sub.coiExpirationDate) && !isDocumentExpired(sub.coiExpirationDate);
         case 'ExpiredInsurance': return sub.insuranceStatus === 'Expired';
         case 'DoNotUse': return sub.status === 'DoNotUse';
@@ -467,6 +467,7 @@ export class SubcontractorsPage implements OnInit {
 
   summaryCards = computed(() => {
     const subs = this.subs() ?? [];
+    const onJob = (subId: string) => countActiveProjectsForSub(subId, this.projectSubs() ?? []) > 0;
     const qbDiscovered = subs.filter(s =>
       s.source === 'QuickBooksSync' || s.source === 'QuickBooksSeed' || (s.seededTotalCost ?? 0) > 0,
     );
@@ -475,11 +476,11 @@ export class SubcontractorsPage implements OnInit {
       { label: 'Total', value: String(subs.length), alert: false },
       { label: 'From QuickBooks', value: String(qbDiscovered.length), alert: false },
       { label: 'Imported Cost', value: importedTotal ? `$${Math.round(importedTotal).toLocaleString()}` : '—', alert: false },
-      { label: 'Missing W-9', value: String(subs.filter(s => s.w9Status === 'Missing').length), alert: true },
-      { label: 'Missing COI', value: String(subs.filter(s => s.insuranceStatus === 'Missing').length), alert: true },
-      { label: 'Expiring COI', value: String(subs.filter(s => isCoiExpiringSoon(s.coiExpirationDate)).length), alert: true },
-      { label: 'Expired COI', value: String(subs.filter(s => s.insuranceStatus === 'Expired').length), alert: true },
-      { label: 'Compliance Issues', value: String(subs.filter(s => s.status === 'MissingCompliance').length), alert: true },
+      { label: 'Missing W-9', value: String(subs.filter(s => onJob(s.id) && s.w9Status === 'Missing').length), alert: true },
+      { label: 'Missing COI', value: String(subs.filter(s => onJob(s.id) && s.insuranceStatus === 'Missing').length), alert: true },
+      { label: 'Expiring COI', value: String(subs.filter(s => onJob(s.id) && isCoiExpiringSoon(s.coiExpirationDate)).length), alert: true },
+      { label: 'Expired COI', value: String(subs.filter(s => onJob(s.id) && s.insuranceStatus === 'Expired').length), alert: true },
+      { label: 'Compliance Issues', value: String(subs.filter(s => onJob(s.id) && s.status === 'MissingCompliance').length), alert: true },
       { label: 'Do Not Use', value: String(subs.filter(s => s.status === 'DoNotUse').length), alert: true },
     ];
   });
@@ -555,7 +556,7 @@ export class SubcontractorsPage implements OnInit {
 
   openNew(): void {
     this.editingId.set(null);
-    this.draft = { w9Status: 'Missing', insuranceStatus: 'Missing', status: 'PendingSetup', vendorClassification: 'NeedsReview' };
+    this.draft = { status: 'PendingSetup', vendorClassification: 'Subcontractor' };
     this.drawerOpen.set(true);
   }
 
@@ -671,7 +672,8 @@ export class SubcontractorsPage implements OnInit {
     );
   }
 
-  complianceTone(sub: Subcontractor): StatusTone {
+  complianceTone(sub: Subcontractor, activeProjects = 0): StatusTone {
+    if (activeProjects === 0 && (sub.status === 'PendingSetup' || sub.status === 'MissingCompliance')) return 'slate';
     if (sub.w9Status === 'Missing' || sub.insuranceStatus === 'Missing' || sub.insuranceStatus === 'Expired'
         || isDocumentExpired(sub.coiExpirationDate)) return 'red';
     if (isCoiExpiringSoon(sub.coiExpirationDate)) return 'amber';
@@ -679,14 +681,19 @@ export class SubcontractorsPage implements OnInit {
     return 'amber';
   }
 
-  complianceLabel(sub: Subcontractor): string {
-    const tone = this.complianceTone(sub);
+  complianceLabel(sub: Subcontractor, activeProjects = 0): string {
+    if (activeProjects === 0 && (sub.status === 'PendingSetup' || sub.status === 'MissingCompliance')) return 'Not on a job';
+    const tone = this.complianceTone(sub, activeProjects);
     if (tone === 'green') return 'Compliant';
     if (tone === 'red') return 'Non-compliant';
+    if (tone === 'slate') return 'Setup pending';
     return 'Expiring';
   }
 
-  complianceTooltip(sub: Subcontractor): string {
+  complianceTooltip(sub: Subcontractor, activeProjects = 0): string {
+    if (activeProjects === 0 && (sub.status === 'PendingSetup' || sub.status === 'MissingCompliance')) {
+      return 'Assign to a job before W-9 and COI are required';
+    }
     const issues: string[] = [];
     if (sub.w9Status === 'Missing') issues.push('Missing W-9');
     if (sub.insuranceStatus === 'Missing') issues.push('Missing COI');

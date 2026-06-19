@@ -3,6 +3,15 @@ import { v4 as uuidv4 } from 'uuid';
 import { Employee, TimeEntry } from '@app/models/types';
 import { DataService } from '@core/services/data.service';
 import { findEmployeeByName } from '@shared/utils/labor-cost.compute';
+import { ParsedEmployeeInfoReportRow } from '@shared/utils/employee-info-report.parser';
+import { employeeNameMatchKey } from '@shared/utils/employee-name-match';
+
+export interface EmployeeInfoImportResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  total: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class EmployeeDirectoryService {
@@ -76,5 +85,56 @@ export class EmployeeDirectoryService {
       return { ...existing, payPerHour };
     }
     return this.createEmployee(name, payPerHour);
+  }
+
+  private findEmployeeForImport(row: ParsedEmployeeInfoReportRow): Employee | undefined {
+    const employees = this.employees();
+    return findEmployeeByName(employees, row.displayName)
+      ?? findEmployeeByName(employees, row.reportName)
+      ?? employees.find(e => employeeNameMatchKey(e.name ?? '') === row.matchKey);
+  }
+
+  async importEmployeeInfoReport(rows: ParsedEmployeeInfoReportRow[]): Promise<EmployeeInfoImportResult> {
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const row of rows) {
+      if (!row.payPerHour || row.payPerHour <= 0) {
+        skipped++;
+        continue;
+      }
+
+      const existing = this.findEmployeeForImport(row);
+      if (existing) {
+        await this.data.upsertEmployee({
+          ...existing,
+          name: existing.name || row.displayName,
+          payPerHour: row.payPerHour,
+          status: row.status,
+          department: row.department ?? existing.department,
+          hoursType: row.payType,
+          startDate: row.hireDate ?? existing.startDate,
+          source: 'sheet',
+        });
+        updated++;
+        continue;
+      }
+
+      const id = uuidv4();
+      await this.data.upsertEmployee({
+        id,
+        name: row.displayName,
+        payPerHour: row.payPerHour,
+        status: row.status,
+        department: row.department,
+        hoursType: row.payType,
+        startDate: row.hireDate,
+        source: 'sheet',
+      });
+      created++;
+    }
+
+    return { created, updated, skipped, total: rows.length };
   }
 }

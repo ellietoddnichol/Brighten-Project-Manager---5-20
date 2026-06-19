@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  computeMasterSubcontractorStatus,
   computeProjectSubComplianceStatus,
   complianceTasksForProjectSub,
   isCoiExpiringSoon,
@@ -42,6 +43,11 @@ function doc(partial: Partial<SubcontractorDocument>): SubcontractorDocument {
 }
 
 describe('subcontractor compliance compute', () => {
+  it('keeps pending setup until subcontractor is on a job', () => {
+    expect(computeMasterSubcontractorStatus(master, 0)).toBe('PendingSetup');
+    expect(computeMasterSubcontractorStatus(master, 1)).toBe('MissingCompliance');
+  });
+
   it('computes missing compliance when required docs absent', () => {
     expect(computeProjectSubComplianceStatus(master, [], 'ps-1')).toBe('MissingItems');
   });

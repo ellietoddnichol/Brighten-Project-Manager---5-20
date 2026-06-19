@@ -9,6 +9,8 @@ import { PageHeaderComponent } from '@app/components/ui/page-header';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { formatMoney } from '@features/projects/utils/project-profit.compute';
 import { findEmployeeByName } from '@shared/utils/labor-cost.compute';
+import { parseEmployeeInfoReportRows } from '@shared/utils/employee-info-report.parser';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-employees-page',
@@ -68,6 +70,10 @@ import { findEmployeeByName } from '@shared/utils/labor-cost.compute';
         </section>
       }
 
+      @if (importMessage()) {
+        <p class="px-4 py-3 text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-xl">{{ importMessage() }}</p>
+      }
+
       @if (saveError()) {
         <p class="px-4 py-3 text-sm text-rose-700 bg-rose-50 border border-rose-100 rounded-xl">{{ saveError() }}</p>
       }
@@ -78,10 +84,16 @@ import { findEmployeeByName } from '@shared/utils/labor-cost.compute';
             <h2 class="text-sm font-bold">Employee roster</h2>
             <p class="text-xs text-slate-500">Reg × wage + OT × 1.5 × wage + DT × 2 × wage</p>
           </div>
-          <button type="button" (click)="toggleAddForm()"
-                  class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">
-            {{ showAddForm() ? 'Cancel' : 'Add Employee' }}
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <label class="text-xs font-semibold border border-slate-200 text-slate-700 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-50">
+              {{ importing() ? 'Importing…' : 'Import payroll report' }}
+              <input type="file" accept=".xlsx,.xls" class="hidden" (change)="onReportSelected($event)" [disabled]="importing()" />
+            </label>
+            <button type="button" (click)="toggleAddForm()"
+                    class="text-xs font-semibold bg-slate-900 text-white px-3 py-1.5 rounded-lg">
+              {{ showAddForm() ? 'Cancel' : 'Add Employee' }}
+            </button>
+          </div>
         </div>
         @if (showAddForm()) {
           <div class="p-4 border-b bg-slate-50 grid sm:grid-cols-3 gap-3">
@@ -131,7 +143,7 @@ import { findEmployeeByName } from '@shared/utils/labor-cost.compute';
                   }
                 </td>
                 <td class="px-4 py-2 text-xs text-slate-500">
-                  {{ emp.source === 'sheet' ? 'Master Time sheet' : 'Manual' }}
+                  {{ emp.source === 'sheet' ? 'Payroll / sheet' : 'Manual' }}
                   @if (!emp.payPerHour && inMasterTime(emp)) {
                     <span class="text-amber-700"> · needs wage</span>
                   }
@@ -159,6 +171,8 @@ export class EmployeesPage {
   employees = toSignal(this.data.getEmployees(), { initialValue: [] as Employee[] });
   showAddForm = signal(false);
   saving = signal(false);
+  importing = signal(false);
+  importMessage = signal<string | null>(null);
   saveError = signal<string | null>(null);
   editingId = signal<string | null>(null);
   quickPayName = signal<string | null>(null);
@@ -236,6 +250,34 @@ export class EmployeesPage {
       this.saveError.set(err instanceof Error ? err.message : 'Could not save wage.');
     } finally {
       this.saving.set(false);
+    }
+  }
+
+  async onReportSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.importing.set(true);
+    this.saveError.set(null);
+    this.importMessage.set(null);
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const sheetName = wb.SheetNames.find(n => /employee info/i.test(n)) ?? wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '' }) as string[][];
+      const parsed = parseEmployeeInfoReportRows(rows);
+      if (!parsed.length) {
+        throw new Error('No hourly employees found in that report. Use the ADP Employee Info Report export.');
+      }
+      const result = await this.employeeSvc.importEmployeeInfoReport(parsed);
+      this.importMessage.set(
+        `Imported ${result.total} employees from payroll report · ${result.created} added · ${result.updated} updated`,
+      );
+    } catch (err) {
+      this.saveError.set(err instanceof Error ? err.message : 'Could not import employee report.');
+    } finally {
+      this.importing.set(false);
+      input.value = '';
     }
   }
 }
