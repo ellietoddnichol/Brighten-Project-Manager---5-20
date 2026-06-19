@@ -219,6 +219,16 @@ export interface AdpPayrollDetail {
   overtimeHours?: number;
   doubleTimeHours?: number;
   grossPay?: number;
+  regularRate?: number;
+  overtimeRate?: number;
+  socialSecurity?: number;
+  medicare?: number;
+  federalIncomeTax?: number;
+  stateTaxKs?: number;
+  stateTaxMo?: number;
+  unionDues?: number;
+  vacationDeduction?: number;
+  netPay?: number;
   source?: string;
   ownerId?: string;
   createdAt?: unknown;

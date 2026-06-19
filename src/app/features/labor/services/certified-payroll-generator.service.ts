@@ -23,8 +23,12 @@ import {
 } from '@features/labor/utils/certified-payroll-week';
 import {
   fringeRateForClassification,
-  isCarpenterClassification,
 } from '@features/labor/utils/fringe-rates-seed';
+import {
+  commercialCarpenterFringeApplies,
+  getEmployeeCprOverride,
+  normalizeOccupationLabel,
+} from '@features/labor/utils/cpr-form.util';
 import {
   countsTowardCertifiedPayroll,
   effectiveClassification,
@@ -130,7 +134,9 @@ export class CertifiedPayrollGeneratorService {
       if (!entry.workDate || !entry.employeeName) continue;
       const weekEnding = weekEndingSunday(entry.workDate);
       const mapping = resolveLaborCodeMapping(entry.laborCode, mappings);
-      const classification = (effectiveClassification(entry, mapping) ?? 'Unknown').trim();
+      const rawClass = (effectiveClassification(entry, mapping) ?? 'Unknown').trim();
+      const override = getEmployeeCprOverride(entry.employeeName);
+      const classification = normalizeOccupationLabel(override?.occupation || rawClass).trim();
       const key = [
         weekEnding,
         entry.employeeName.trim(),
@@ -170,10 +176,11 @@ export class CertifiedPayrollGeneratorService {
     const doubleTimeHours = dailyHours.reduce((s, d) => s + d.doubleTimeHours, 0);
     const totalHours = regularHours + overtimeHours + doubleTimeHours;
 
-    const matched = this.rateService.matchRate(employeeName, classification, employees, rates);
-    const seedFringe = fringeRateForClassification(classification);
+    const normalizedClass = normalizeOccupationLabel(classification);
+    const matched = this.rateService.matchRate(employeeName, normalizedClass, employees, rates);
+    const seedFringe = fringeRateForClassification(normalizedClass);
     const baseRate = seedFringe?.wage ?? matched.baseRate ?? rows[0]?.baseRate;
-    const fringeRate = isCarpenterClassification(classification) || seedFringe
+    const fringeRate = commercialCarpenterFringeApplies(normalizedClass)
       ? (seedFringe?.totalEmployer ?? (matched.fringeEligible ? (matched.fringeRate ?? 0) : 0))
       : 0;
     const regularWage = regularHours * (baseRate ?? 0);
@@ -306,7 +313,7 @@ export class CertifiedPayrollGeneratorService {
     }
 
     if (entry.baseRate == null || entry.baseRate <= 0) push('missing-wage-rate', 'Base wage rate is missing.');
-    const needsFringe = isCarpenterClassification(classification) || !!fringeRateForClassification(classification);
+    const needsFringe = commercialCarpenterFringeApplies(classification);
     if (needsFringe && (entry.fringeRate == null || entry.fringeRate <= 0)) {
       push('missing-fringe-rate', 'Fringe rate is missing.');
     }

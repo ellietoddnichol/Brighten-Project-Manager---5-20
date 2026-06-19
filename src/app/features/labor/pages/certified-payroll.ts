@@ -13,6 +13,7 @@ import { DataService } from '@core/services/data.service';
 import { CertifiedPayrollException, CertifiedPayrollTask, CertifiedPayrollWeek } from '@app/models/certified-payroll.types';
 import { Project } from '@app/models/types';
 import { CprFormPrintComponent } from '@features/labor/components/cpr-form-print';
+import { computeJobPayrollNumber } from '@features/labor/utils/cpr-form.util';
 
 type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
 
@@ -378,12 +379,12 @@ export class CertifiedPayroll {
 
   payrollNumberForWeek(weekId: string): string {
     const week = this.weeks().find(w => w.id === weekId);
-    if (!week) return '001';
+    if (!week) return '01';
     const projectWeeks = this.weeks()
       .filter(w => w.projectId === week.projectId)
       .sort((a, b) => a.weekEnding.localeCompare(b.weekEnding));
-    const index = projectWeeks.findIndex(w => w.id === weekId);
-    return String(index + 1).padStart(3, '0');
+    const endings = projectWeeks.map(w => w.weekEnding);
+    return computeJobPayrollNumber(endings, week.weekEnding, endings[0]);
   }
 
   projectLabel(projectId: string): string {

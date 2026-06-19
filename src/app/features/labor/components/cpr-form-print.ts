@@ -9,46 +9,12 @@ import {
 import { Project } from '@app/models/types';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
 import { normalizeEmployeeKey } from '@features/labor/utils/certified-payroll-week';
-import { fringeRateForClassification } from '@features/labor/utils/fringe-rates-seed';
-
-interface DayHours {
-  regular: number;
-  overtime: number;
-}
-
-interface Page1Row {
-  name: string;
-  address: string;
-  occupation: string;
-  stHours: number[];
-  otHours: number[];
-  totalSt: number;
-  totalOt: number;
-  stRate: number;
-  otRate: number;
-  projectGross: number;
-  weekGross: number;
-  ficaMed: number;
-  fedStateTax: number;
-  unionDues: number;
-  vacationDeduction: number;
-  totalDeductions: number;
-  netPay: number;
-}
-
-interface Page2Row {
-  name: string;
-  healthWelfare: number;
-  pension: number;
-  vacation: number;
-  holiday: number;
-  apprenticeTraining: number;
-  otherC: number;
-  otherD: number;
-  total: number;
-  explanation: string;
-  planName: string;
-}
+import {
+  buildCprPage1Row,
+  buildCprPage2Row,
+  formatCprShortDate,
+  workWeekDatesSunThroughSat,
+} from '@features/labor/utils/cpr-form.util';
 
 @Component({
   selector: 'app-cpr-form-print',
@@ -92,7 +58,7 @@ interface Page2Row {
           </tr>
           <tr>
             <td class="center">{{ payrollNumber }}</td>
-            <td class="center">{{ week.weekEnding }}</td>
+            <td class="center">{{ weekEndingLabel() }}</td>
             <td class="center">{{ project.wageOrderNumber || '—' }}</td>
             <td>{{ projectAndLocation() }} / {{ project.contractNumber || project.projectNumber || '—' }}</td>
           </tr>
@@ -203,117 +169,49 @@ export class CprFormPrintComponent {
   @Input({ required: true }) project!: Project;
   @Input({ required: true }) week!: CertifiedPayrollWeek;
   @Input({ required: true }) entries!: CertifiedPayrollEntry[];
-  @Input() payrollNumber = '001';
+  @Input() payrollNumber = '01';
 
   private cprData = inject(CertifiedPayrollDataService);
 
   readonly dayLabels = ['SU', 'M', 'T', 'W', 'TH', 'F', 'S'] as const;
 
-  weekDates = computed(() => {
-    const end = new Date(`${this.week.weekEnding}T12:00:00`);
-    const dates: string[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(end);
-      d.setDate(end.getDate() - i);
-      dates.push(d.toISOString().slice(0, 10));
-    }
-    return dates;
+  weekEndingLabel = computed(() => {
+    const { weekEndingLabel } = workWeekDatesSunThroughSat(this.week.weekEnding);
+    return formatCprShortDate(weekEndingLabel);
   });
 
-  displayDates = computed(() => {
-    const dates = this.weekDates();
-    return [dates[6], dates[0], dates[1], dates[2], dates[3], dates[4], dates[5]];
-  });
+  weekDates = computed(() => workWeekDatesSunThroughSat(this.week.weekEnding).dates);
 
-  page1Rows = computed((): Page1Row[] => {
+  page1Rows = computed(() => {
     const employeeInfo = this.cprData.getEmployeePayrollInfoSnapshot();
     const adpDetails = this.cprData.getAdpPayrollDetailsSnapshot();
-    const dates = this.displayDates();
+    const dates = this.weekDates();
 
     return this.entries.map(entry => {
-      const fringe = fringeRateForClassification(entry.classification);
       const empInfo = this.findEmployeeInfo(employeeInfo, entry.employeeName);
       const adp = this.findAdp(adpDetails, entry.employeeName);
-      const dayMap = new Map(entry.dailyHours.map(d => [d.workDate.slice(0, 10), d]));
-
-      const stHours = dates.map(date => dayMap.get(date)?.regularHours ?? 0);
-      const otHours = dates.map(date => dayMap.get(date)?.overtimeHours ?? 0);
-      const totalSt = entry.regularHours;
-      const totalOt = entry.overtimeHours;
-      const stRate = entry.baseRate ?? 0;
-      const otRate = stRate * 1.5;
-      const projectGross = entry.regularWage + entry.overtimeWage;
-      const weekGross = adp?.grossPay ?? entry.grossPackage;
-      const ficaMed = weekGross * 0.0765;
-      const fedStateTax = Math.max(0, weekGross - ficaMed) * 0.12;
-      const unionDues = (fringe?.dues ?? 0) * entry.totalHours;
-      const vacationDeduction = (fringe?.vacationDeduction ?? 0) * entry.totalHours;
-      const totalDeductions = ficaMed + fedStateTax + unionDues + vacationDeduction;
-      const netPay = Math.max(0, weekGross - totalDeductions);
-
       const addressParts = [empInfo?.address, empInfo?.city, empInfo?.state, empInfo?.zip].filter(Boolean);
-
-      return {
-        name: empInfo?.legalName || entry.employeeName,
-        address: addressParts.join(' ') || '—',
-        occupation: entry.classification,
-        stHours,
-        otHours,
-        totalSt,
-        totalOt,
-        stRate,
-        otRate,
-        projectGross,
-        weekGross,
-        ficaMed,
-        fedStateTax,
-        unionDues,
-        vacationDeduction,
-        totalDeductions,
-        netPay,
-      };
+      return buildCprPage1Row({
+        entry,
+        weekDates: dates,
+        adp,
+        displayName: empInfo?.legalName,
+        address: addressParts.join(' ') || undefined,
+      });
     });
   });
 
-  page2Rows = computed((): Page2Row[] => {
+  page2Rows = computed(() => {
+    const employeeInfo = this.cprData.getEmployeePayrollInfoSnapshot();
     return this.entries.map(entry => {
-      const fringe = fringeRateForClassification(entry.classification);
-      if (!fringe) {
-        return {
-          name: entry.employeeName,
-          healthWelfare: 0,
-          pension: 0,
-          vacation: 0,
-          holiday: 0,
-          apprenticeTraining: 0,
-          otherC: 0,
-          otherD: 0,
-          total: 0,
-          explanation: entry.classification,
-          planName: '—',
-        };
-      }
-      return {
-        name: entry.employeeName,
-        healthWelfare: fringe.healthWelfare,
-        pension: fringe.pension,
-        vacation: 0,
-        holiday: 0,
-        apprenticeTraining: fringe.apprenticeTraining,
-        otherC: fringe.iaf + fringe.citf + fringe.annuity,
-        otherD: 0,
-        total: fringe.totalEmployer,
-        explanation: 'Other A: Union Dues, Other C: IAF / CITF / Annuity, Other B: Vacation',
-        planName: 'Mid American Carpenters Union',
-      };
+      const empInfo = this.findEmployeeInfo(employeeInfo, entry.employeeName);
+      return buildCprPage2Row(entry, empInfo?.legalName);
     });
   });
 
   dayDate(index: number): string {
-    const date = this.displayDates()[index];
-    if (!date) return '';
-    const [, m, d] = date.split('-');
-    return `${m}/${d}`;
+    const date = this.weekDates()[index];
+    return date ? formatCprShortDate(date) : '';
   }
 
   publicBodyLine(): string {

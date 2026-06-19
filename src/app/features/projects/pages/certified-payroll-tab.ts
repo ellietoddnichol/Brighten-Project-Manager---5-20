@@ -2,19 +2,23 @@ import { Component, ChangeDetectionStrategy, Input, computed, inject, signal, On
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Project } from '@app/models/types';
 import { CertifiedPayrollService } from '@features/labor/services/certified-payroll.service';
+import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
 import { WorkflowDocumentsSectionComponent } from '@app/components/workflow-documents-section';
 import { DataService } from '@core/services/data.service';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
+import { CprFormPrintComponent } from '@features/labor/components/cpr-form-print';
+import { computeJobPayrollNumber } from '@features/labor/utils/cpr-form.util';
 import { PayrollComplianceType } from '@app/models/certified-payroll.types';
 import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payroll-week';
 
 @Component({
   selector: 'app-certified-payroll-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, EmptyStateComponent, WorkflowDocumentsSectionComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, EmptyStateComponent, WorkflowDocumentsSectionComponent, CprFormPrintComponent],
   template: `
     @if (!isCprProject()) {
       <app-empty-state icon="lock" title="Certified Payroll not enabled"
@@ -134,6 +138,8 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
                   <td class="px-3 py-2.5">{{ week.exceptionCount }}</td>
                   <td class="px-3 py-2.5"><app-status-chip [tone]="weekTone(week.status)" [label]="week.status" /></td>
                   <td class="px-3 py-2.5 text-right space-x-2">
+                    <button type="button" (click)="printWeek(week.id)" [disabled]="week.status === 'blocked'"
+                            class="text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors disabled:opacity-40">Print Form</button>
                     <button type="button" (click)="exportWeek(week.id)" [disabled]="week.status === 'blocked'"
                             class="text-indigo-700 bg-indigo-50 px-2 py-1 rounded-lg text-xs font-semibold hover:bg-indigo-100 transition-colors disabled:opacity-40">Export</button>
                     <button type="button" (click)="toggleDocs(week.id)"
@@ -160,6 +166,29 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
         </div>
       </div>
     }
+
+    @if (printWeekId()) {
+      <div class="fixed inset-0 z-50 bg-white overflow-auto">
+        <div class="no-print sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+          <h2 class="text-sm font-bold text-slate-900">Certified Payroll Form Preview</h2>
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="triggerPrint()"
+                    class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Print</button>
+            <button type="button" (click)="closePrint()"
+                    class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold">Close</button>
+          </div>
+        </div>
+        <div class="p-6 max-w-[1400px] mx-auto">
+          @if (printContext(); as ctx) {
+            <app-cpr-form-print
+              [project]="ctx.project"
+              [week]="ctx.week"
+              [entries]="ctx.entries"
+              [payrollNumber]="ctx.payrollNumber" />
+          }
+        </div>
+      </div>
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -167,13 +196,17 @@ export class CertifiedPayrollTabComponent implements OnInit {
   @Input({ required: true }) project!: Project;
 
   cpr = inject(CertifiedPayrollService);
+  private cprData = inject(CertifiedPayrollDataService);
   private dataService = inject(DataService);
 
   showEdit = signal(false);
   expandedWeekId = signal<string | null>(null);
   selectedWeekIds = signal<Set<string>>(new Set());
+  printWeekId = signal<string | null>(null);
   saving = signal(false);
   draft: Partial<Project> = {};
+
+  entries = toSignal(this.cprData.getEntries(), { initialValue: [] });
 
   readonly complianceTypes: PayrollComplianceType[] = ['NONE', 'FEDERAL_DAVIS_BACON', 'MISSOURI_LS57', 'BOTH', 'OTHER'];
 
@@ -182,6 +215,21 @@ export class CertifiedPayrollTabComponent implements OnInit {
   tasks = computed(() => this.cpr.tasksForProject(this.project.id));
   weeks = computed(() => this.cpr.weeksForProject(this.project.id));
   openExceptions = computed(() => this.cpr.exceptionsForProject(this.project.id));
+
+  printContext = computed(() => {
+    const weekId = this.printWeekId();
+    if (!weekId) return null;
+    const week = this.weeks().find(w => w.id === weekId);
+    if (!week) return null;
+    const weekEntries = this.entries().filter(e => e.weekId === weekId);
+    const endings = this.weeks().map(w => w.weekEnding).sort();
+    return {
+      project: this.project,
+      week,
+      entries: weekEntries,
+      payrollNumber: computeJobPayrollNumber(endings, week.weekEnding, endings[0]),
+    };
+  });
 
   ngOnInit(): void {
     this.draft = {
@@ -238,6 +286,18 @@ export class CertifiedPayrollTabComponent implements OnInit {
 
   exportWeek(weekId: string): void {
     void this.cpr.exportWeek(weekId);
+  }
+
+  printWeek(weekId: string): void {
+    this.printWeekId.set(weekId);
+  }
+
+  closePrint(): void {
+    this.printWeekId.set(null);
+  }
+
+  triggerPrint(): void {
+    window.print();
   }
 
   saveCompliance(): void {
