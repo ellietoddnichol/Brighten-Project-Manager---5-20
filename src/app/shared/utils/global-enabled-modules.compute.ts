@@ -128,8 +128,9 @@ export function isGlobalModuleVisible(id: GlobalModuleId, input: GlobalNeedsInpu
     case 'closeout':
       return input.hasCloseoutJobs;
     case 'reports':
+      return true;
     case 'labor-codes':
-      return false;
+      return input.showAllTools;
 
     default:
       return false;
@@ -387,7 +388,8 @@ function pinIcon(id: GlobalModuleId): string {
 }
 
 export function globalModuleHiddenMessage(id: GlobalModuleId): string {
-  return 'This tool is hidden from the main sidebar because there are no active items right now.';
+  const label = globalNavLabel(id);
+  return `${label} is hidden from the main sidebar because there are no active items right now. You can still use this page directly, or turn on Show all tools in Settings.`;
 }
 
 export function routeToGlobalModuleId(path: string, fragment?: string | null): GlobalModuleId | null {

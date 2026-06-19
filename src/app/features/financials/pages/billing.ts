@@ -1,7 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatIconModule } from '@angular/material/icon';
 import { ProjectDataService } from '@features/projects/services/project-data.service';
@@ -15,6 +15,16 @@ import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { DetailDrawerComponent } from '@app/components/ui/detail-drawer';
 import { isApprovedUnbilledCo } from '@features/projects/utils/change-management';
 import { Billing as BillingRecord } from '@app/models/types';
+type BillingAction = {
+  id: string;
+  title: string;
+  subtitle: string;
+  actionLabel: string;
+  projectId?: string;
+  billingId?: string;
+  changeOrderId?: string;
+  kind: 'bill-project' | 'collections' | 'bill-co' | 'pay-app';
+};
 
 @Component({
   selector: 'app-billing',
@@ -51,6 +61,10 @@ import { Billing as BillingRecord } from '@app/models/types';
         </a>
       </app-page-header>
 
+      @if (resendMessage()) {
+        <p class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-2">{{ resendMessage() }}</p>
+      }
+
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Total Billed" [value]="fmt(metrics()?.billedToDate ?? 0)" icon="receipt_long" />
         <app-stat-card label="Open AR" [value]="fmt(metrics()?.openAR ?? 0)" icon="account_balance_wallet" />
@@ -68,7 +82,7 @@ import { Billing as BillingRecord } from '@app/models/types';
             [title]="action.title"
             [subtitle]="action.subtitle"
             [nextAction]="action.actionLabel"
-            (rowClick)="null" />
+            (rowClick)="handleBillingAction(action)" />
         } @empty {
           <app-empty-state title="No billing actions right now." message="All caught up on billing queue." />
         }
@@ -225,6 +239,9 @@ export class Billing {
   projectData = inject(ProjectDataService);
   private data = inject(DataService);
   private currency = inject(CurrencyPipe);
+  private router = inject(Router);
+
+  resendMessage = signal<string | null>(null);
 
   createDrawerOpen = signal(false);
   paidExpanded = signal(false);
@@ -267,7 +284,7 @@ export class Billing {
     const projects = this.projectData.projects();
     const fmt = (value: number) =>
       this.currency.transform(value, 'USD', 'symbol', '1.0-0') ?? '$0';
-    const actions: { id: string; title: string; subtitle: string; actionLabel: string }[] = [];
+    const actions: BillingAction[] = [];
 
     for (const p of projects) {
       const left = p.wipLeftToBill ?? 0;
@@ -277,6 +294,8 @@ export class Billing {
           title: `${p.projectNumber} · ${p.projectName}`,
           subtitle: `${fmt(left)} left to bill`,
           actionLabel: 'Create pay app',
+          projectId: p.id,
+          kind: 'bill-project',
         });
       }
       if ((p.currentAR ?? 0) > 0) {
@@ -285,6 +304,8 @@ export class Billing {
           title: `${p.projectNumber} · ${p.projectName}`,
           subtitle: `${fmt(p.currentAR ?? 0)} open AR`,
           actionLabel: 'Follow up collections',
+          projectId: p.id,
+          kind: 'collections',
         });
       }
     }
@@ -297,16 +318,23 @@ export class Billing {
         title: `${project?.projectNumber ?? '—'} · Approved CO`,
         subtitle: co.title ?? co.coNumber ?? 'Change order',
         actionLabel: 'Bill approved CO',
+        projectId: co.projectId,
+        changeOrderId: co.id,
+        kind: 'bill-co',
       });
     }
 
     for (const b of this.projectData.billings()) {
       if (!['Draft', 'Submitted'].includes(b.status ?? '')) continue;
+      const project = resolveProjectByReference(projects, { projectId: b.projectId, payAppNumber: b.payAppNumber });
       actions.push({
         id: `pa-${b.id}`,
         title: resolveProjectLabel(projects, { projectId: b.projectId }),
         subtitle: `Pay app ${b.payAppNumber ?? '—'} · ${b.status}`,
         actionLabel: b.status === 'Draft' ? 'Submit pay app' : 'Invoice pay app',
+        projectId: project?.id ?? b.projectId,
+        billingId: b.id,
+        kind: 'pay-app',
       });
     }
 
@@ -365,8 +393,36 @@ export class Billing {
     }
   }
 
-  resendInvoice(row: BillingRecord & { projectLabel: string }): void {
-    void row;
-    alert('Resend queued — invoice notification stub.');
+  handleBillingAction(action: BillingAction): void {
+    if (!action.projectId) return;
+    const queryParams: Record<string, string> = { section: 'financials' };
+    switch (action.kind) {
+      case 'collections':
+        queryParams['view'] = 'ar';
+        break;
+      case 'bill-co':
+        queryParams['tab'] = 'changes';
+        if (action.changeOrderId) queryParams['coId'] = action.changeOrderId;
+        break;
+      case 'bill-project':
+      case 'pay-app':
+      default:
+        queryParams['view'] = 'billing';
+        if (action.billingId) queryParams['billingId'] = action.billingId;
+        break;
+    }
+    void this.router.navigate(['/projects', action.projectId], { queryParams });
+  }
+
+  async resendInvoice(row: BillingRecord & { projectLabel: string; projectId?: string }): Promise<void> {
+    if (!row.projectId) return;
+    const stamp = new Date().toLocaleString();
+    const note = `Resend requested ${stamp}`;
+    const billingNotes = [row.billingNotes, note].filter(Boolean).join('\n');
+    await firstValueFrom(this.data.updateBilling(row.id, { billingNotes }));
+    this.resendMessage.set(`Resend logged for ${row.payAppNumber ?? 'invoice'} — opening project billing.`);
+    void this.router.navigate(['/projects', row.projectId], {
+      queryParams: { section: 'financials', view: 'billing', billingId: row.id },
+    });
   }
 }

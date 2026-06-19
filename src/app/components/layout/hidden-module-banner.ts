@@ -11,7 +11,7 @@ import { globalModuleHiddenMessage } from '@shared/utils/global-enabled-modules.
   template: `
     @if (hidden()) {
       <div class="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        {{ message }}
+        {{ message() }}
       </div>
     }
   `,
@@ -23,5 +23,5 @@ export class HiddenModuleBannerComponent {
   private globalNeeds = inject(GlobalNeedsService);
 
   hidden = computed(() => !this.globalNeeds.isModuleVisible(this.moduleId));
-  readonly message = globalModuleHiddenMessage('rfis');
+  message = computed(() => globalModuleHiddenMessage(this.moduleId));
 }
