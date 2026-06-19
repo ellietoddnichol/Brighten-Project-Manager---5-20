@@ -9,6 +9,7 @@ import {
 } from '@app/models/project-needs.types';
 
 import { FinancialView, FileView, WorkflowView } from '@app/components/project/project-detail.types';
+import { shouldShowCertifiedPayroll } from '@features/labor/utils/certified-payroll-week';
 
 
 
@@ -38,8 +39,8 @@ function showSubmittals(input: ProjectNeedsInput): boolean {
 
 
 
-function showCpr(_input: ProjectNeedsInput): boolean {
-  return false;
+function showCpr(input: ProjectNeedsInput): boolean {
+  return shouldShowCertifiedPayroll(input);
 }
 
 

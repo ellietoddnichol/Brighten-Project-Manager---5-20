@@ -114,6 +114,7 @@ export interface GlobalNeedsInput {
   dailyLogsRequiredOnActiveJob: boolean;
   openFieldIssueCount: number;
   cprRequiredJobCount: number;
+  prevailingWageJobCount: number;
   cprRecordCount: number;
   cprExceptionCount: number;
   safetyItemCount: number;

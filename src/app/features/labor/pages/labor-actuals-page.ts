@@ -95,7 +95,7 @@ interface LaborGroupRow {
                   @for (row of exceptionRows(); track row.id) {
                     <tr class="border-b hover:bg-slate-50 transition-colors">
                       <td class="px-4 py-3">
-                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ section: 'workflows', workflow: 'certified-payroll' }"
+                        <a [routerLink]="['/projects', row.projectId]" [queryParams]="{ tab: 'certified-payroll' }"
                            class="text-indigo-700 font-medium hover:underline">{{ row.projectName || row.jobNumber || '—' }}</a>
                       </td>
                       <td class="px-4 py-3">{{ row.employeeName || '—' }}</td>

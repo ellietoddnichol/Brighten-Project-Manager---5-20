@@ -32,11 +32,12 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
               <div><dt class="text-slate-500">Compliance Type</dt><dd class="font-semibold">{{ project.payrollComplianceType || 'Not set' }}</dd></div>
               <div><dt class="text-slate-500">Wage Order #</dt><dd class="font-semibold">{{ project.wageOrderNumber || '—' }}</dd></div>
               <div><dt class="text-slate-500">County</dt><dd class="font-semibold">{{ project.county || '—' }}</dd></div>
+              <div><dt class="text-slate-500">Contract / Project No.</dt><dd class="font-semibold">{{ project.contractNumber || '—' }}</dd></div>
               <div><dt class="text-slate-500">Public Body</dt><dd class="font-semibold">{{ project.publicBody || '—' }}</dd></div>
+              <div><dt class="text-slate-500">Public Body Address</dt><dd class="font-semibold">{{ publicBodyAddressLine() }}</dd></div>
               <div><dt class="text-slate-500">Contracting Agency</dt><dd class="font-semibold">{{ project.contractingAgency || '—' }}</dd></div>
               <div><dt class="text-slate-500">Prime Contractor</dt><dd class="font-semibold">{{ project.primeContractor || '—' }}</dd></div>
               <div><dt class="text-slate-500">CPR Status</dt><dd class="font-semibold">{{ project.certifiedPayrollStatus || 'Not Started' }}</dd></div>
-            </dl>
             <button type="button" (click)="showEdit.set(!showEdit())" class="mt-4 text-sm font-semibold text-blue-600 hover:text-blue-800">
               {{ showEdit() ? 'Hide quick edit' : 'Quick edit compliance fields' }}
             </button>
@@ -49,7 +50,16 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
                   }
                 </select>
                 <input [(ngModel)]="draft.wageOrderNumber" name="wageOrderNumber" placeholder="Wage order / AWO #" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                <input [(ngModel)]="draft.contractNumber" name="contractNumber" placeholder="Contract / project no." class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
                 <input [(ngModel)]="draft.publicBody" name="publicBody" placeholder="Public body" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                <input [(ngModel)]="draft.publicBodyAddress" name="publicBodyAddress" placeholder="Public body address" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                <div class="grid grid-cols-3 gap-2">
+                  <input [(ngModel)]="draft.publicBodyCity" name="publicBodyCity" placeholder="City" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                  <input [(ngModel)]="draft.publicBodyState" name="publicBodyState" placeholder="State" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                  <input [(ngModel)]="draft.publicBodyZip" name="publicBodyZip" placeholder="ZIP" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                </div>
+                <input [(ngModel)]="draft.publicBodyPhone" name="publicBodyPhone" placeholder="Public body phone" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
+                <input [(ngModel)]="draft.county" name="county" placeholder="County" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
                 <input [(ngModel)]="draft.contractingAgency" name="contractingAgency" placeholder="Contracting agency" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
                 <input [(ngModel)]="draft.primeContractor" name="primeContractor" placeholder="Prime contractor" class="w-full border border-slate-300 rounded px-3 py-2 text-sm" />
                 <label class="flex items-center gap-2 text-sm"><input type="checkbox" [(ngModel)]="draft.certifiedPayrollRequired" name="cprRequired"> Certified payroll required</label>
@@ -177,7 +187,14 @@ export class CertifiedPayrollTabComponent implements OnInit {
     this.draft = {
       payrollComplianceType: this.project.payrollComplianceType ?? 'NONE',
       wageOrderNumber: this.project.wageOrderNumber,
+      contractNumber: this.project.contractNumber,
+      county: this.project.county,
       publicBody: this.project.publicBody,
+      publicBodyAddress: this.project.publicBodyAddress,
+      publicBodyCity: this.project.publicBodyCity,
+      publicBodyState: this.project.publicBodyState,
+      publicBodyZip: this.project.publicBodyZip,
+      publicBodyPhone: this.project.publicBodyPhone,
       contractingAgency: this.project.contractingAgency,
       primeContractor: this.project.primeContractor,
       certifiedPayrollRequired: this.project.certifiedPayrollRequired ?? this.project.prevailingWage,
@@ -252,5 +269,13 @@ export class CertifiedPayrollTabComponent implements OnInit {
 
   toggleDocs(weekId: string): void {
     this.expandedWeekId.set(this.expandedWeekId() === weekId ? null : weekId);
+  }
+
+  publicBodyAddressLine(): string {
+    const parts = [
+      this.project.publicBodyAddress,
+      [this.project.publicBodyCity, this.project.publicBodyState, this.project.publicBodyZip].filter(Boolean).join(' '),
+    ].filter(Boolean);
+    return parts.join(', ') || '—';
   }
 }

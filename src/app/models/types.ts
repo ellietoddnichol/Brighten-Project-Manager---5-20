@@ -54,6 +54,12 @@ export interface Project {
   payrollComplianceType?: PayrollComplianceType;
   wageOrderNumber?: string;
   publicBody?: string;
+  publicBodyAddress?: string;
+  publicBodyCity?: string;
+  publicBodyState?: string;
+  publicBodyZip?: string;
+  publicBodyPhone?: string;
+  contractNumber?: string;
   contractingAgency?: string;
   primeContractor?: string;
   certifiedPayrollStartDate?: string;

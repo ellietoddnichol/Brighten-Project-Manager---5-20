@@ -1,17 +1,16 @@
 import { Project } from '@app/models/types';
 
-export function isCertifiedPayrollProject(project: Pick<Project, 'prevailingWage'>): boolean {
-  return !!project.prevailingWage;
+export function isCertifiedPayrollProject(project: Pick<Project, 'prevailingWage' | 'certifiedPayrollRequired'>): boolean {
+  return !!(project.prevailingWage || project.certifiedPayrollRequired);
 }
 
-/** CPR tools hidden for now — re-enable when certified payroll returns. */
-export function shouldShowCertifiedPayroll(_input: {
+export function shouldShowCertifiedPayroll(input: {
   showAllTools?: boolean;
   certifiedPayrollRequired?: boolean;
   prevailingWage?: boolean;
   hasCPRRecords?: boolean;
 }): boolean {
-  return false;
+  return !!(input.showAllTools || input.certifiedPayrollRequired || input.prevailingWage || input.hasCPRRecords);
 }
 
 /** Payroll week ending Sunday (YYYY-MM-DD). */

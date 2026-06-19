@@ -59,17 +59,19 @@ describe('project-needs.compute', () => {
     expect(modules.moneyMore.length).toBeGreaterThan(0);
   });
 
-  it('hides CPR from project workflows for now', () => {
+  it('shows CPR when required, prevailing wage, or CPR records exist', () => {
     const withRequired = computeProjectEnabledModules(baseInput({
       certifiedPayrollRequired: true,
     }));
-    expect(withRequired.workMore).not.toContain('certified-payroll');
+    expect(withRequired.workMore).toContain('certified-payroll');
 
     const withRecords = computeProjectEnabledModules(baseInput({
       hasCPRRecords: true,
-      showAllTools: true,
     }));
-    expect(withRecords.workMore).not.toContain('certified-payroll');
+    expect(withRecords.workMore).toContain('certified-payroll');
+
+    const hidden = computeProjectEnabledModules(baseInput());
+    expect(hidden.workMore).not.toContain('certified-payroll');
   });
 
   it('shows daily logs when required by profile', () => {

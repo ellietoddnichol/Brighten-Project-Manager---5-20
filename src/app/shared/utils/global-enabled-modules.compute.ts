@@ -103,7 +103,10 @@ export function isGlobalModuleVisible(id: GlobalModuleId, input: GlobalNeedsInpu
     case 'inspections':
       return input.inspectionItemCount > 0;
     case 'certified-payroll':
-      return false;
+      return input.showAllTools
+        || input.cprRequiredJobCount > 0
+        || input.prevailingWageJobCount > 0
+        || input.cprRecordCount > 0;
 
     case 'foreman-bonuses':
       return input.hasForemanBonusRecords || input.hasBonusEligibleJobs || input.foremanBonusReviewCount > 0;
@@ -296,7 +299,7 @@ export function computeGlobalEnabledModules(input: GlobalNeedsInput): GlobalEnab
 
   const moreSubgroups = [
     filterSubgroup('Work Tools', workMoreIds, input, badges),
-    filterSubgroup('Labor', ['labor', 'labor-actuals', 'foreman-bonuses', 'labor-codes'], input, badges),
+    filterSubgroup('Labor', ['labor', 'labor-actuals', 'certified-payroll', 'foreman-bonuses', 'labor-codes'], input, badges),
     filterSubgroup('Financials', ['pos', 'cost-transactions', 'sub-invoices'], input, badges),
     filterSubgroup('Documents', ['generated-docs', 'missing-required-docs', 'closeout'], input, badges),
     filterSubgroup('Projects', ['closeout'], input, badges),

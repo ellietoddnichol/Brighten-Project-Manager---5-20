@@ -12,6 +12,7 @@ import { CertifiedPayrollDataService } from '@features/labor/services/certified-
 import { DataService } from '@core/services/data.service';
 import { CertifiedPayrollException, CertifiedPayrollTask, CertifiedPayrollWeek } from '@app/models/certified-payroll.types';
 import { Project } from '@app/models/types';
+import { CprFormPrintComponent } from '@features/labor/components/cpr-form-print';
 
 type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
 
@@ -26,6 +27,7 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
     HiddenModuleBannerComponent,
     StatCardComponent,
     StatusChipComponent,
+    CprFormPrintComponent,
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
@@ -179,6 +181,8 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
                   <td class="px-5 py-3"><app-status-chip [tone]="weekTone(week.status)">{{ week.status }}</app-status-chip></td>
                   <td class="px-5 py-3 text-right">
                     <button type="button" (click)="reviewWeek.set(week.id)" class="text-blue-600 hover:text-blue-800 text-xs font-semibold mr-3">Review</button>
+                    <button type="button" (click)="printWeek(week.id)"
+                            class="text-violet-700 hover:text-violet-900 text-xs font-semibold mr-3">Print Form</button>
                     <button type="button" (click)="exportWeek(week.id)" [disabled]="week.status === 'blocked' || cpr.loading()"
                             class="text-emerald-700 hover:text-emerald-900 text-xs font-semibold disabled:opacity-40">Export</button>
                   </td>
@@ -261,6 +265,29 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
         </div>
       }
     </div>
+
+    @if (printWeekId()) {
+      <div class="fixed inset-0 z-50 bg-white overflow-auto">
+        <div class="no-print sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-6 py-3 shadow-sm">
+          <h2 class="text-sm font-bold text-slate-900">Certified Payroll Form Preview</h2>
+          <div class="flex items-center gap-2">
+            <button type="button" (click)="triggerPrint()"
+                    class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold">Print</button>
+            <button type="button" (click)="closePrint()"
+                    class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold">Close</button>
+          </div>
+        </div>
+        <div class="p-6 max-w-[1400px] mx-auto">
+          @if (printContext(); as ctx) {
+            <app-cpr-form-print
+              [project]="ctx.project"
+              [week]="ctx.week"
+              [entries]="ctx.entries"
+              [payrollNumber]="ctx.payrollNumber" />
+          }
+        </div>
+      </div>
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -271,6 +298,7 @@ export class CertifiedPayroll {
 
   activeTab = signal<CprTab>('dashboard');
   reviewWeek = signal<string | null>(null);
+  printWeekId = signal<string | null>(null);
 
   readonly tabs = [
     { id: 'dashboard' as const, label: 'Dashboard', icon: 'dashboard' },
@@ -312,12 +340,50 @@ export class CertifiedPayroll {
     return week ? `${this.projectLabel(week.projectId)} · ${week.weekEnding}` : '';
   });
 
+  printContext = computed(() => {
+    const weekId = this.printWeekId();
+    if (!weekId) return null;
+    const week = this.weeks().find(w => w.id === weekId);
+    if (!week) return null;
+    const project = this.projects().find(p => p.id === week.projectId);
+    if (!project) return null;
+    const weekEntries = this.entries().filter(e => e.weekId === weekId);
+    return {
+      project,
+      week,
+      entries: weekEntries,
+      payrollNumber: this.payrollNumberForWeek(weekId),
+    };
+  });
+
   generate(): void {
     void this.cpr.generateDrafts();
   }
 
   exportWeek(weekId: string): void {
     void this.cpr.exportWeek(weekId);
+  }
+
+  printWeek(weekId: string): void {
+    this.printWeekId.set(weekId);
+  }
+
+  closePrint(): void {
+    this.printWeekId.set(null);
+  }
+
+  triggerPrint(): void {
+    window.print();
+  }
+
+  payrollNumberForWeek(weekId: string): string {
+    const week = this.weeks().find(w => w.id === weekId);
+    if (!week) return '001';
+    const projectWeeks = this.weeks()
+      .filter(w => w.projectId === week.projectId)
+      .sort((a, b) => a.weekEnding.localeCompare(b.weekEnding));
+    const index = projectWeeks.findIndex(w => w.id === weekId);
+    return String(index + 1).padStart(3, '0');
   }
 
   projectLabel(projectId: string): string {

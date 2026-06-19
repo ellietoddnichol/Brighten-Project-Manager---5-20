@@ -122,7 +122,8 @@ export class GlobalNeedsService {
     const cprWeeks = (this.cprWeeks() ?? []).filter(w => activeIds.has(w.projectId));
     const cprExceptions = cprWeeks.reduce((n, w) => n + (w.exceptionCount ?? 0), 0);
 
-    const cprRequiredJobs = activeProjects.filter(p => !!p.certifiedPayrollRequired).length;
+    const cprRequiredJobs = activeProjects.filter(p => !!p.certifiedPayrollRequired || !!p.prevailingWage).length;
+    const prevailingWageJobs = activeProjects.filter(p => !!p.prevailingWage).length;
 
     const safetyCount =
       issues.filter(i => i.issueType === 'Safety').length
@@ -184,6 +185,7 @@ export class GlobalNeedsService {
       dailyLogsRequiredOnActiveJob: dailyLogsRequired,
       openFieldIssueCount: issues.length,
       cprRequiredJobCount: cprRequiredJobs,
+      prevailingWageJobCount: prevailingWageJobs,
       cprRecordCount: cprWeeks.length,
       cprExceptionCount: cprExceptions,
       safetyItemCount: safetyCount,

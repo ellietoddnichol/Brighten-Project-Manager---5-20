@@ -21,6 +21,7 @@ function baseInput(overrides: Partial<GlobalNeedsInput> = {}): GlobalNeedsInput 
     dailyLogsRequiredOnActiveJob: false,
     openFieldIssueCount: 0,
     cprRequiredJobCount: 0,
+    prevailingWageJobCount: 0,
     cprRecordCount: 0,
     cprExceptionCount: 0,
     safetyItemCount: 0,
@@ -61,9 +62,10 @@ describe('global-enabled-modules.compute', () => {
     expect(workMore.some(i => i.id === 'rfis')).toBe(true);
   });
 
-  it('hides certified payroll in the UI for now', () => {
-    const input = baseInput({ cprRequiredJobCount: 1, cprExceptionCount: 5 });
-    expect(isGlobalModuleVisible('certified-payroll', input)).toBe(false);
+  it('shows certified payroll when prevailing wage jobs or CPR records exist', () => {
+    expect(isGlobalModuleVisible('certified-payroll', baseInput({ prevailingWageJobCount: 1 }))).toBe(true);
+    expect(isGlobalModuleVisible('certified-payroll', baseInput({ cprRecordCount: 2 }))).toBe(true);
+    expect(isGlobalModuleVisible('certified-payroll', baseInput())).toBe(false);
   });
 
   it('does not badge AR as urgent when past due exists', () => {
