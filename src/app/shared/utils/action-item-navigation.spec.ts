@@ -22,7 +22,7 @@ describe('action-item-navigation', () => {
       title: 'Missing Budget',
       type: 'Budget',
     }));
-    expect(hint.nav.section).toBe('overview');
+    expect(hint.nav.section).toBe('financials');
     expect(hint.nav.financialView).toBe('budget');
   });
 

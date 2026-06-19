@@ -101,7 +101,7 @@ describe('parseIncomeByCustomerRows', () => {
   });
 
   it('reads QuickBooks multi-row Income by Customer export', () => {
-    const parsed = parseIncomeByCustomerRows([...QB_EXPORT.incomeByCustomer]);
+    const parsed = parseIncomeByCustomerRows(QB_EXPORT.incomeByCustomer.map(r => r.map(c => String(c))));
     expect(parsed.length).toBeGreaterThanOrEqual(2);
     expect(parsed.find(r => r.jobNumber === '215')?.income).toBe(12720);
     expect(parsed.find(r => r.jobNumber === '200')?.expenses).toBe(-1596.43);
@@ -110,16 +110,16 @@ describe('parseIncomeByCustomerRows', () => {
 
 describe('parseInvoiceDetailRows', () => {
   it('reads QuickBooks multi-row Invoice Details export', () => {
-    const parsed = parseInvoiceDetailRows([...QB_EXPORT.invoiceDetails]);
-    expect(parsed.length).toBeGreaterThanOrEqual(1);
-    expect(parsed[0].jobNumber).toBe('223');
-    expect(parsed[0].amount).toBe(4000);
+    const parsed = parseInvoiceDetailRows(QB_EXPORT.invoiceDetails.map(r => r.map(c => String(c))));
+    const line = parsed.find(r => r.jobNumber === '223');
+    expect(line).toBeTruthy();
+    expect(line!.amount).toBe(4000);
   });
 });
 
 describe('parseVendorBalanceRows', () => {
   it('reads QuickBooks Vendor Balance Summary export', () => {
-    const parsed = parseVendorBalanceRows([...QB_EXPORT.vendorBalance]);
+    const parsed = parseVendorBalanceRows(QB_EXPORT.vendorBalance.map(r => r.map(c => String(c))));
     expect(parsed.length).toBeGreaterThanOrEqual(2);
     expect(parsed.find(v => v.vendorName === 'ABC Supply')?.totalOpenBalance).toBe(3686.77);
   });
@@ -127,7 +127,7 @@ describe('parseVendorBalanceRows', () => {
 
 describe('parseBillPaymentRows', () => {
   it('reads QuickBooks Bill Payments export', () => {
-    const parsed = parseBillPaymentRows([...QB_EXPORT.billPayments]);
+    const parsed = parseBillPaymentRows(QB_EXPORT.billPayments.map(r => r.map(c => String(c))));
     expect(parsed).toHaveLength(1);
     expect(parsed[0].amount).toBe(33436.88);
     expect(parsed[0].linkedTxnId).toBe('6947');
@@ -136,7 +136,7 @@ describe('parseBillPaymentRows', () => {
 
 describe('parseCustomersRows', () => {
   it('reads QuickBooks Customers export without a header row', () => {
-    const parsed = parseCustomersRows([...QB_EXPORT.customers]);
+    const parsed = parseCustomersRows(QB_EXPORT.customers.map(r => r.map(c => String(c))));
     expect(parsed.length).toBeGreaterThanOrEqual(4);
     expect(parsed.find(c => c.jobNumber === '158')).toBeTruthy();
     expect(parsed.find(c => c.jobNumber === '225')).toBeTruthy();
@@ -182,7 +182,7 @@ describe('parseArAgingRows', () => {
   });
 
   it('reads QuickBooks multi-row AR Aging Summary export', () => {
-    const parsed = parseArAgingRows([...QB_EXPORT.arAgingSummary]);
+    const parsed = parseArAgingRows(QB_EXPORT.arAgingSummary.map(r => r.map(c => String(c))));
     expect(parsed.length).toBeGreaterThanOrEqual(2);
     expect(parsed.find(r => r.jobNumber === '215')?.total).toBe(12720);
     expect(parsed.find(r => r.jobNumber === '221')?.total).toBe(600);

@@ -61,10 +61,6 @@ type BillingAction = {
         </a>
       </app-page-header>
 
-      @if (resendMessage()) {
-        <p class="text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-4 py-2">{{ resendMessage() }}</p>
-      }
-
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <app-stat-card label="Total Billed" [value]="fmt(metrics()?.billedToDate ?? 0)" icon="receipt_long" />
         <app-stat-card label="Open AR" [value]="fmt(metrics()?.openAR ?? 0)" icon="account_balance_wallet" />
@@ -122,7 +118,6 @@ type BillingAction = {
                 <th class="px-5 py-3 text-right">Billed</th>
                 <th class="px-5 py-3 text-right">Paid</th>
                 <th class="px-5 py-3">Status</th>
-                <th class="px-5 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
@@ -139,17 +134,9 @@ type BillingAction = {
                   <td class="px-5 py-3">
                     <app-status-chip [tone]="billingTone(row.status)">{{ row.status }}</app-status-chip>
                   </td>
-                  <td class="px-5 py-3 text-right">
-                    @if (row.status === 'Submitted' || row.status === 'Past Due') {
-                      <button type="button" (click)="resendInvoice(row)"
-                              class="bg-white border border-slate-200 text-slate-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">
-                        Resend
-                      </button>
-                    }
-                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="px-5 py-10 text-center text-slate-400 italic">No open invoices on sheet</td></tr>
+                <tr><td colspan="6" class="px-5 py-10 text-center text-slate-400 italic">No open invoices on sheet</td></tr>
               }
             </tbody>
           </table>
@@ -240,8 +227,6 @@ export class Billing {
   private data = inject(DataService);
   private currency = inject(CurrencyPipe);
   private router = inject(Router);
-
-  resendMessage = signal<string | null>(null);
 
   createDrawerOpen = signal(false);
   paidExpanded = signal(false);
@@ -395,34 +380,20 @@ export class Billing {
 
   handleBillingAction(action: BillingAction): void {
     if (!action.projectId) return;
-    const queryParams: Record<string, string> = { section: 'financials' };
+    const queryParams: Record<string, string> = {};
     switch (action.kind) {
       case 'collections':
-        queryParams['view'] = 'ar';
+        queryParams['tab'] = 'ar';
         break;
       case 'bill-co':
         queryParams['tab'] = 'changes';
-        if (action.changeOrderId) queryParams['coId'] = action.changeOrderId;
         break;
       case 'bill-project':
       case 'pay-app':
       default:
-        queryParams['view'] = 'billing';
-        if (action.billingId) queryParams['billingId'] = action.billingId;
+        queryParams['tab'] = 'billing';
         break;
     }
     void this.router.navigate(['/projects', action.projectId], { queryParams });
-  }
-
-  async resendInvoice(row: BillingRecord & { projectLabel: string; projectId?: string }): Promise<void> {
-    if (!row.projectId) return;
-    const stamp = new Date().toLocaleString();
-    const note = `Resend requested ${stamp}`;
-    const billingNotes = [row.billingNotes, note].filter(Boolean).join('\n');
-    await firstValueFrom(this.data.updateBilling(row.id, { billingNotes }));
-    this.resendMessage.set(`Resend logged for ${row.payAppNumber ?? 'invoice'} — opening project billing.`);
-    void this.router.navigate(['/projects', row.projectId], {
-      queryParams: { section: 'financials', view: 'billing', billingId: row.id },
-    });
   }
 }

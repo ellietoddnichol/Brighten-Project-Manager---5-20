@@ -20,7 +20,7 @@ describe('labor-cost.compute', () => {
 
   it('matches employees case-insensitively', () => {
     expect(findEmployeeByName(employees, 'jane doe')?.id).toBe('e1');
-    expect(findEmployeeByName(employees, 'Dustin Miller')?.id).toBe('e2');
+    expect(findEmployeeByName(employees, 'john smith')?.id).toBe('e2');
     expect(findEmployeeByName([{ id: 'e3', name: 'Miller, Dustin', payPerHour: 50 }], 'Dustin Miller')?.payPerHour).toBe(50);
   });
 

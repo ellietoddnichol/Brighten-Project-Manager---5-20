@@ -13,6 +13,7 @@ describe('global-nav.config', () => {
       'Financials',
       'Tasks',
       'Documents',
+      'Employees',
       'Directory',
     ]);
   });

@@ -66,7 +66,7 @@ interface EnrichedPo extends PO {
             [nextAction]="po.nextAction"
             (rowClick)="openPo(po)" />
         } @empty {
-          <app-empty-state title="No purchase orders match this filter." />
+          <app-empty-state title="No purchase orders match this filter." message="No purchase orders yet — add one using Add PO above." />
         }
       </div>
     </div>
@@ -217,7 +217,7 @@ export class PosPage {
 
   openPo(po: EnrichedPo): void {
     if (po.projectId) {
-      void this.router.navigate(['/projects', po.projectId], { queryParams: { section: 'financials', view: 'pos' } });
+      void this.router.navigate(['/projects', po.projectId], { queryParams: { tab: 'budget' } });
       return;
     }
     this.editingId.set(po.id);
@@ -267,7 +267,7 @@ export class PosPage {
         committedAmount: this.draftAmount ?? 0,
       }, this.editingId());
       this.closeDrawer();
-      void this.router.navigate(['/projects', project.id], { queryParams: { section: 'financials', view: 'pos' } });
+      void this.router.navigate(['/projects', project.id], { queryParams: { tab: 'budget' } });
       void saved;
     } catch (err) {
       this.saveError.set(err instanceof Error ? err.message : 'Could not save PO.');
