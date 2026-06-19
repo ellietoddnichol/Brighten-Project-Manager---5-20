@@ -18,7 +18,7 @@ import {
   isCertifiedPayrollProject,
   normalizeEmployeeKey,
   safeFirestoreId,
-  weekEndingSunday,
+  weekEndingSaturday,
   weekId,
 } from '@features/labor/utils/certified-payroll-week';
 import {
@@ -132,7 +132,7 @@ export class CertifiedPayrollGeneratorService {
     const mappings = this.laborCodeMapping.snapshot();
     for (const entry of entries) {
       if (!entry.workDate || !entry.employeeName) continue;
-      const weekEnding = weekEndingSunday(entry.workDate);
+      const weekEnding = weekEndingSaturday(entry.workDate);
       const mapping = resolveLaborCodeMapping(entry.laborCode, mappings);
       const rawClass = (effectiveClassification(entry, mapping) ?? 'Unknown').trim();
       const override = getEmployeeCprOverride(entry.employeeName);
@@ -190,7 +190,8 @@ export class CertifiedPayrollGeneratorService {
 
     const empKey = normalizeEmployeeKey(employeeName);
     const empInfo = employeeInfo.find(e => e.employeeKey === empKey);
-    const adp = adpDetails.find(d => d.employeeKey === empKey && d.payPeriodEnding === rows[0]?.workDate?.slice(0, 10));
+    const weekEnding = rows[0]?.workDate ? weekEndingSaturday(rows[0].workDate) : undefined;
+    const adp = adpDetails.find(d => d.employeeKey === empKey && d.payPeriodEnding === weekEnding);
 
     return {
       entryRows: rows,

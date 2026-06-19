@@ -13,7 +13,21 @@ export function shouldShowCertifiedPayroll(input: {
   return !!(input.showAllTools || input.certifiedPayrollRequired || input.prevailingWage || input.hasCPRRecords);
 }
 
-/** Payroll week ending Sunday (YYYY-MM-DD). */
+/**
+ * Payroll week ending Saturday (YYYY-MM-DD).
+ * CPR weeks run Sunday–Saturday to match ADP pay periods and the government WH-347 form.
+ * Any date within the week returns the same Saturday.
+ */
+export function weekEndingSaturday(dateInput: string | Date): string {
+  const date = typeof dateInput === 'string' ? new Date(`${dateInput.slice(0, 10)}T12:00:00`) : new Date(dateInput);
+  const day = date.getDay(); // 0=Sun … 6=Sat
+  const diff = 6 - day;     // 0 on Sat, 6 on Sun
+  const saturday = new Date(date);
+  saturday.setDate(date.getDate() + diff);
+  return saturday.toISOString().slice(0, 10);
+}
+
+/** @deprecated Use weekEndingSaturday — CPR weeks end on Saturday, not Sunday. */
 export function weekEndingSunday(dateInput: string | Date): string {
   const date = typeof dateInput === 'string' ? new Date(`${dateInput.slice(0, 10)}T12:00:00`) : new Date(dateInput);
   const day = date.getDay();
