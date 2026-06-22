@@ -58,6 +58,8 @@ service cloud.firestore {
         'fringe-rates',
         'employee-payroll-info',
         'adp-payroll-details',
+        'cpr-memory',
+        'adp-payroll-report-index',
         'subcontractors',
         'project-subcontractors',
         'subcontractor-documents',

@@ -3,11 +3,13 @@ import { Observable, BehaviorSubject, from } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AdpPayrollDetail,
+  AdpPayrollReportIndex,
   CertifiedPayrollEntry,
   CertifiedPayrollException,
   CertifiedPayrollExport,
   CertifiedPayrollTask,
   CertifiedPayrollWeek,
+  CprMemoryRecord,
   EmployeePayrollInfo,
   StoredClassificationRate,
   StoredFringeRate,
@@ -42,6 +44,8 @@ export class CertifiedPayrollDataService {
   private exportsSubject = new BehaviorSubject<CertifiedPayrollExport[]>([]);
   private employeeInfoSubject = new BehaviorSubject<EmployeePayrollInfo[]>([]);
   private adpDetailsSubject = new BehaviorSubject<AdpPayrollDetail[]>([]);
+  private cprMemorySubject = new BehaviorSubject<CprMemoryRecord[]>([]);
+  private adpReportIndexSubject = new BehaviorSubject<AdpPayrollReportIndex[]>([]);
   private classificationRatesSubject = new BehaviorSubject<StoredClassificationRate[]>([]);
   private fringeRatesSubject = new BehaviorSubject<StoredFringeRate[]>([]);
 
@@ -57,6 +61,8 @@ export class CertifiedPayrollDataService {
         this.listen('certified-payroll-exports', this.exportsSubject);
         this.listen('employee-payroll-info', this.employeeInfoSubject);
         this.listen('adp-payroll-details', this.adpDetailsSubject);
+        this.listen('cpr-memory', this.cprMemorySubject);
+        this.listen('adp-payroll-report-index', this.adpReportIndexSubject);
         this.listen('classification-rates', this.classificationRatesSubject);
         this.listen('fringe-rates', this.fringeRatesSubject);
         this.initialized.set(true);
@@ -69,6 +75,8 @@ export class CertifiedPayrollDataService {
           this.exportsSubject.next([]);
           this.employeeInfoSubject.next([]);
           this.adpDetailsSubject.next([]);
+          this.cprMemorySubject.next([]);
+          this.adpReportIndexSubject.next([]);
           this.classificationRatesSubject.next([]);
           this.fringeRatesSubject.next([]);
           this.initialized.set(false);
@@ -108,6 +116,10 @@ export class CertifiedPayrollDataService {
   getEmployeePayrollInfoSnapshot(): EmployeePayrollInfo[] { return this.employeeInfoSubject.value; }
   getAdpPayrollDetails(): Observable<AdpPayrollDetail[]> { return this.adpDetailsSubject.asObservable(); }
   getAdpPayrollDetailsSnapshot(): AdpPayrollDetail[] { return this.adpDetailsSubject.value; }
+  getCprMemory(): Observable<CprMemoryRecord[]> { return this.cprMemorySubject.asObservable(); }
+  getCprMemorySnapshot(): CprMemoryRecord[] { return this.cprMemorySubject.value; }
+  getAdpReportIndex(): Observable<AdpPayrollReportIndex[]> { return this.adpReportIndexSubject.asObservable(); }
+  getAdpReportIndexSnapshot(): AdpPayrollReportIndex[] { return this.adpReportIndexSubject.value; }
   getClassificationRates(): Observable<StoredClassificationRate[]> { return this.classificationRatesSubject.asObservable(); }
   getFringeRates(): Observable<StoredFringeRate[]> { return this.fringeRatesSubject.asObservable(); }
 
@@ -278,6 +290,54 @@ export class CertifiedPayrollDataService {
 
     await setDoc(doc(db, 'adp-payroll-details', detail.id), forFirestore({
       ...detail,
+      ownerId,
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    }), { merge: true });
+  }
+
+  async batchUpsertAdpPayrollDetails(
+    details: Array<Partial<AdpPayrollDetail> & Pick<AdpPayrollDetail, 'id' | 'employeeKey' | 'employeeName'>>,
+  ): Promise<void> {
+    const ownerId = auth.currentUser?.uid;
+    if (!ownerId || !details.length) return;
+
+    const BATCH_SIZE = 400;
+    for (let i = 0; i < details.length; i += BATCH_SIZE) {
+      const batch = writeBatch(db);
+      for (const detail of details.slice(i, i + BATCH_SIZE)) {
+        batch.set(doc(db, 'adp-payroll-details', detail.id), forFirestore({
+          ...detail,
+          ownerId,
+          updatedAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        }), { merge: true });
+      }
+      await batch.commit();
+    }
+  }
+
+  async upsertAdpReportIndex(
+    record: Partial<AdpPayrollReportIndex> & Pick<AdpPayrollReportIndex, 'id' | 'fileName' | 'payDate' | 'weekEnding' | 'weekStart' | 'employeeCount'>,
+  ): Promise<void> {
+    const ownerId = auth.currentUser?.uid;
+    if (!ownerId) throw new Error('Sign in before saving ADP report index.');
+
+    await setDoc(doc(db, 'adp-payroll-report-index', record.id), forFirestore({
+      ...record,
+      ownerId,
+      importedAt: record.importedAt ?? new Date().toISOString(),
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    }), { merge: true });
+  }
+
+  async upsertCprMemory(record: Partial<CprMemoryRecord> & Pick<CprMemoryRecord, 'id' | 'timelogNorm' | 'adpNorm'>): Promise<void> {
+    const ownerId = auth.currentUser?.uid;
+    if (!ownerId) throw new Error('Sign in before saving CPR memory.');
+
+    await setDoc(doc(db, 'cpr-memory', record.id), forFirestore({
+      ...record,
       ownerId,
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp(),

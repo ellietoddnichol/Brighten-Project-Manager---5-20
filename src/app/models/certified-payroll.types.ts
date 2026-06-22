@@ -41,7 +41,8 @@ export type CertifiedPayrollExceptionType =
   | 'missing-public-body'
   | 'final-payroll-needed'
   | 'unmapped-labor-code'
-  | 'labor-code-missing-classification';
+  | 'labor-code-missing-classification'
+  | 'missing-adp-match';
 
 export type CertifiedPayrollTaskKey =
   | 'setup-needed'
@@ -210,11 +211,41 @@ export interface EmployeePayrollInfo {
   updatedAt?: unknown;
 }
 
+export interface CprMemoryRecord {
+  id: string;
+  timelogNorm: string;
+  adpNorm: string;
+  display?: string;
+  occupation?: string;
+  address?: string;
+  approvedAt?: string;
+  ownerId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface AdpPayrollReportIndex {
+  id: string;
+  fileName: string;
+  payDate: string;
+  weekEnding: string;
+  weekStart: string;
+  employeeCount: number;
+  importedAt?: string;
+  ownerId?: string;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
 export interface AdpPayrollDetail {
   id: string;
   employeeKey: string;
   employeeName: string;
   payPeriodEnding?: string;
+  payDate?: string;
+  ssnLast4?: string;
+  department?: string;
+  sourceFileName?: string;
   regularHours?: number;
   overtimeHours?: number;
   doubleTimeHours?: number;

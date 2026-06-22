@@ -5,6 +5,7 @@ import {
   CertifiedPayrollEntry,
   CertifiedPayrollException,
   CertifiedPayrollWeek,
+  CprMemoryRecord,
   EmployeePayrollInfo,
 } from '@app/models/certified-payroll.types';
 import { ClassificationRateRecord, EmployeeRecord, NormalizedLaborEntry } from '@app/models/labor.types';
@@ -15,13 +16,13 @@ import { LaborRateService } from '@features/labor/services/labor-rate.service';
 import { LaborCodeMappingService } from '@features/labor/services/labor-code-mapping.service';
 import {
   entryId,
-  findAdpPayrollDetail,
   isCertifiedPayrollProject,
   normalizeEmployeeKey,
   safeFirestoreId,
   weekEndingSaturday,
   weekId,
 } from '@features/labor/utils/certified-payroll-week';
+import { resolveAdpPayrollDetail } from '@features/labor/utils/cpr-name-match.util';
 import {
   fringeRateForClassification,
 } from '@features/labor/utils/fringe-rates-seed';
@@ -61,6 +62,7 @@ export class CertifiedPayrollGeneratorService {
 
     const employeeInfo = this.cprData.getEmployeePayrollInfoSnapshot();
     const adpDetails = this.cprData.getAdpPayrollDetailsSnapshot();
+    const cprMemory = this.cprData.getCprMemorySnapshot();
     const rates = this.resolveRates();
     const employees = this.laborData.employees();
 
@@ -86,8 +88,11 @@ export class CertifiedPayrollGeneratorService {
           employees,
           employeeInfo,
           adpDetails,
+          cprMemory,
         );
-        const weekExceptions = this.detectWeekEntryExceptions(project, wId, weekEnding, eId, built.entry, built.entryRows, adpDetails);
+        const weekExceptions = this.detectWeekEntryExceptions(
+          project, wId, weekEnding, eId, built.entry, built.entryRows, adpDetails, employeeInfo, cprMemory,
+        );
 
         await this.cprData.upsertEntry({
           ...built.entry,
@@ -171,6 +176,7 @@ export class CertifiedPayrollGeneratorService {
     employees: EmployeeRecord[],
     employeeInfo: EmployeePayrollInfo[],
     adpDetails: AdpPayrollDetail[],
+    cprMemory: CprMemoryRecord[],
   ): { entry: Omit<CertifiedPayrollEntry, 'id' | 'weekId' | 'projectId' | 'weekEnding' | 'employeeName' | 'classification'>; entryRows: NormalizedLaborEntry[] } {
     const dailyMap = new Map<string, CertifiedPayrollDailyHours>();
     for (const row of rows) {
@@ -202,7 +208,14 @@ export class CertifiedPayrollGeneratorService {
 
     const empKey = normalizeEmployeeKey(employeeName);
     const empInfo = employeeInfo.find(e => e.employeeKey === empKey);
-    const adp = findAdpPayrollDetail(adpDetails, empKey, weekEnding);
+    const adpMatch = resolveAdpPayrollDetail({
+      timelogEmployee: employeeName,
+      weekEnding,
+      adpDetails,
+      memory: cprMemory,
+      employeeInfo,
+    });
+    const adp = adpMatch.detail;
 
     return {
       entryRows: rows,
@@ -280,6 +293,8 @@ export class CertifiedPayrollGeneratorService {
     entry: Partial<CertifiedPayrollEntry>,
     rows: NormalizedLaborEntry[],
     adpDetails: AdpPayrollDetail[],
+    employeeInfo: EmployeePayrollInfo[],
+    cprMemory: CprMemoryRecord[],
   ): Array<CertifiedPayrollException & { id: string }> {
     const exceptions: Array<CertifiedPayrollException & { id: string }> = [];
     const employeeName = rows[0]?.employeeName ?? 'Unknown';
@@ -336,12 +351,17 @@ export class CertifiedPayrollGeneratorService {
       }
     }
 
-    const adp = findAdpPayrollDetail(
-      adpDetails,
-      normalizeEmployeeKey(employeeName),
+    const adpMatch = resolveAdpPayrollDetail({
+      timelogEmployee: employeeName,
       weekEnding,
-    );
-    if (adp?.regularHours != null && Math.abs((adp.regularHours ?? 0) - (entry.regularHours ?? 0)) > 0.25) {
+      adpDetails,
+      memory: cprMemory,
+      employeeInfo,
+    });
+    const adp = adpMatch.detail;
+    if (!adp) {
+      push('missing-adp-match', `No ADP payroll row matched for ${employeeName} (week ending ${weekEnding}).`, 'warning');
+    } else if (adp.regularHours != null && Math.abs((adp.regularHours ?? 0) - (entry.regularHours ?? 0)) > 0.25) {
       push('adp-time-mismatch', `ADP regular hours (${adp.regularHours}) differ from timekeeper (${entry.regularHours}).`, 'warning');
     }
 

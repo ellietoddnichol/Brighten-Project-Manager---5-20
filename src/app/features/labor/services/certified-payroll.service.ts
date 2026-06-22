@@ -12,6 +12,7 @@ import { ClassificationRateRecord } from '@app/models/labor.types';
 import { Project } from '@app/models/types';
 import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payroll-week';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
+import { CertifiedPayrollAdpService } from '@features/labor/services/certified-payroll-adp.service';
 import { CertifiedPayrollExportService } from '@features/labor/services/certified-payroll-export.service';
 import { CertifiedPayrollGeneratorService } from '@features/labor/services/certified-payroll-generator.service';
 import { CertifiedPayrollTasksService } from '@features/labor/services/certified-payroll-tasks.service';
@@ -23,6 +24,7 @@ import { ProjectLaborActualService } from '@features/labor/services/project-labo
 export class CertifiedPayrollService {
   private dataService = inject(DataService);
   private cprData = inject(CertifiedPayrollDataService);
+  private adpImport = inject(CertifiedPayrollAdpService);
   private generator = inject(CertifiedPayrollGeneratorService);
   private tasks = inject(CertifiedPayrollTasksService);
   private exporter = inject(CertifiedPayrollExportService);
@@ -98,6 +100,23 @@ export class CertifiedPayrollService {
       }
     } catch (err) {
       this.lastError.set(err instanceof Error ? err.message : 'Failed to generate certified payroll drafts.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async importAdpEarningsRecord(file: File): Promise<void> {
+    this.loading.set(true);
+    this.lastError.set(null);
+    try {
+      const text = await file.text();
+      const result = await this.adpImport.importEarningsRecordCsv(text, file.name);
+      this.lastMessage.set(
+        `Imported ADP EarningsRecord "${result.fileName}" · pay date ${result.payDate} · ` +
+        `work week ${result.weekStart} – ${result.weekEnding} · ${result.employeesImported} employees.`,
+      );
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'ADP import failed.');
     } finally {
       this.loading.set(false);
     }

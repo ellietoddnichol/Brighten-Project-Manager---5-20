@@ -8,8 +8,8 @@ import {
 } from '@app/models/certified-payroll.types';
 import { Project } from '@app/models/types';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
+import { resolveAdpPayrollDetail } from '@features/labor/utils/cpr-name-match.util';
 import {
-  findAdpPayrollDetail,
   normalizeEmployeeKey,
   normalizeWeekEndingToSaturday,
   workWeekDatesSunThroughSat,
@@ -238,6 +238,13 @@ export class CprFormPrintComponent {
   }
 
   private findAdp(rows: AdpPayrollDetail[], name: string): AdpPayrollDetail | undefined {
-    return findAdpPayrollDetail(rows, normalizeEmployeeKey(name), this.week.weekEnding);
+    const match = resolveAdpPayrollDetail({
+      timelogEmployee: name,
+      weekEnding: this.week.weekEnding,
+      adpDetails: rows,
+      memory: this.cprData.getCprMemorySnapshot(),
+      employeeInfo: this.cprData.getEmployeePayrollInfoSnapshot(),
+    });
+    return match.detail;
   }
 }

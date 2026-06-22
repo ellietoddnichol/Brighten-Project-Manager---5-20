@@ -56,6 +56,12 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
           <mat-icon class="!text-[18px]">{{ cpr.loading() ? 'hourglass_empty' : 'play_arrow' }}</mat-icon>
           Generate Weekly Drafts
         </button>
+        <label class="bg-white border border-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold shadow-sm hover:bg-slate-50 cursor-pointer flex items-center gap-2"
+               [class.opacity-50]="cpr.loading()" [class.pointer-events-none]="cpr.loading()">
+          <mat-icon class="!text-[18px]">upload_file</mat-icon>
+          Import ADP EarningsRecord
+          <input type="file" accept=".csv,text/csv" class="hidden" (change)="onAdpFileSelected($event)" [disabled]="cpr.loading()" />
+        </label>
         <a routerLink="/settings" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
           Connect export sheet <mat-icon class="!text-[16px] w-4 h-4">settings</mat-icon>
         </a>
@@ -359,6 +365,14 @@ export class CertifiedPayroll {
 
   generate(): void {
     void this.cpr.generateDrafts();
+  }
+
+  async onAdpFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    await this.cpr.importAdpEarningsRecord(file);
+    input.value = '';
   }
 
   exportWeek(weekId: string): void {
