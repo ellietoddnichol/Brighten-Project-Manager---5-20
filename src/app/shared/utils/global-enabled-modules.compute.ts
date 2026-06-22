@@ -86,6 +86,7 @@ export function isGlobalModuleVisible(id: GlobalModuleId, input: GlobalNeedsInpu
     case 'documents':
     case 'drive-mapping':
     case 'labor':
+    case 'certified-payroll':
     case 'subcontractors':
     case 'settings':
       return true;
@@ -102,12 +103,6 @@ export function isGlobalModuleVisible(id: GlobalModuleId, input: GlobalNeedsInpu
       return input.safetyItemCount > 0;
     case 'inspections':
       return input.inspectionItemCount > 0;
-    case 'certified-payroll':
-      return input.showAllTools
-        || input.cprRequiredJobCount > 0
-        || input.prevailingWageJobCount > 0
-        || input.cprRecordCount > 0;
-
     case 'foreman-bonuses':
       return input.hasForemanBonusRecords || input.hasBonusEligibleJobs || input.foremanBonusReviewCount > 0;
     case 'labor-actuals':

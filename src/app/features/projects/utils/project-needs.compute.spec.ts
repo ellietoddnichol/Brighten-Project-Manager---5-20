@@ -41,10 +41,10 @@ function baseInput(overrides: Partial<ProjectNeedsInput> = {}): ProjectNeedsInpu
 }
 
 describe('project-needs.compute', () => {
-  it('hides RFIs and CPR for small install by default', () => {
+  it('hides RFIs for small install by default but always shows CPR tab', () => {
     const modules = computeProjectEnabledModules(baseInput({ projectProfile: 'SmallJob' }));
     expect(modules.workMore).not.toContain('rfis');
-    expect(modules.workMore).not.toContain('certified-payroll');
+    expect(modules.workPrimary).toContain('certified-payroll');
     expect(modules.moneyPrimary).not.toContain('pos');
   });
 
@@ -59,19 +59,15 @@ describe('project-needs.compute', () => {
     expect(modules.moneyMore.length).toBeGreaterThan(0);
   });
 
-  it('shows CPR when required, prevailing wage, or CPR records exist', () => {
+  it('always shows CPR as a primary todos sub-tab', () => {
+    const modules = computeProjectEnabledModules(baseInput());
+    expect(modules.workPrimary).toContain('certified-payroll');
+
     const withRequired = computeProjectEnabledModules(baseInput({
       certifiedPayrollRequired: true,
     }));
-    expect(withRequired.workMore).toContain('certified-payroll');
-
-    const withRecords = computeProjectEnabledModules(baseInput({
-      hasCPRRecords: true,
-    }));
-    expect(withRecords.workMore).toContain('certified-payroll');
-
-    const hidden = computeProjectEnabledModules(baseInput());
-    expect(hidden.workMore).not.toContain('certified-payroll');
+    expect(withRequired.workPrimary).toContain('certified-payroll');
+    expect(withRequired.urgentModules).toContain('certified-payroll');
   });
 
   it('shows daily logs when required by profile', () => {

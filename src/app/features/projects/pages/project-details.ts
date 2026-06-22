@@ -38,13 +38,13 @@ import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { ProjectOverviewPanelComponent } from '@app/components/project/project-overview-panel';
 import { ProjectRecordHeaderComponent } from '@app/components/project/project-record-header';
 import { ProjectFinancialsPanelComponent } from '@app/components/project/project-financials-panel';
+import { ProjectWorkflowsPanelComponent } from '@app/components/project/project-workflows-panel';
 import {
   ProjectRecordOverviewTabComponent,
   ProjectRecordLaborTabComponent,
   ProjectRecordMaterialsTabComponent,
   ProjectRecordChangesTabComponent,
   ProjectRecordDocumentsTabComponent,
-  ProjectRecordTodosTabComponent,
   ProjectRecordActivitiesTabComponent,
   ProjectRecordSubsTabComponent,
 } from '@app/components/project/project-record-tabs';
@@ -87,9 +87,9 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
     ProjectRecordHeaderComponent,
     ProjectRecordOverviewTabComponent, ProjectRecordLaborTabComponent,
     ProjectRecordMaterialsTabComponent, ProjectRecordChangesTabComponent,
-    ProjectRecordDocumentsTabComponent, ProjectRecordTodosTabComponent,
+    ProjectRecordDocumentsTabComponent,
     ProjectRecordActivitiesTabComponent, ProjectRecordSubsTabComponent,
-    ProjectFinancialsPanelComponent,
+    ProjectFinancialsPanelComponent, ProjectWorkflowsPanelComponent,
   ],
   template: `
     <div class="project-detail-density min-h-full overflow-y-auto bg-slate-50/50">
@@ -163,7 +163,11 @@ import { workflowChipVisible, computeProjectEnabledModules } from '@features/pro
                 <app-project-record-documents-tab [project]="p" />
               }
               @case ('todos') {
-                <app-project-record-todos-tab [project]="p" />
+                <app-project-workflows-panel
+                  [project]="p"
+                  [activeView]="nav().workflowView"
+                  [modules]="enabledModules()"
+                  (viewChange)="setWorkflowView($event)" />
               }
               @case ('activities') {
                 <app-project-record-activities-tab [project]="p" />
@@ -804,6 +808,16 @@ export class ProjectDetails implements OnInit {
     this.applyNav({ ...this.nav(), section: 'financials', financialView: view, utilityView: null });
   }
 
+  setWorkflowView(view: WorkflowView): void {
+    const section: ProjectPrimarySection = view === 'changes' ? 'changes' : 'todos';
+    this.applyNav({
+      ...defaultNavState(),
+      section,
+      workflowView: view,
+      utilityView: null,
+    });
+  }
+
   goWorkflow(view: WorkflowView | 'billing'): void {
     if (view === 'billing') {
       this.applyNav(openFinancial('billing'));
@@ -866,7 +880,6 @@ export class ProjectDetails implements OnInit {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: navQueryParams(state),
-      queryParamsHandling: 'merge',
     });
   }
 

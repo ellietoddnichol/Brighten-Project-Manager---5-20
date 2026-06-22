@@ -11,6 +11,7 @@ import { DataService } from '@core/services/data.service';
 import { StatusChipComponent, StatusTone } from '@app/components/ui/status-chip';
 import { EmptyStateComponent } from '@app/components/ui/empty-state';
 import { CprFormPrintComponent } from '@features/labor/components/cpr-form-print';
+import { CprExportSheetConnectComponent } from '@features/labor/components/cpr-export-sheet-connect';
 import { computeJobPayrollNumber } from '@features/labor/utils/cpr-form.util';
 import { PayrollComplianceType } from '@app/models/certified-payroll.types';
 import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payroll-week';
@@ -18,16 +19,14 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
 @Component({
   selector: 'app-certified-payroll-tab',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, EmptyStateComponent, WorkflowDocumentsSectionComponent, CprFormPrintComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, StatusChipComponent, EmptyStateComponent, WorkflowDocumentsSectionComponent, CprFormPrintComponent, CprExportSheetConnectComponent],
   template: `
     @if (!isCprProject()) {
       <app-empty-state icon="lock" title="Certified Payroll not enabled"
                        message="Enable Prevailing Wage or Certified Payroll Required on this project to activate compliance tracking." />
     } @else {
       <div class="space-y-4">
-        @if (cpr.exportBanner()) {
-          <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{{ cpr.exportBanner() }}</div>
-        }
+        <app-cpr-export-sheet-connect />
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div class="bg-white rounded-xl border border-slate-200 p-5">

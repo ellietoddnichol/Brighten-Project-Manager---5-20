@@ -1,7 +1,7 @@
 import { NormalizedLaborEntry } from '@app/models/labor.types';
 import { ProjectLaborActual } from '@app/models/labor-actual.types';
 import { Employee, Project, TimeEntry } from '@app/models/types';
-import { weekEndingSaturday, weekStartSundayFromEnding } from '@features/labor/utils/certified-payroll-week';
+import { weekEndingSaturday, weekStartSundayFromEnding, safeFirestoreId } from '@features/labor/utils/certified-payroll-week';
 
 const APPROVED_STATUSES = new Set(['approved', 'approve', 'yes', 'y']);
 
@@ -20,7 +20,7 @@ export function laborActualFromNormalizedEntry(
   if (!entry.workDate || !entry.projectId) return null;
   const weekEnd = weekEndingSaturday(entry.workDate);
   return {
-    id: `norm-${entry.id}`,
+    id: safeFirestoreId(`norm-${entry.id}`),
     projectId: entry.projectId,
     jobNumber: entry.projectNumber ?? project?.projectNumber,
     projectName: entry.projectName ?? project?.projectName,
@@ -62,7 +62,7 @@ export function laborActualFromTimeEntry(
     + doubleTimeHours * baseRate * 2;
 
   return {
-    id: `te-${entry.id}`,
+    id: safeFirestoreId(`te-${entry.id}`),
     projectId: entry.projectId,
     jobNumber: project?.projectNumber,
     projectName: project?.projectName ?? entry.jobName,

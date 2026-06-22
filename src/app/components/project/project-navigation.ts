@@ -135,6 +135,18 @@ export function navQueryParams(state: ProjectNavState): Record<string, string> {
     return {};
   }
 
+  if (state.section === 'todos') {
+    const params: Record<string, string> = { section: 'todos' };
+    if (state.workflowView && state.workflowView !== 'all-work') {
+      params['tab'] = state.workflowView;
+    }
+    return params;
+  }
+
+  if (state.section === 'changes') {
+    return { section: 'changes' };
+  }
+
   return { section: state.section };
 }
 

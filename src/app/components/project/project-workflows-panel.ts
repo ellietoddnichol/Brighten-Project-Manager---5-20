@@ -356,7 +356,9 @@ export class ProjectWorkflowsPanelComponent {
     showSubmittals: this.modules.workMore.includes('submittals') || this.modules.showAllTools,
     showDailyLogs: this.modules.workMore.includes('daily-logs') || this.modules.showAllTools,
     showFieldIssues: this.modules.workMore.includes('field-issues') || this.modules.showAllTools,
-    showCpr: this.modules.workMore.includes('certified-payroll') || this.modules.showAllTools,
+    showCpr: this.modules.workPrimary.includes('certified-payroll')
+      || this.modules.workMore.includes('certified-payroll')
+      || this.modules.showAllTools,
     hasRFIs: this.rfis().some(r => r.projectId === this.project.id),
     hasSubmittals: this.submittals().some(s => s.projectId === this.project.id),
     hasDailyLogs: this.projectLogs().length > 0,
@@ -417,7 +419,7 @@ export class ProjectWorkflowsPanelComponent {
   );
 
   panelLoading = computed(() => this.cprSvc.loading() && !this.cprData.initialized());
-  panelError = computed(() => this.cprSvc.lastError());
+  panelError = computed(() => this.cprSvc.lastError() || this.cprData.lastListenError());
 
   workCompTotalHours = computed(() =>
     this.projectLaborHours().reduce((sum, row) => sum + row.totalHours, 0),
@@ -441,6 +443,7 @@ export class ProjectWorkflowsPanelComponent {
 
   retryLoad(): void {
     this.cprSvc.lastError.set(null);
+    this.cprData.lastListenError.set(null);
     void this.cprSvc.ensureComplianceForProject(this.project);
     void this.laborData.refreshFromSheets(false);
   }

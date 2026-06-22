@@ -109,16 +109,24 @@ export const GLOBAL_MAIN_NAV: GlobalNavItemConfig[] = [
     isActive: path => pathMatches(path, '/employees'),
   },
   {
+    id: 'payroll',
+    label: 'Certified Payroll',
+    route: '/certified-payroll',
+    icon: 'health_and_safety',
+    group: 'people',
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['certified-payroll'],
+    isActive: path => pathMatches(path, '/certified-payroll'),
+  },
+  {
     id: 'people',
     label: 'Directory',
     route: '/directory',
     icon: 'contacts',
     group: 'people',
-    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['subcontractors', 'sub-invoices', 'certified-payroll', 'labor', 'labor-actuals'],
+    badgeSources: manualFirstConfig.hideSidebarReviewBadges ? undefined : ['subcontractors', 'sub-invoices', 'labor', 'labor-actuals'],
     isActive: path =>
       pathMatches(path, '/directory')
       || pathMatches(path, '/subcontractors')
-      || pathMatches(path, '/certified-payroll')
       || pathMatches(path, '/labor-actuals')
       || pathMatches(path, '/labor'),
   },
@@ -158,6 +166,7 @@ export const FINANCIALS_HUB_LINKS: HubLink[] = [
 ];
 
 export const DIRECTORY_HUB_LINKS: HubLink[] = [
+  { title: 'Certified Payroll', description: 'Prevailing wage CPR drafts, ADP import, review, and WH-347 print forms.', route: '/certified-payroll', icon: 'health_and_safety' },
   { title: 'Subcontractors', description: 'Sub compliance, agreements, and project assignments.', route: '/subcontractors', icon: 'engineering' },
   { title: 'Vendors', description: 'Vendor balances and AP-related contacts.', route: '/subcontractors', icon: 'storefront', queryParams: { view: 'directory' } },
   { title: 'Customers', description: 'Job customers synced from projects and QuickBooks.', route: '/projects', icon: 'business' },

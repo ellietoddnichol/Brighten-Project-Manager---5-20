@@ -14,6 +14,7 @@ describe('global-nav.config', () => {
       'Tasks',
       'Documents',
       'Employees',
+      'Certified Payroll',
       'Directory',
     ]);
   });
@@ -33,12 +34,18 @@ describe('global-nav.config', () => {
     expect(money.isActive('/foreman-bonuses')).toBe(false);
   });
 
+  it('highlights Certified Payroll for CPR routes', () => {
+    const payroll = GLOBAL_MAIN_NAV.find(n => n.id === 'payroll')!;
+    expect(payroll.isActive('/certified-payroll')).toBe(true);
+    expect(payroll.isActive('/directory')).toBe(false);
+  });
+
   it('highlights Directory for directory and subcontractor routes', () => {
     const people = GLOBAL_MAIN_NAV.find(n => n.id === 'people')!;
     expect(people.isActive('/directory')).toBe(true);
     expect(people.isActive('/subcontractors')).toBe(true);
-    expect(people.isActive('/certified-payroll')).toBe(true);
     expect(people.isActive('/labor-actuals')).toBe(true);
+    expect(people.isActive('/certified-payroll')).toBe(false);
     expect(people.isActive('/projects')).toBe(false);
   });
 

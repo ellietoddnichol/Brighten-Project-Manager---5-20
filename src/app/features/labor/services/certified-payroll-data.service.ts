@@ -50,6 +50,7 @@ export class CertifiedPayrollDataService {
   private fringeRatesSubject = new BehaviorSubject<StoredFringeRate[]>([]);
 
   initialized = signal(false);
+  lastListenError = signal<string | null>(null);
 
   constructor() {
     auth.onAuthStateChanged(user => {
@@ -99,7 +100,13 @@ export class CertifiedPayrollDataService {
           subject.next(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as T)));
         });
       },
-      error => console.error(`Firestore ${collectionName}:`, error),
+      error => {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Firestore ${collectionName}:`, error);
+        this.ngZone.run(() => {
+          this.lastListenError.set(`${collectionName}: ${message}`);
+        });
+      },
     );
   }
 

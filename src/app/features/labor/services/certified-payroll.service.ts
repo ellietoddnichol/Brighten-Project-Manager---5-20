@@ -2,9 +2,9 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { loadMockDataJson } from '@core/utils/mock-data-loader';
 import { environment } from '@app/config/environment';
-import { CERTIFIED_PAYROLL_EXPORT_MESSAGE } from '@app/config/certified-payroll-sheet.config';
 import {
   CertifiedPayrollDashboardKpis,
+  CprWeekReviewRow,
   StoredClassificationRate,
   StoredFringeRate,
 } from '@app/models/certified-payroll.types';
@@ -14,7 +14,6 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
 import { CertifiedPayrollAdpService } from '@features/labor/services/certified-payroll-adp.service';
 import { CertifiedPayrollReviewService } from '@features/labor/services/certified-payroll-review.service';
-import { CprWeekReviewRow } from '@app/models/certified-payroll.types';
 import { CertifiedPayrollExportService } from '@features/labor/services/certified-payroll-export.service';
 import { CertifiedPayrollGeneratorService } from '@features/labor/services/certified-payroll-generator.service';
 import { CertifiedPayrollTasksService } from '@features/labor/services/certified-payroll-tasks.service';
@@ -37,6 +36,7 @@ export class CertifiedPayrollService {
   loading = signal(false);
   lastMessage = signal<string | null>(null);
   lastError = signal<string | null>(null);
+  exportSheetConfigured = signal(!!environment.certifiedPayrollSheetId.trim());
 
   private projects = toSignal(this.dataService.getProjects(), { initialValue: [] as Project[] });
   private weeks = toSignal(this.cprData.getWeeks(), { initialValue: [] });
@@ -57,28 +57,41 @@ export class CertifiedPayrollService {
       blockedWeeks: weeks.filter(w => w.status === 'blocked').length,
       readyWeeks: weeks.filter(w => w.status === 'ready').length,
       openExceptions,
-      exportConfigured: this.exporter.exportConfigured(),
+      exportConfigured: this.exportConfigured(),
     };
   });
 
   exportBanner = computed(() =>
-    this.exporter.exportConfigured() ? null : CERTIFIED_PAYROLL_EXPORT_MESSAGE,
+    this.exportConfigured() ? null : 'Optional: connect a Google Sheet below to export draft rows. Print Form works without it.',
   );
 
+  exportConfigured(): boolean {
+    return this.exportSheetConfigured();
+  }
+
   async initialize(): Promise<void> {
-    const projects = this.dataService.getProjectsSnapshot();
-    await this.seedRatesFromLaborModule();
-    await this.tasks.ensureTasksForProjects(projects);
-    for (const project of projects.filter(isCertifiedPayrollProject)) {
-      const openExceptions = this.cprData.getExceptionsSnapshot().filter(e => e.projectId === project.id && !e.resolved).length;
-      const readyWeeks = this.cprData.getWeeksSnapshot().filter(w => w.projectId === project.id && w.status === 'ready').length;
-      this.tasks.syncTaskProgress(project, openExceptions, readyWeeks);
+    this.lastError.set(null);
+    try {
+      const projects = this.dataService.getProjectsSnapshot();
+      await this.seedRatesFromLaborModule();
+      await this.tasks.ensureTasksForProjects(projects);
+      for (const project of projects.filter(isCertifiedPayrollProject)) {
+        const openExceptions = this.cprData.getExceptionsSnapshot().filter(e => e.projectId === project.id && !e.resolved).length;
+        const readyWeeks = this.cprData.getWeeksSnapshot().filter(w => w.projectId === project.id && w.status === 'ready').length;
+        this.tasks.syncTaskProgress(project, openExceptions, readyWeeks);
+      }
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'Certified payroll initialization failed.');
     }
   }
 
   async ensureComplianceForProject(project: Project): Promise<void> {
     if (!isCertifiedPayrollProject(project)) return;
-    await this.tasks.ensureTasksForProject(project);
+    try {
+      await this.tasks.ensureTasksForProject(project);
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'Failed to load certified payroll tasks.');
+    }
   }
 
   async generateDrafts(projectId?: string): Promise<void> {
@@ -190,7 +203,7 @@ export class CertifiedPayrollService {
     try {
       const result = await this.exporter.exportWeek(project, week);
       this.lastMessage.set(result.message);
-      if (!result.success && !this.exporter.exportConfigured()) {
+      if (!result.success && !this.exportConfigured()) {
         this.lastError.set(result.message);
       }
     } catch (err) {
@@ -202,6 +215,7 @@ export class CertifiedPayrollService {
 
   configureSheetId(sheetId: string): void {
     environment.setCertifiedPayrollSheetId(sheetId);
+    this.exportSheetConfigured.set(!!sheetId.trim());
   }
 
   getSheetId(): string {

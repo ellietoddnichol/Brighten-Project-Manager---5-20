@@ -62,10 +62,11 @@ describe('global-enabled-modules.compute', () => {
     expect(workMore.some(i => i.id === 'rfis')).toBe(true);
   });
 
-  it('shows certified payroll when prevailing wage jobs or CPR records exist', () => {
+  it('always shows certified payroll in the main nav', () => {
+    expect(isGlobalModuleVisible('certified-payroll', baseInput())).toBe(true);
     expect(isGlobalModuleVisible('certified-payroll', baseInput({ prevailingWageJobCount: 1 }))).toBe(true);
-    expect(isGlobalModuleVisible('certified-payroll', baseInput({ cprRecordCount: 2 }))).toBe(true);
-    expect(isGlobalModuleVisible('certified-payroll', baseInput())).toBe(false);
+    const modules = computeGlobalEnabledModules(baseInput());
+    expect(modules.hiddenModules).not.toContain('certified-payroll');
   });
 
   it('does not badge AR as urgent when past due exists', () => {

@@ -2,6 +2,11 @@ import { Routes } from '@angular/router';
 
 export const LABOR_ROUTES: Routes = [
   {
+    path: 'labor/certified-payroll',
+    redirectTo: 'certified-payroll',
+    pathMatch: 'full',
+  },
+  {
     path: 'certified-payroll',
     loadComponent: () => import('@features/labor/pages/certified-payroll').then(m => m.CertifiedPayroll),
   },

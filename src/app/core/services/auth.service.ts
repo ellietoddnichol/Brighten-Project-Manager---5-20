@@ -47,7 +47,7 @@ export class AuthService {
   private googleProvider(forceConsent = false): GoogleAuthProvider {
     const provider = new GoogleAuthProvider();
     provider.addScope('https://www.googleapis.com/auth/drive');
-    provider.addScope('https://www.googleapis.com/auth/spreadsheets.readonly');
+    provider.addScope('https://www.googleapis.com/auth/spreadsheets');
     if (forceConsent) {
       provider.setCustomParameters({ prompt: 'consent' });
     }

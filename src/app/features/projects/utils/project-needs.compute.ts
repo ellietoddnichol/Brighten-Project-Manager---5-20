@@ -9,7 +9,6 @@ import {
 } from '@app/models/project-needs.types';
 
 import { FinancialView, FileView, WorkflowView } from '@app/components/project/project-detail.types';
-import { shouldShowCertifiedPayroll } from '@features/labor/utils/certified-payroll-week';
 
 
 
@@ -39,8 +38,8 @@ function showSubmittals(input: ProjectNeedsInput): boolean {
 
 
 
-function showCpr(input: ProjectNeedsInput): boolean {
-  return shouldShowCertifiedPayroll(input);
+function showCpr(_input: ProjectNeedsInput): boolean {
+  return true;
 }
 
 
@@ -150,15 +149,9 @@ export function computeProjectEnabledModules(input: ProjectNeedsInput): ProjectE
 
 
   if (showCpr(input)) {
-
-    workMore.push('certified-payroll');
-
     if (input.certifiedPayrollRequired && !input.hasCPRRecords) urgent.push('certified-payroll');
-
   } else {
-
     hidden.push('certified-payroll');
-
   }
 
 
@@ -287,9 +280,13 @@ export function computeProjectEnabledModules(input: ProjectNeedsInput): ProjectE
 
 
 
+  const workPrimary: WorkflowView[] = showCpr(input)
+    ? [...WORK_PRIMARY, 'certified-payroll']
+    : WORK_PRIMARY;
+
   return {
 
-    workPrimary: WORK_PRIMARY,
+    workPrimary,
 
     workMore,
 
@@ -335,7 +332,9 @@ export function workflowChipVisible(
 
   if (chipId === 'billing') return count > 0;
 
-  if (chipId === 'certified-payroll') return modules.workMore.includes('certified-payroll');
+  if (chipId === 'certified-payroll') {
+    return modules.workPrimary.includes('certified-payroll') || modules.workMore.includes('certified-payroll');
+  }
 
   if (chipId === 'changes') return true;
 

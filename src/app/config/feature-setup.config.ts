@@ -24,8 +24,8 @@ export const FEATURE_SETUP_MATRIX: FeatureSetupEntry[] = [
   {
     id: 'certified-payroll',
     label: 'Certified Payroll',
-    status: 'HiddenForNow',
-    description: 'Shows when project.certifiedPayrollRequired, prevailing wage with CPR records, or Show all tools.',
+    status: 'Active',
+    description: 'Prevailing wage CPR hub — ADP import, weekly drafts, review, and WH-347 print forms.',
     route: '/certified-payroll',
   },
   {

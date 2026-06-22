@@ -13,6 +13,7 @@ import { DataService } from '@core/services/data.service';
 import { CertifiedPayrollException, CertifiedPayrollTask, CertifiedPayrollWeek } from '@app/models/certified-payroll.types';
 import { Project } from '@app/models/types';
 import { CprFormPrintComponent } from '@features/labor/components/cpr-form-print';
+import { CprExportSheetConnectComponent } from '@features/labor/components/cpr-export-sheet-connect';
 import { computeJobPayrollNumber } from '@features/labor/utils/cpr-form.util';
 
 type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
@@ -29,16 +30,13 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
     StatCardComponent,
     StatusChipComponent,
     CprFormPrintComponent,
+    CprExportSheetConnectComponent,
   ],
   providers: [CurrencyPipe, DecimalPipe],
   template: `
     <div class="p-4 lg:p-6 w-full max-w-[1440px] mx-auto space-y-4">
       <app-hidden-module-banner moduleId="certified-payroll" />
-      @if (cpr.exportBanner()) {
-        <div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900">
-          {{ cpr.exportBanner() }}
-        </div>
-      }
+      <app-cpr-export-sheet-connect />
 
       @if (cpr.lastMessage()) {
         <div class="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ cpr.lastMessage() }}</div>
@@ -67,9 +65,12 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
           <mat-icon class="!text-[18px]">folder_open</mat-icon>
           Import ADP from Drive
         </button>
-        <a routerLink="/settings" class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
-          Connect export sheet <mat-icon class="!text-[16px] w-4 h-4">settings</mat-icon>
-        </a>
+        @if (cpr.exportConfigured()) {
+          <a [href]="cprSheetUrl()" target="_blank" rel="noopener"
+             class="text-sm font-semibold text-indigo-700 hover:text-indigo-800 flex items-center gap-1">
+            Open export sheet <mat-icon class="!text-[16px] w-4 h-4">open_in_new</mat-icon>
+          </a>
+        }
       </app-page-header>
 
       <div class="flex flex-wrap gap-2 border-b border-slate-200 pb-1">
@@ -375,6 +376,11 @@ export class CertifiedPayroll {
   reviewWeekLabel = computed(() => {
     const week = this.weeks().find(w => w.id === this.reviewWeek());
     return week ? `${this.projectLabel(week.projectId)} · ${week.weekEnding}` : '';
+  });
+
+  cprSheetUrl = computed(() => {
+    const id = this.cpr.getSheetId().trim();
+    return id ? `https://docs.google.com/spreadsheets/d/${id}/edit` : '';
   });
 
   printContext = computed(() => {

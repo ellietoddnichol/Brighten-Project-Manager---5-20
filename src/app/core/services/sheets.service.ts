@@ -38,7 +38,7 @@ export interface SpreadsheetSheetMeta {
 export class SheetsService {
   private authService = inject(AuthService);
 
-  /** Read-only — the app never writes to Google Sheets. */
+  /** Read spreadsheet tab metadata. */
   async getSpreadsheetSheets(spreadsheetId: string, allowRetry = true): Promise<SpreadsheetSheetMeta[]> {
     const token = await this.authService.getAccessToken();
     if (!token) {
