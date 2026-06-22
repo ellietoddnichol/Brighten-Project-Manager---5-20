@@ -38,6 +38,23 @@ import {
     .cpr-form .header-cell { font-weight: bold; background: #f8fafc; }
     .cpr-form .center { text-align: center; }
     .cpr-form .right { text-align: right; }
+
+    /* LS-57-3 Statement of Compliance styles */
+    .ls57 { font-size: 9pt; font-family: Arial, sans-serif; line-height: 1.5; padding: 8px; }
+    .ls57-date { margin-bottom: 10px; }
+    .ls57-signatory { margin-bottom: 10px; }
+    .ls57-line {
+      display: inline-block;
+      border-bottom: 1px solid #000;
+      vertical-align: bottom;
+      padding: 0 2px;
+    }
+    .ls57-para { margin-bottom: 14px; text-align: justify; }
+    .ls57-sig-table { width: 100%; border-collapse: collapse; margin-bottom: 0; }
+    .ls57-sig-table td { border: 1px solid #000; }
+    .ls57-warning-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .ls57-warning-table td { border: 1px solid #000; padding: 4px 6px; font-style: italic; font-size: 8pt; }
+    .ls57-footer { font-style: italic; font-size: 7.5pt; text-align: center; color: #444; margin-top: 16px; }
   `],
   template: `
     <div class="cpr-form space-y-4">
@@ -169,94 +186,85 @@ import {
       </section>
 
       <!-- PAGE 3 — Missouri LS-57-3 Statement of Compliance -->
-      <section class="cpr-page-break">
-        <div class="text-center font-bold text-sm mb-1">STATEMENT OF COMPLIANCE</div>
-        <div class="text-center text-[8px] mb-3 text-slate-600">LS-57-3 (08-18) AI &nbsp;|&nbsp; Missouri Department of Labor and Industrial Relations</div>
+      <section class="cpr-page-break ls57">
 
-        <table class="mb-3">
+        <!-- Date line -->
+        <div class="ls57-date">
+          Date: <span class="ls57-line" style="min-width:180px;">&nbsp;</span>
+        </div>
+
+        <!-- Signatory line -->
+        <div class="ls57-signatory">
+          I,&nbsp;
+          <span class="ls57-line" style="min-width:300px;">&nbsp;</span>
+          &nbsp;<em>(Name of Signatory Party)</em>,&nbsp;
+          <span class="ls57-line" style="min-width:200px;">&nbsp;</span>
+          &nbsp;<em>(Title)</em>&nbsp;do hereby state:
+        </div>
+
+        <!-- Paragraph 1 -->
+        <div class="ls57-para">
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(1) That I pay or supervise the payment of the persons employed by
+          <span class="ls57-line" style="min-width:260px;">Brighten Builders, LLC</span>
+          <em>(Contractor or Subcontractor)</em> on the
+          <span class="ls57-line" style="min-width:200px;">{{ buildingOrWork() }}</span>
+          <em>(Building or Work)</em>;
+          that during the payroll period commencing seven (7) days prior to the week ending date of
+          <span class="ls57-line" style="min-width:90px;">{{ weekEndingLabel() }}</span>
+          all persons employed on said project have been paid the full weekly wages stated above,
+          that no rebates have been or will be made either directly or indirectly to or on behalf of
+          <span class="ls57-line" style="min-width:260px;">Brighten Builders, LLC</span>
+          <em>(Contractor or Subcontractor)</em>,
+          from the full weekly wages earned by any person and that no deductions have been made
+          either directly or indirectly from the full wages earned by any person, other than legally
+          permissible deductions, that full and accurate records clearly indicating the names,
+          occupations, and crafts of every worker employed by them in connection with the public work
+          together with an accurate record of the number of hours worked by each worker and the actual
+          wages paid for each class or type of work performed and deduction made for each worker have
+          been prepared, that these payroll records are kept and have been provided for inspection to
+          the authorized representative of the contracting public body and will be available as often
+          as may be necessary and such records shall not be destroyed or removed from the state for
+          the period of one year following the completion of the public work in connection with which
+          the records are made.
+        </div>
+
+        <!-- Paragraph 2 -->
+        <div class="ls57-para">
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(2) That any payrolls otherwise under this contract required
+          to be submitted for the above period are correct and complete; that the wage rates for
+          laborers or mechanics contained therein are not less than the applicable wage rates
+          contained in any wage order incorporated into the contract; that the occupational title
+          set forth herein for each laborer or mechanic conform with the work performed.
+        </div>
+
+        <!-- Signature block -->
+        <table class="ls57-sig-table">
           <tr>
-            <td style="padding: 6px 4px;">
-              <span class="font-bold">Date:</span>
-              <span class="compliance-blank" style="display:inline-block;min-width:160px;border-bottom:1px solid #000;margin-left:6px;">&nbsp;</span>
+            <td style="width:50%;padding:4px 6px;">Name and Title</td>
+            <td style="width:50%;padding:4px 6px;">Signature</td>
+          </tr>
+          <tr>
+            <td style="height:56px;padding:4px 6px;">&nbsp;</td>
+            <td style="height:56px;padding:4px 6px;">&nbsp;</td>
+          </tr>
+        </table>
+
+        <!-- Legal warning inside border -->
+        <table class="ls57-warning-table">
+          <tr>
+            <td>
+              The falsification of any of the above statements may subject the contractor or
+              subcontractor to criminal prosecution. See Sections 290.340, 570.090, 575.050,
+              and 575.060, RSMo.
             </td>
           </tr>
         </table>
 
-        <table class="mb-3">
-          <tr>
-            <td style="padding:4px;">
-              I,&nbsp;
-              <span class="compliance-blank" style="display:inline-block;min-width:280px;border-bottom:1px solid #000;">&nbsp;</span>
-              &nbsp;<em>(Name of Signatory Party)</em>,&nbsp;
-              <span class="compliance-blank" style="display:inline-block;min-width:200px;border-bottom:1px solid #000;">&nbsp;</span>
-              &nbsp;<em>(Title)</em>&nbsp;do hereby state:
-            </td>
-          </tr>
-        </table>
-
-        <table class="mb-3" style="font-size:7.5pt;">
-          <tr>
-            <td style="padding:6px 4px; line-height:1.6;">
-              <p style="margin-bottom:8px;">
-                (1) That I pay or supervise the payment of the persons employed by
-                <strong>Brighten Builders, LLC</strong>
-                <em>(Contractor or Subcontractor)</em> on the
-                <span class="compliance-blank" style="display:inline-block;min-width:220px;border-bottom:1px solid #000;">
-                  {{ buildingOrWork() }}
-                </span>
-                <em>(Building or Work)</em>;
-                that during the payroll period commencing seven (7) days prior to the week ending date of
-                <strong>{{ weekEndingLabel() }}</strong>
-                all persons employed on said project have been paid the full weekly wages stated above,
-                that no rebates have been or will be made either directly or indirectly to or on behalf of
-                <strong>Brighten Builders, LLC</strong>
-                <em>(Contractor or Subcontractor)</em>,
-                from the full weekly wages earned by any person and that no deductions have been made
-                either directly or indirectly from the full wages earned by any person, other than legally
-                permissible deductions, that full and accurate records clearly indicating the names,
-                occupations, and crafts of every worker employed by them in connection with the public work
-                together with an accurate record of the number of hours worked by each worker and the actual
-                wages paid for each class or type of work performed and deduction made for each worker have
-                been prepared, that these payroll records are kept and have been provided for inspection to
-                the authorized representative of the contracting public body and will be available as often
-                as may be necessary and such records shall not be destroyed or removed from the state for
-                the period of one year following the completion of the public work in connection with which
-                the records are made.
-              </p>
-              <p>
-                (2) That any payrolls otherwise under this contract required to be submitted for the above
-                period are correct and complete; that the wage rates for laborers or mechanics contained
-                therein are not less than the applicable wage rates contained in any wage order incorporated
-                into the contract; that the occupational title set forth herein for each laborer or mechanic
-                conform with the work performed.
-              </p>
-            </td>
-          </tr>
-        </table>
-
-        <table style="margin-bottom:16px;">
-          <tr>
-            <th style="width:50%;padding:4px 6px;font-weight:bold;">Name and Title</th>
-            <th style="width:50%;padding:4px 6px;font-weight:bold;">Signature</th>
-          </tr>
-          <tr>
-            <td style="padding:32px 6px 8px;">&nbsp;</td>
-            <td style="padding:32px 6px 8px;">&nbsp;</td>
-          </tr>
-        </table>
-
-        <table>
-          <tr>
-            <td style="padding:4px 6px;font-size:7pt;font-style:italic;">
-              The falsification of any of the above statements may subject the contractor or subcontractor
-              to criminal prosecution. See Sections 290.340, 570.090, 575.050, and 575.060, RSMo.
-            </td>
-          </tr>
-        </table>
-
-        <div class="text-center text-[7pt] mt-6 text-slate-500 italic">
-          Missouri Department of Labor and Industrial Relations is an equal opportunity employer/program.
-          TDD/TTY: 800-735-2966 &nbsp; Relay Missouri: 711 &nbsp;&nbsp; LS-57-3 (08-18) AI
+        <!-- Footer -->
+        <div class="ls57-footer">
+          Missouri Department of Labor and Industrial Relations is an equal opportunity employer/program.<br/>
+          TDD/TTY: 800-735-2966 &nbsp;&nbsp; Relay Missouri: 711
+          <span style="float:right;">LS-57-3 (08-18) AI</span>
         </div>
       </section>
     </div>
