@@ -1,5 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import * as XLSX from 'xlsx';
 import { AdpPayrollDetail } from '@app/models/certified-payroll.types';
 import {
   CPR_ADP_EARNINGS_FILE_NAME_CONTAINS,
@@ -38,10 +37,7 @@ export class CertifiedPayrollAdpService {
     const lower = file.name.toLowerCase();
     if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' }) as unknown[][];
-      const parsed = parseAdpEarningsRecordMatrix(rows, file.name);
+      const parsed = await this.parseXlsxBuffer(buffer, file.name);
       return this.persistParsedReport(parsed);
     }
 
@@ -96,6 +92,11 @@ export class CertifiedPayrollAdpService {
       return parseAdpEarningsRecordCsv(new TextDecoder().decode(buffer), fileName);
     }
 
+    return this.parseXlsxBuffer(buffer, fileName);
+  }
+
+  private async parseXlsxBuffer(buffer: ArrayBuffer, fileName: string) {
+    const XLSX = await import('xlsx');
     const workbook = XLSX.read(buffer, { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' }) as unknown[][];
