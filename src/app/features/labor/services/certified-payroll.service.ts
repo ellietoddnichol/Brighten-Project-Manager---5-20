@@ -112,14 +112,39 @@ export class CertifiedPayrollService {
     this.loading.set(true);
     this.lastError.set(null);
     try {
-      const text = await file.text();
-      const result = await this.adpImport.importEarningsRecordCsv(text, file.name);
+      const result = await this.adpImport.importEarningsRecordFile(file);
       this.lastMessage.set(
         `Imported ADP EarningsRecord "${result.fileName}" · pay date ${result.payDate} · ` +
         `work week ${result.weekStart} – ${result.weekEnding} · ${result.employeesImported} employees.`,
       );
     } catch (err) {
       this.lastError.set(err instanceof Error ? err.message : 'ADP import failed.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  async importAdpFromDriveFolder(): Promise<void> {
+    this.loading.set(true);
+    this.lastError.set(null);
+    try {
+      const result = await this.adpImport.importEarningsRecordsFromDriveFolder();
+      if (!result.imported.length && result.errors.length) {
+        throw new Error(result.errors[0]?.message ?? 'Drive ADP import failed.');
+      }
+      const summary = result.imported
+        .map(r => `${r.fileName} (${r.employeesImported} employees, week ending ${r.weekEnding})`)
+        .join('; ');
+      this.lastMessage.set(
+        `Imported ${result.imported.length} ADP file(s) from Drive.${summary ? ' ' + summary : ''}`,
+      );
+      if (result.errors.length) {
+        this.lastError.set(
+          `${result.errors.length} file(s) failed: ${result.errors.map(e => e.fileName).join(', ')}`,
+        );
+      }
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'Drive ADP import failed.');
     } finally {
       this.loading.set(false);
     }

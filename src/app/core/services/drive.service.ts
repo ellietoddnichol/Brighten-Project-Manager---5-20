@@ -131,6 +131,32 @@ export class DriveService {
     return children.filter(f => isDriveFolder(f.mimeType));
   }
 
+  async downloadFile(fileId: string, allowRetry = true): Promise<ArrayBuffer> {
+    const response = await this.authorizedFetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`,
+      { method: 'GET' },
+      allowRetry,
+    );
+    if (!response.ok) {
+      const detail = await readDriveApiError(response);
+      throw new Error(`Drive download error: ${detail}`);
+    }
+    return response.arrayBuffer();
+  }
+
+  async exportFile(fileId: string, mimeType: string, allowRetry = true): Promise<string> {
+    const response = await this.authorizedFetch(
+      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/export?mimeType=${encodeURIComponent(mimeType)}&supportsAllDrives=true`,
+      { method: 'GET' },
+      allowRetry,
+    );
+    if (!response.ok) {
+      const detail = await readDriveApiError(response);
+      throw new Error(`Drive export error: ${detail}`);
+    }
+    return response.text();
+  }
+
   async listFiles(folderId: string, allowRetry = true): Promise<DriveFile[]> {
     const children = await this.listChildren(folderId, false, allowRetry);
     return children

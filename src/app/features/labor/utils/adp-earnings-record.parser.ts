@@ -113,13 +113,29 @@ function extractPayDateFromTable(rows: string[][]): string | null {
   return null;
 }
 
+function headerRowScore(rowText: string): number {
+  const clean = rowText.toLowerCase();
+  return ['employee name', 'gross earning', 'check date'].filter(k => clean.includes(k)).length;
+}
+
 function locateHeaderRow(lines: string[]): number {
   for (let i = 0; i < Math.min(lines.length, 500); i++) {
-    const clean = String(lines[i] ?? '').toLowerCase();
-    const hits = ['employee name', 'gross earning', 'check date'].filter(k => clean.includes(k)).length;
+    const clean = String(lines[i] ?? '');
+    const hits = headerRowScore(clean);
     if ((clean.includes(',') || clean.includes('\t')) && hits >= 2) return i;
   }
   return -1;
+}
+
+function locateHeaderRowInMatrix(rows: string[][]): number {
+  for (let i = 0; i < Math.min(rows.length, 500); i++) {
+    if (headerRowScore(rows[i].join(' ')) >= 2) return i;
+  }
+  return -1;
+}
+
+function matrixRowsToStrings(rows: unknown[][]): string[][] {
+  return rows.map(row => row.map(cell => String(cell ?? '').trim()));
 }
 
 function filterTableRows(rows: string[][]): string[][] {
@@ -234,6 +250,42 @@ export function aggregateAdpEmployees(tableRows: string[][]): ParsedAdpEmployeeR
   return [...acc.values()];
 }
 
+function parseAdpEarningsRecordTable(tableRows: string[][], fileName: string, preambleLines: string[] = []): ParsedAdpEarningsRecord {
+  const filtered = filterTableRows(tableRows);
+  if (filtered.length < 2) {
+    throw new Error(`ADP EarningsRecord had a header but no employee rows in: ${fileName}`);
+  }
+
+  const payDate = extractPayDateFromTable(filtered) || extractPayDateFromPreamble(preambleLines);
+  if (!payDate) {
+    throw new Error('Could not determine ADP pay/check date from the EarningsRecord.');
+  }
+
+  const workWeek = deriveWorkWeekFromPayDate(payDate);
+  const employees = aggregateAdpEmployees(filtered);
+
+  return {
+    fileName,
+    payDate,
+    weekEnding: workWeek.weekEnding,
+    weekStart: workWeek.weekStart,
+    employees,
+    tableRowCount: filtered.length - 1,
+  };
+}
+
+/** Parse ADP EarningsRecord rows from Excel/CSV matrix export. */
+export function parseAdpEarningsRecordMatrix(rows: unknown[][], fileName: string): ParsedAdpEarningsRecord {
+  const matrix = matrixRowsToStrings(rows);
+  const headerIdx = locateHeaderRowInMatrix(matrix);
+  if (headerIdx < 0) {
+    throw new Error(`Could not locate the ADP table header row in: ${fileName}`);
+  }
+
+  const preambleLines = matrix.slice(0, headerIdx).map(row => row.join(' '));
+  return parseAdpEarningsRecordTable(matrix.slice(headerIdx), fileName, preambleLines);
+}
+
 /** Parse an ADP EarningsRecord CSV export (matches Apps Script parseAdpCsvIntoDetail_). */
 export function parseAdpEarningsRecordCsv(text: string, fileName: string): ParsedAdpEarningsRecord {
   const cleaned = text.replace(/^\uFEFF/, '');
@@ -246,24 +298,5 @@ export function parseAdpEarningsRecordCsv(text: string, fileName: string): Parse
   }
 
   const tableRows = filterTableRows(parseCsv(lines.slice(headerIdx).join('\n')));
-  if (tableRows.length < 2) {
-    throw new Error('ADP CSV had a header but no employee rows.');
-  }
-
-  const payDate = extractPayDateFromTable(tableRows) || preambleDate;
-  if (!payDate) {
-    throw new Error('Could not determine ADP pay/check date from the EarningsRecord.');
-  }
-
-  const workWeek = deriveWorkWeekFromPayDate(payDate);
-  const employees = aggregateAdpEmployees(tableRows);
-
-  return {
-    fileName,
-    payDate,
-    weekEnding: workWeek.weekEnding,
-    weekStart: workWeek.weekStart,
-    employees,
-    tableRowCount: tableRows.length - 1,
-  };
+  return parseAdpEarningsRecordTable(tableRows, fileName, lines.slice(0, headerIdx));
 }

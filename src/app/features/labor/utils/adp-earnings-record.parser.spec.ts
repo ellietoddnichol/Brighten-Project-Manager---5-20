@@ -1,4 +1,4 @@
-import { parseAdpEarningsRecordCsv } from './adp-earnings-record.parser';
+import { parseAdpEarningsRecordCsv, parseAdpEarningsRecordMatrix } from './adp-earnings-record.parser';
 
 const SAMPLE_CSV = `
 ADP EarningsRecord
@@ -37,5 +37,19 @@ describe('adp-earnings-record.parser', () => {
 
   it('throws when header row is missing', () => {
     expect(() => parseAdpEarningsRecordCsv('foo,bar\n1,2', 'bad.csv')).toThrow(/header row/i);
+  });
+
+  it('parses ADP EarningsRecord matrix rows from Excel export', () => {
+    const rows = [
+      ['Report: Earnings Record'],
+      ['Check Dates From: 6/22/2026'],
+      ['Employee Name', 'SSN', 'Check Date', 'Department', 'Earning 1', 'Rate', 'Hours', 'Amount', 'Gross Earning', 'FED FIT', 'FED SOCSEC', 'FED MEDCARE', 'KS SIT', 'MO SIT', 'Union Dues', 'Vacation', 'Net Pay'],
+      ['Albright, Max', 'xxx-xx-3380', '6/22/2026', 'Department: 007', 'Regular', 23.42, 8, 187.36, 936.8, 50, 58.08, 13.58, 20, 0, 10, 5, 780.14],
+    ];
+    const parsed = parseAdpEarningsRecordMatrix(rows, 'EarningsRecord.xlsx');
+    expect(parsed.payDate).toBe('2026-06-22');
+    expect(parsed.employees).toHaveLength(1);
+    expect(parsed.employees[0]?.rawName).toContain('Albright');
+    expect(parsed.employees[0]?.grossPay).toBeCloseTo(936.8);
   });
 });
