@@ -1,5 +1,11 @@
 import { AdpPayrollDetail, CertifiedPayrollEntry } from '@app/models/certified-payroll.types';
 import { fringeRateForClassification } from '@features/labor/utils/fringe-rates-seed';
+import {
+  normalizeWeekEndingToSaturday,
+  parseCprLocalDate,
+  startOfWeekSunday,
+  workWeekDatesSunThroughSat as buildWorkWeekDates,
+} from '@features/labor/utils/certified-payroll-week';
 
 export interface CprEmployeeOverride {
   displayName?: string;
@@ -56,16 +62,8 @@ export function commercialCarpenterFringeApplies(occupation?: string): boolean {
 
 /** Sun–Sat column dates; header uses Saturday (last day) per Apps Script. */
 export function workWeekDatesSunThroughSat(weekEnding: string): { dates: string[]; weekEndingLabel: string } {
-  const end = parseLocalDate(weekEnding);
-  const start = new Date(end);
-  start.setDate(end.getDate() - end.getDay());
-  const dates: string[] = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    dates.push(formatIsoDate(d));
-  }
-  return { dates, weekEndingLabel: formatIsoDate(dates[6] ? parseLocalDate(dates[6]) : end) };
+  const weekEndingLabel = normalizeWeekEndingToSaturday(weekEnding);
+  return { dates: buildWorkWeekDates(weekEnding), weekEndingLabel };
 }
 
 /** Apps Script computeJobPayrollNumber_: 01-based week index from first job time week. */
@@ -74,24 +72,23 @@ export function computeJobPayrollNumber(
   targetWeekEnding: string,
   firstJobWeekEnding?: string,
 ): string {
-  const target = parseLocalDate(targetWeekEnding);
-  const targetStart = startOfWeekSunday(target);
+  const target = startOfWeekSunday(parseCprLocalDate(normalizeWeekEndingToSaturday(targetWeekEnding)));
   let firstStart: Date | null = null;
 
   if (firstJobWeekEnding) {
-    firstStart = startOfWeekSunday(parseLocalDate(firstJobWeekEnding));
+    firstStart = startOfWeekSunday(parseCprLocalDate(normalizeWeekEndingToSaturday(firstJobWeekEnding)));
   } else if (sortedWeekEndings.length) {
-    firstStart = startOfWeekSunday(parseLocalDate(sortedWeekEndings[0]));
+    firstStart = startOfWeekSunday(parseCprLocalDate(normalizeWeekEndingToSaturday(sortedWeekEndings[0])));
   }
 
   if (!firstStart) return '01';
 
-  const weeksFromStart = Math.round((targetStart.getTime() - firstStart.getTime()) / (7 * 86400000));
+  const weeksFromStart = Math.round((target.getTime() - firstStart.getTime()) / (7 * 86400000));
   return String(Math.max(1, weeksFromStart + 1)).padStart(2, '0');
 }
 
 export function formatCprShortDate(iso: string): string {
-  const d = parseLocalDate(iso);
+  const d = parseCprLocalDate(iso);
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
@@ -230,21 +227,6 @@ export function buildCprPage2Row(entry: CertifiedPayrollEntry, displayName?: str
     explanation: 'Other A: Union Dues, Other C: IAF / CITF / Annuity, Other B: Vacation',
     planName: 'Mid American Carpenters Union',
   };
-}
-
-function startOfWeekSunday(d: Date): Date {
-  const x = new Date(d);
-  x.setDate(d.getDate() - d.getDay());
-  x.setHours(12, 0, 0, 0);
-  return x;
-}
-
-function parseLocalDate(iso: string): Date {
-  return new Date(`${iso.slice(0, 10)}T12:00:00`);
-}
-
-function formatIsoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 function round2(n: number): number {

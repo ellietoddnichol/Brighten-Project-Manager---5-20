@@ -8,12 +8,16 @@ import {
 } from '@app/models/certified-payroll.types';
 import { Project } from '@app/models/types';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
-import { normalizeEmployeeKey } from '@features/labor/utils/certified-payroll-week';
+import {
+  findAdpPayrollDetail,
+  normalizeEmployeeKey,
+  normalizeWeekEndingToSaturday,
+  workWeekDatesSunThroughSat,
+} from '@features/labor/utils/certified-payroll-week';
 import {
   buildCprPage1Row,
   buildCprPage2Row,
   formatCprShortDate,
-  workWeekDatesSunThroughSat,
 } from '@features/labor/utils/cpr-form.util';
 
 @Component({
@@ -175,12 +179,11 @@ export class CprFormPrintComponent {
 
   readonly dayLabels = ['SU', 'M', 'T', 'W', 'TH', 'F', 'S'] as const;
 
-  weekEndingLabel = computed(() => {
-    const { weekEndingLabel } = workWeekDatesSunThroughSat(this.week.weekEnding);
-    return formatCprShortDate(weekEndingLabel);
-  });
+  weekEndingLabel = computed(() =>
+    formatCprShortDate(normalizeWeekEndingToSaturday(this.week.weekEnding)),
+  );
 
-  weekDates = computed(() => workWeekDatesSunThroughSat(this.week.weekEnding).dates);
+  weekDates = computed(() => workWeekDatesSunThroughSat(this.week.weekEnding));
 
   page1Rows = computed(() => {
     const employeeInfo = this.cprData.getEmployeePayrollInfoSnapshot();
@@ -235,7 +238,6 @@ export class CprFormPrintComponent {
   }
 
   private findAdp(rows: AdpPayrollDetail[], name: string): AdpPayrollDetail | undefined {
-    const key = normalizeEmployeeKey(name);
-    return rows.find(r => r.employeeKey === key && r.payPeriodEnding === this.week.weekEnding);
+    return findAdpPayrollDetail(rows, normalizeEmployeeKey(name), this.week.weekEnding);
   }
 }

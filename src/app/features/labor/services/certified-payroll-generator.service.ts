@@ -15,6 +15,7 @@ import { LaborRateService } from '@features/labor/services/labor-rate.service';
 import { LaborCodeMappingService } from '@features/labor/services/labor-code-mapping.service';
 import {
   entryId,
+  findAdpPayrollDetail,
   isCertifiedPayrollProject,
   normalizeEmployeeKey,
   safeFirestoreId,
@@ -75,7 +76,17 @@ export class CertifiedPayrollGeneratorService {
         const wId = weekId(project.id, weekEnding);
         const eId = entryId(project.id, weekEnding, employeeName, classification, laborCode || undefined);
 
-        const built = this.buildEntry(rows, employeeName, classification, laborCode || undefined, rates, employees, employeeInfo, adpDetails);
+        const built = this.buildEntry(
+          rows,
+          employeeName,
+          classification,
+          laborCode || undefined,
+          weekEnding,
+          rates,
+          employees,
+          employeeInfo,
+          adpDetails,
+        );
         const weekExceptions = this.detectWeekEntryExceptions(project, wId, weekEnding, eId, built.entry, built.entryRows, adpDetails);
 
         await this.cprData.upsertEntry({
@@ -155,6 +166,7 @@ export class CertifiedPayrollGeneratorService {
     employeeName: string,
     classification: string,
     laborCode: string | undefined,
+    weekEnding: string,
     rates: ClassificationRateRecord[],
     employees: EmployeeRecord[],
     employeeInfo: EmployeePayrollInfo[],
@@ -190,8 +202,7 @@ export class CertifiedPayrollGeneratorService {
 
     const empKey = normalizeEmployeeKey(employeeName);
     const empInfo = employeeInfo.find(e => e.employeeKey === empKey);
-    const weekEnding = rows[0]?.workDate ? weekEndingSaturday(rows[0].workDate) : undefined;
-    const adp = adpDetails.find(d => d.employeeKey === empKey && d.payPeriodEnding === weekEnding);
+    const adp = findAdpPayrollDetail(adpDetails, empKey, weekEnding);
 
     return {
       entryRows: rows,
@@ -325,9 +336,10 @@ export class CertifiedPayrollGeneratorService {
       }
     }
 
-    const adp = adpDetails.find(d =>
-      d.employeeKey === normalizeEmployeeKey(employeeName)
-      && d.payPeriodEnding === weekEnding,
+    const adp = findAdpPayrollDetail(
+      adpDetails,
+      normalizeEmployeeKey(employeeName),
+      weekEnding,
     );
     if (adp?.regularHours != null && Math.abs((adp.regularHours ?? 0) - (entry.regularHours ?? 0)) > 0.25) {
       push('adp-time-mismatch', `ADP regular hours (${adp.regularHours}) differ from timekeeper (${entry.regularHours}).`, 'warning');

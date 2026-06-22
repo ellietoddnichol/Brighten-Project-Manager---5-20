@@ -1,7 +1,7 @@
 import { NormalizedLaborEntry } from '@app/models/labor.types';
 import { ProjectLaborActual } from '@app/models/labor-actual.types';
 import { Employee, Project, TimeEntry } from '@app/models/types';
-import { weekEndingSunday } from '@features/labor/utils/certified-payroll-week';
+import { weekEndingSaturday, weekStartSundayFromEnding } from '@features/labor/utils/certified-payroll-week';
 
 const APPROVED_STATUSES = new Set(['approved', 'approve', 'yes', 'y']);
 
@@ -10,10 +10,7 @@ export function isApprovedTimeStatus(status?: string): boolean {
 }
 
 export function weekStartFromEnding(weekEnd: string): string {
-  const end = new Date(`${weekEnd.slice(0, 10)}T12:00:00`);
-  const start = new Date(end);
-  start.setDate(end.getDate() - 6);
-  return start.toISOString().slice(0, 10);
+  return weekStartSundayFromEnding(weekEnd);
 }
 
 export function laborActualFromNormalizedEntry(
@@ -21,7 +18,7 @@ export function laborActualFromNormalizedEntry(
   project?: Project,
 ): ProjectLaborActual | null {
   if (!entry.workDate || !entry.projectId) return null;
-  const weekEnd = weekEndingSunday(entry.workDate);
+  const weekEnd = weekEndingSaturday(entry.workDate);
   return {
     id: `norm-${entry.id}`,
     projectId: entry.projectId,
@@ -54,7 +51,7 @@ export function laborActualFromTimeEntry(
   if (!entry.projectId || !entry.workDate) return null;
   if (!isApprovedTimeStatus(entry.approvalStatus)) return null;
 
-  const weekEnd = weekEndingSunday(entry.workDate);
+  const weekEnd = weekEndingSaturday(entry.workDate);
   const baseRate = employee?.payPerHour ?? 0;
   const regularHours = entry.regularHours ?? 0;
   const overtimeHours = entry.overtimeHours ?? 0;

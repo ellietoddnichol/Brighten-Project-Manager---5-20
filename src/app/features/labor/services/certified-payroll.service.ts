@@ -86,7 +86,10 @@ export class CertifiedPayrollService {
         await this.laborActuals.refreshFromApprovedTime(this.dataService.getProjectsSnapshot());
       }
       const result = await this.generator.generateWeeklyDrafts(this.dataService.getProjectsSnapshot(), projectId);
-      this.lastMessage.set(`Generated ${result.weeksCreated} week(s), ${result.entriesCreated} entries, ${result.exceptionsCreated} exceptions.`);
+      this.lastMessage.set(
+        `Generated ${result.weeksCreated} week(s), ${result.entriesCreated} entries, ${result.exceptionsCreated} exceptions. ` +
+        'CPR weeks use Sun–Sat with Saturday week ending (matches Apps Script).',
+      );
       for (const project of this.certifiedProjects()) {
         if (projectId && project.id !== projectId) continue;
         const openExceptions = this.cprData.getExceptionsSnapshot().filter(e => e.projectId === project.id && !e.resolved).length;

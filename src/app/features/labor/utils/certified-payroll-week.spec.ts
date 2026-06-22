@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adpPayPeriodMatchesWeek,
+  deriveWorkWeekFromPayDate,
+  normalizeWeekEndingToSaturday,
   shouldShowCertifiedPayroll,
   weekEndingSaturday,
   weekEndingSunday,
+  weekStartSundayFromEnding,
+  workWeekDatesSunThroughSat,
 } from '@features/labor/utils/certified-payroll-week';
 
 describe('certified-payroll-week visibility', () => {
@@ -16,52 +21,85 @@ describe('certified-payroll-week visibility', () => {
 });
 
 describe('weekEndingSaturday', () => {
-  // Week of 2025-06-08 (Sun) – 2025-06-14 (Sat)
-  it('returns the same Saturday for every day in the same week', () => {
+  it('returns the same Saturday for every day in the same Sun–Sat week', () => {
     const expected = '2025-06-14';
-    expect(weekEndingSaturday('2025-06-08')).toBe(expected); // Sunday
-    expect(weekEndingSaturday('2025-06-09')).toBe(expected); // Monday
-    expect(weekEndingSaturday('2025-06-10')).toBe(expected); // Tuesday
-    expect(weekEndingSaturday('2025-06-11')).toBe(expected); // Wednesday
-    expect(weekEndingSaturday('2025-06-12')).toBe(expected); // Thursday
-    expect(weekEndingSaturday('2025-06-13')).toBe(expected); // Friday
-    expect(weekEndingSaturday('2025-06-14')).toBe(expected); // Saturday — stays same day
+    expect(weekEndingSaturday('2025-06-08')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-09')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-10')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-11')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-12')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-13')).toBe(expected);
+    expect(weekEndingSaturday('2025-06-14')).toBe(expected);
   });
 
-  it('rolls to the next Saturday for a Sunday', () => {
-    // 2025-06-15 is a Sunday → week ends 2025-06-21
+  it('rolls to the next Saturday for a Sunday work date', () => {
     expect(weekEndingSaturday('2025-06-15')).toBe('2025-06-21');
   });
 
   it('handles month and year boundaries', () => {
-    // 2024-12-31 is a Tuesday → week ends 2025-01-04 (Sat)
     expect(weekEndingSaturday('2024-12-31')).toBe('2025-01-04');
-    // 2025-01-01 is a Wednesday → same week ending
     expect(weekEndingSaturday('2025-01-01')).toBe('2025-01-04');
   });
 
   it('accepts a Date object', () => {
-    const d = new Date('2025-06-11T00:00:00Z');
-    expect(weekEndingSaturday(d)).toBe('2025-06-14');
+    expect(weekEndingSaturday(new Date('2025-06-11T00:00:00Z'))).toBe('2025-06-14');
   });
 
-  it('is different from weekEndingSunday for a mid-week date', () => {
-    // Wednesday 2025-06-11:
-    //   weekEndingSaturday → 2025-06-14 (same week)
-    //   weekEndingSunday   → 2025-06-15 (next Sunday — one day later)
-    expect(weekEndingSaturday('2025-06-11')).toBe('2025-06-14');
-    expect(weekEndingSunday('2025-06-11')).toBe('2025-06-15');
+  it('aliases weekEndingSunday to the same Saturday week key', () => {
+    expect(weekEndingSunday('2025-06-11')).toBe('2025-06-14');
+    expect(weekEndingSunday('2025-06-09')).toBe(weekEndingSaturday('2025-06-09'));
+  });
+});
+
+describe('normalizeWeekEndingToSaturday', () => {
+  it('maps legacy Sunday week keys to the prior Saturday', () => {
+    expect(normalizeWeekEndingToSaturday('2025-06-15')).toBe('2025-06-14');
+    expect(normalizeWeekEndingToSaturday('2025-06-14')).toBe('2025-06-14');
+  });
+});
+
+describe('workWeekDatesSunThroughSat', () => {
+  it('returns seven dates Sunday through Saturday', () => {
+    const dates = workWeekDatesSunThroughSat('2025-06-14');
+    expect(dates).toEqual([
+      '2025-06-08',
+      '2025-06-09',
+      '2025-06-10',
+      '2025-06-11',
+      '2025-06-12',
+      '2025-06-13',
+      '2025-06-14',
+    ]);
+    expect(new Date(`${dates[0]}T12:00:00`).getDay()).toBe(0);
+    expect(new Date(`${dates[6]}T12:00:00`).getDay()).toBe(6);
   });
 
-  it('pay date 2025-06-14 (Sat) maps to ADP period ending 2025-06-14', () => {
-    // Confirms ADP payPeriodEnding matches week-ending key used in Firestore
-    expect(weekEndingSaturday('2025-06-14')).toBe('2025-06-14');
+  it('normalizes legacy Sunday endings before building dates', () => {
+    expect(workWeekDatesSunThroughSat('2025-06-15')).toEqual(workWeekDatesSunThroughSat('2025-06-14'));
   });
+});
 
-  it('timelog Monday buckets into the correct Saturday week', () => {
-    // Monday 2025-06-09 → week end 2025-06-14; NOT 2025-06-08 (Sunday)
-    const weekEnd = weekEndingSaturday('2025-06-09');
-    expect(weekEnd).toBe('2025-06-14');
-    expect(weekEnd).not.toBe('2025-06-08');
+describe('weekStartSundayFromEnding', () => {
+  it('returns the Sunday six days before Saturday week end', () => {
+    expect(weekStartSundayFromEnding('2025-06-14')).toBe('2025-06-08');
+  });
+});
+
+describe('deriveWorkWeekFromPayDate', () => {
+  it('derives Sun–Sat work week from a Friday ADP check date', () => {
+    const week = deriveWorkWeekFromPayDate('2025-06-13');
+    expect(week.weekEnding).toBe('2025-06-07');
+    expect(week.weekStart).toBe('2025-06-01');
+    expect(week.weekDates[0]).toBe('2025-06-01');
+    expect(week.weekDates[6]).toBe('2025-06-07');
+    expect(week.payDate).toBe('2025-06-13');
+  });
+});
+
+describe('adpPayPeriodMatchesWeek', () => {
+  it('matches ADP period ending to CPR week using Saturday normalization', () => {
+    expect(adpPayPeriodMatchesWeek('2025-06-14', '2025-06-14')).toBe(true);
+    expect(adpPayPeriodMatchesWeek('2025-06-15', '2025-06-14')).toBe(true);
+    expect(adpPayPeriodMatchesWeek('2025-06-07', '2025-06-13')).toBe(false);
   });
 });
