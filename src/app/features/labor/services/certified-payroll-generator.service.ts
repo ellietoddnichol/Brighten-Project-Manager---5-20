@@ -122,7 +122,11 @@ export class CertifiedPayrollGeneratorService {
           id: wId,
           projectId: project.id,
           weekEnding,
-          status: existingWeek?.status === 'exported' ? existingWeek.status : status,
+          status: existingWeek?.status === 'exported'
+            || existingWeek?.status === 'approved'
+            || existingWeek?.status === 'submitted'
+            ? existingWeek.status
+            : status,
           regularHours: weekEntries.regularHours,
           overtimeHours: weekEntries.overtimeHours,
           doubleTimeHours: weekEntries.doubleTimeHours,

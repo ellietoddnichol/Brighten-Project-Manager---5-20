@@ -18,6 +18,7 @@ export type CertifiedPayrollWeekStatus =
   | 'draft'
   | 'blocked'
   | 'ready'
+  | 'approved'
   | 'submitted'
   | 'exported';
 
@@ -68,6 +69,7 @@ export interface CertifiedPayrollWeek {
   entryCount: number;
   exceptionCount: number;
   readyAt?: string;
+  approvedAt?: string;
   submittedAt?: string;
   exportedAt?: string;
   notes?: string;
@@ -215,13 +217,35 @@ export interface CprMemoryRecord {
   id: string;
   timelogNorm: string;
   adpNorm: string;
+  timelogEmployee?: string;
+  adpEmployee?: string;
   display?: string;
   occupation?: string;
   address?: string;
   approvedAt?: string;
+  lastApprovedAt?: string;
+  approveCount?: number;
+  source?: string;
+  notes?: string;
   ownerId?: string;
   createdAt?: unknown;
   updatedAt?: unknown;
+}
+
+export interface CprWeekReviewRow {
+  entryId: string;
+  timelogEmployee: string;
+  adpEmployee?: string;
+  displayName?: string;
+  matchSource: string;
+  confidence: number;
+  occupation: string;
+  address?: string;
+  regularHours: number;
+  overtimeHours: number;
+  grossPay?: number;
+  reviewNotes: string[];
+  canApprove: boolean;
 }
 
 export interface AdpPayrollReportIndex {

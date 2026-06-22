@@ -13,6 +13,8 @@ import { Project } from '@app/models/types';
 import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payroll-week';
 import { CertifiedPayrollDataService } from '@features/labor/services/certified-payroll-data.service';
 import { CertifiedPayrollAdpService } from '@features/labor/services/certified-payroll-adp.service';
+import { CertifiedPayrollReviewService } from '@features/labor/services/certified-payroll-review.service';
+import { CprWeekReviewRow } from '@app/models/certified-payroll.types';
 import { CertifiedPayrollExportService } from '@features/labor/services/certified-payroll-export.service';
 import { CertifiedPayrollGeneratorService } from '@features/labor/services/certified-payroll-generator.service';
 import { CertifiedPayrollTasksService } from '@features/labor/services/certified-payroll-tasks.service';
@@ -25,6 +27,7 @@ export class CertifiedPayrollService {
   private dataService = inject(DataService);
   private cprData = inject(CertifiedPayrollDataService);
   private adpImport = inject(CertifiedPayrollAdpService);
+  private review = inject(CertifiedPayrollReviewService);
   private generator = inject(CertifiedPayrollGeneratorService);
   private tasks = inject(CertifiedPayrollTasksService);
   private exporter = inject(CertifiedPayrollExportService);
@@ -117,6 +120,36 @@ export class CertifiedPayrollService {
       );
     } catch (err) {
       this.lastError.set(err instanceof Error ? err.message : 'ADP import failed.');
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  getWeekReview(weekId: string): CprWeekReviewRow[] {
+    return this.review.buildWeekReview(weekId);
+  }
+
+  async approveWeek(weekId: string): Promise<void> {
+    this.loading.set(true);
+    this.lastError.set(null);
+    try {
+      const result = await this.review.approveWeek(weekId);
+      this.lastMessage.set(
+        `Approved week and saved ${result.memorySaved} CPR memory record(s). Future drafts will reuse these matches.`,
+      );
+      const week = this.cprData.getWeeksSnapshot().find(w => w.id === weekId);
+      if (week) {
+        const project = this.dataService.getProjectsSnapshot().find(p => p.id === week.projectId);
+        if (project) {
+          const openExceptions = this.cprData.getExceptionsSnapshot()
+            .filter(e => e.projectId === project.id && !e.resolved).length;
+          const readyWeeks = this.cprData.getWeeksSnapshot()
+            .filter(w => w.projectId === project.id && (w.status === 'ready' || w.status === 'approved')).length;
+          this.tasks.syncTaskProgress(project, openExceptions, readyWeeks);
+        }
+      }
+    } catch (err) {
+      this.lastError.set(err instanceof Error ? err.message : 'Failed to approve certified payroll week.');
     } finally {
       this.loading.set(false);
     }

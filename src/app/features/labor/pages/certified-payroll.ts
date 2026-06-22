@@ -203,35 +203,55 @@ type CprTab = 'dashboard' | 'tasks' | 'weeks' | 'exceptions';
 
         @if (reviewWeek()) {
           <div class="mt-6 bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-              <h2 class="text-sm font-bold text-slate-900">Weekly Review · {{ reviewWeekLabel() }}</h2>
-              <button type="button" (click)="reviewWeek.set(null)" class="text-slate-500 hover:text-slate-700"><mat-icon>close</mat-icon></button>
+            <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
+              <div>
+                <h2 class="text-sm font-bold text-slate-900">Weekly Review · {{ reviewWeekLabel() }}</h2>
+                <p class="text-xs text-slate-500 mt-1">Confirm ADP matches and occupations, then approve to save CPR Memory.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" (click)="approveReviewWeek()" [disabled]="cpr.loading() || !canApproveReviewWeek()"
+                        class="bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50">
+                  Approve Week
+                </button>
+                <button type="button" (click)="reviewWeek.set(null)" class="text-slate-500 hover:text-slate-700"><mat-icon>close</mat-icon></button>
+              </div>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full text-left text-sm">
                 <thead>
                   <tr class="text-[10px] uppercase font-bold text-slate-400 tracking-wider border-b border-slate-100">
-                    <th class="px-5 py-3">Employee</th>
-                    <th class="px-5 py-3">Classification</th>
+                    <th class="px-5 py-3">Timelog Employee</th>
+                    <th class="px-5 py-3">ADP Employee</th>
+                    <th class="px-5 py-3">Match</th>
+                    <th class="px-5 py-3">Occupation</th>
                     <th class="px-5 py-3 text-right">Reg</th>
                     <th class="px-5 py-3 text-right">OT</th>
-                    <th class="px-5 py-3 text-right">DT</th>
-                    <th class="px-5 py-3 text-right">Base</th>
-                    <th class="px-5 py-3 text-right">Fringe</th>
-                    <th class="px-5 py-3 text-right">Gross Pkg</th>
+                    <th class="px-5 py-3 text-right">ADP Gross</th>
+                    <th class="px-5 py-3">Review Notes</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                  @for (entry of reviewEntries(); track entry.id) {
-                    <tr>
-                      <td class="px-5 py-3 font-medium">{{ entry.employeeName }}</td>
-                      <td class="px-5 py-3">{{ entry.classification }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.regularHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.overtimeHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.doubleTimeHours | number:'1.1-1' }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.baseRate | currency:'USD':'symbol':'1.2-2' }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.fringeRate | currency:'USD':'symbol':'1.2-2' }}</td>
-                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ entry.grossPackage | currency:'USD':'symbol':'1.0-0' }}</td>
+                  @for (row of reviewRows(); track row.entryId) {
+                    <tr [class.bg-rose-50]="!row.canApprove">
+                      <td class="px-5 py-3 font-medium">{{ row.timelogEmployee }}</td>
+                      <td class="px-5 py-3">{{ row.adpEmployee || '—' }}</td>
+                      <td class="px-5 py-3 text-xs text-slate-600">
+                        {{ row.matchSource }}
+                        @if (row.confidence) {
+                          <span class="text-slate-400"> · {{ row.confidence | number:'1.0-2' }}</span>
+                        }
+                      </td>
+                      <td class="px-5 py-3">{{ row.occupation }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ row.regularHours | number:'1.1-1' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ row.overtimeHours | number:'1.1-1' }}</td>
+                      <td class="px-5 py-3 text-right font-numeric text-xs">{{ row.grossPay | currency:'USD':'symbol':'1.0-0' }}</td>
+                      <td class="px-5 py-3 text-xs text-slate-600">
+                        @if (row.reviewNotes.length) {
+                          {{ row.reviewNotes.join(' · ') }}
+                        } @else {
+                          <span class="text-emerald-700">Ready</span>
+                        }
+                      </td>
                     </tr>
                   } @empty {
                     <tr><td colspan="8" class="px-5 py-10 text-center text-slate-400 italic">No entries for this week.</td></tr>
@@ -336,10 +356,15 @@ export class CertifiedPayroll {
   allTasks = computed(() => [...this.tasks()].sort((a, b) => a.sortOrder - b.sortOrder));
   openExceptions = computed(() => this.exceptions().filter(e => !e.resolved));
 
-  reviewEntries = computed(() => {
+  reviewRows = computed(() => {
     const weekId = this.reviewWeek();
     if (!weekId) return [];
-    return this.entries().filter(e => e.weekId === weekId);
+    return this.cpr.getWeekReview(weekId);
+  });
+
+  canApproveReviewWeek = computed(() => {
+    const rows = this.reviewRows();
+    return rows.length > 0 && rows.every(r => r.canApprove);
   });
 
   reviewWeekLabel = computed(() => {
@@ -375,6 +400,12 @@ export class CertifiedPayroll {
     input.value = '';
   }
 
+  approveReviewWeek(): void {
+    const weekId = this.reviewWeek();
+    if (!weekId) return;
+    void this.cpr.approveWeek(weekId);
+  }
+
   exportWeek(weekId: string): void {
     void this.cpr.exportWeek(weekId);
   }
@@ -408,7 +439,7 @@ export class CertifiedPayroll {
   }
 
   weekTone(status: string): StatusTone {
-    if (status === 'ready' || status === 'exported' || status === 'submitted') return 'green';
+    if (status === 'ready' || status === 'approved' || status === 'exported' || status === 'submitted') return 'green';
     if (status === 'blocked') return 'red';
     if (status === 'draft') return 'amber';
     return 'slate';

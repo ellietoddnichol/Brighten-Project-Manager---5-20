@@ -138,6 +138,8 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
                   <td class="px-3 py-2.5">{{ week.exceptionCount }}</td>
                   <td class="px-3 py-2.5"><app-status-chip [tone]="weekTone(week.status)" [label]="week.status" /></td>
                   <td class="px-3 py-2.5 text-right space-x-2">
+                    <button type="button" (click)="openReview(week.id)"
+                            class="text-blue-700 bg-blue-50 px-2 py-1 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors">Review</button>
                     <button type="button" (click)="printWeek(week.id)" [disabled]="week.status === 'blocked'"
                             class="text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors disabled:opacity-40">Print Form</button>
                     <button type="button" (click)="exportWeek(week.id)" [disabled]="week.status === 'blocked'"
@@ -164,6 +166,50 @@ import { isCertifiedPayrollProject } from '@features/labor/utils/certified-payro
             </tbody>
           </table>
         </div>
+
+        @if (reviewWeekId()) {
+          <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900">Weekly Review · {{ reviewWeekLabel() }}</h3>
+                <p class="text-xs text-slate-500 mt-1">Approve to save CPR Memory for future ADP matching.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" (click)="approveReviewWeek()" [disabled]="cpr.loading() || !canApproveReviewWeek()"
+                        class="bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-50">
+                  Approve Week
+                </button>
+                <button type="button" (click)="reviewWeekId.set(null)" class="text-slate-500 hover:text-slate-700 text-xs font-semibold">Close</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="text-[10px] font-bold uppercase tracking-widest text-slate-500 border-b border-slate-100">
+                    <th class="px-3 py-2">Timelog</th>
+                    <th class="px-3 py-2">ADP</th>
+                    <th class="px-3 py-2">Match</th>
+                    <th class="px-3 py-2">Occupation</th>
+                    <th class="px-3 py-2 text-right">Gross</th>
+                    <th class="px-3 py-2">Notes</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  @for (row of reviewRows(); track row.entryId) {
+                    <tr class="text-xs" [class.bg-rose-50]="!row.canApprove">
+                      <td class="px-3 py-2.5 font-medium">{{ row.timelogEmployee }}</td>
+                      <td class="px-3 py-2.5">{{ row.adpEmployee || '—' }}</td>
+                      <td class="px-3 py-2.5">{{ row.matchSource }}</td>
+                      <td class="px-3 py-2.5">{{ row.occupation }}</td>
+                      <td class="px-3 py-2.5 text-right font-mono">{{ row.grossPay | currency:'USD':'symbol':'1.0-0' }}</td>
+                      <td class="px-3 py-2.5">{{ row.reviewNotes.join(' · ') || 'Ready' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
       </div>
     }
 
@@ -202,6 +248,7 @@ export class CertifiedPayrollTabComponent implements OnInit {
   showEdit = signal(false);
   expandedWeekId = signal<string | null>(null);
   selectedWeekIds = signal<Set<string>>(new Set());
+  reviewWeekId = signal<string | null>(null);
   printWeekId = signal<string | null>(null);
   saving = signal(false);
   draft: Partial<Project> = {};
@@ -215,6 +262,22 @@ export class CertifiedPayrollTabComponent implements OnInit {
   tasks = computed(() => this.cpr.tasksForProject(this.project.id));
   weeks = computed(() => this.cpr.weeksForProject(this.project.id));
   openExceptions = computed(() => this.cpr.exceptionsForProject(this.project.id));
+
+  reviewRows = computed(() => {
+    const weekId = this.reviewWeekId();
+    if (!weekId) return [];
+    return this.cpr.getWeekReview(weekId);
+  });
+
+  canApproveReviewWeek = computed(() => {
+    const rows = this.reviewRows();
+    return rows.length > 0 && rows.every(r => r.canApprove);
+  });
+
+  reviewWeekLabel = computed(() => {
+    const week = this.weeks().find(w => w.id === this.reviewWeekId());
+    return week ? week.weekEnding : '';
+  });
 
   printContext = computed(() => {
     const weekId = this.printWeekId();
@@ -288,6 +351,16 @@ export class CertifiedPayrollTabComponent implements OnInit {
     void this.cpr.exportWeek(weekId);
   }
 
+  openReview(weekId: string): void {
+    this.reviewWeekId.set(weekId);
+  }
+
+  approveReviewWeek(): void {
+    const weekId = this.reviewWeekId();
+    if (!weekId) return;
+    void this.cpr.approveWeek(weekId);
+  }
+
   printWeek(weekId: string): void {
     this.printWeekId.set(weekId);
   }
@@ -316,7 +389,7 @@ export class CertifiedPayrollTabComponent implements OnInit {
   }
 
   weekTone(status: string): StatusTone {
-    if (status === 'ready' || status === 'exported') return 'green';
+    if (status === 'ready' || status === 'approved' || status === 'exported' || status === 'submitted') return 'green';
     if (status === 'blocked') return 'red';
     return 'amber';
   }
